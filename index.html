@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>GENERATIONS — Family Life Simulator</title>
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;font-family:Arial,system-ui,sans-serif;background:#142018;color:#f5f1df}
@@ -27,12 +27,58 @@ h1,h2,h3{font-family:Georgia,serif}h1{margin:0;color:#efd28a;letter-spacing:2px}
 @media(max-width:800px){.main{grid-template-columns:1fr}.side{display:none}.grid{grid-template-columns:1fr 1fr}.stats{grid-template-columns:repeat(3,1fr)}}
 .room{position:absolute;inset:0;border:6px solid #4a3426;box-shadow:inset 0 0 60px #0006;z-index:1}.rtitle{position:absolute;top:8px;left:12px;font-weight:bold;color:#3a2b23;background:#fff8;padding:3px 9px;border-radius:6px}.rdoor{position:absolute;bottom:0;transform:translateX(-50%);background:#5b3d30;color:#fff;padding:5px 18px;border-radius:8px 8px 0 0;font-size:12px}.obj{position:absolute;transform:translate(-50%,-50%);text-align:center}.obj span{font-size:34px;display:block}.obj small{white-space:nowrap;font-size:10px;background:#fffb;padding:1px 5px;border-radius:4px;color:#222}#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);background:#000c;color:#ffe9a8;padding:6px 14px;border-radius:8px;font:bold 14px sans-serif;z-index:30;display:none}
 .person{width:26px;height:38px}.legs{width:14px;height:7px;margin:0 auto;border-radius:0 0 3px 3px}.hr{position:absolute;display:block}.head{position:relative}.ey{position:absolute;left:4px;top:8px;width:3px;height:3px;border-radius:50%;box-shadow:8px 0 0 currentColor}.you:after{content:"";position:absolute;bottom:-3px;left:1px;width:24px;height:6px;border-radius:50%;background:#ffd24a99;z-index:-2}
+
+/* ===== MODE MENU + MOBILE MODE ===== */
+#modeMenu{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:20px;background:radial-gradient(circle at 50% 30%,#3c513c,#0c120d);overflow:auto;text-align:center}
+#modeMenu h1{font-size:clamp(30px,7vw,52px);margin:0}#modeMenu p{color:#bfc8bb;margin:0;max-width:520px}
+.modeCards{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;width:100%}
+.modeCard{width:min(300px,86vw);background:#202d22;border:2px solid #61715d;border-radius:18px;padding:22px 18px;cursor:pointer;color:#f5f1df;text-align:center;box-shadow:0 12px 40px #0008}
+.modeCard:hover,.modeCard.rec{border-color:#e7ca80;background:#2a3b2c}.modeCard .ic{font-size:54px;display:block}.modeCard b{display:block;font:bold 22px Georgia,serif;color:#efd28a;margin:6px 0}.modeCard small{display:block;color:#bfc8bb;line-height:1.4;font-size:13px}.modeCard em{display:inline-block;margin-top:8px;font-size:11px;color:#1c271e;background:#e7ca80;border-radius:10px;padding:2px 9px;font-style:normal}
+#worldWrap{position:relative;min-width:0;min-height:0;overflow:hidden}#worldWrap #world{width:100%;height:100%}
+body:not(.mobile) .main{grid-template-columns:1fr 350px}body:not(.mobile) .side{display:flex}
+#touchUI{display:none;position:fixed;inset:0;pointer-events:none;z-index:30}
+#joy{position:absolute;left:18px;bottom:calc(46px + env(safe-area-inset-bottom,0px));width:132px;height:132px;border-radius:50%;background:#ffffff1c;border:2px solid #ffffff4d;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none}
+#knob{position:absolute;left:35px;top:35px;width:58px;height:58px;border-radius:50%;background:#e7ca80cc;border:2px solid #fff9;pointer-events:none}
+#btnE{position:absolute;right:18px;bottom:calc(60px + env(safe-area-inset-bottom,0px));width:94px;height:94px;border-radius:50%;pointer-events:auto;touch-action:none;background:#81642dee;border:3px solid #e7ca80;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px;line-height:1.1;user-select:none}
+#btnE b{font-size:26px}#btnE small{font-size:10px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#ffe9a8}#btnE.dim{background:#334936cc;border-color:#61715d}
+#btnMenu{position:absolute;right:28px;bottom:calc(168px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;pointer-events:auto;background:#1c271ee6;border:2px solid #98a690;font-size:22px;padding:0}
+.sheetHead{display:none}
+body.mobile{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+body.mobile #hint{display:none!important}
+body.mobile #game{height:100vh;height:100dvh;grid-template-rows:46px 1fr 24px}
+body.mobile .top{padding:4px 8px;gap:8px}body.mobile .brand,body.mobile #names{display:none}
+body.mobile .statsline{font-size:11px;gap:7px;overflow:hidden;white-space:nowrap}
+body.mobile .top button{padding:7px 10px;font-size:12px}
+body.mobile .main{grid-template-columns:1fr}
+body.mobile #worldWrap{touch-action:none}body.mobile #worldWrap #world{width:900px;height:620px;min-height:100%}
+body.mobile .side{position:fixed;left:0;right:0;bottom:0;height:70vh;height:70dvh;z-index:40;display:flex;transform:translateY(105%);transition:transform .25s;border-left:0;border-top:2px solid #61715d;border-radius:16px 16px 0 0;box-shadow:0 -10px 40px #000b}
+body.mobile.sheetOpen .side{transform:none}
+body.mobile .sheetHead{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:#121912;border-radius:16px 16px 0 0;color:#e7ca80;font:bold 15px Georgia,serif}
+body.mobile .sheetHead button{padding:5px 12px}
+body.mobile .tabs{grid-template-columns:repeat(3,1fr)}body.mobile .tabs button{padding:13px 3px;font-size:12px}
+body.mobile .content{-webkit-overflow-scrolling:touch;padding-bottom:30px}
+body.mobile #status{font-size:11px;padding:4px 8px;line-height:16px}
+body.mobile .modalBg{align-items:flex-start;padding:2vh 0}
+body.mobile .modal{width:96vw;max-height:94vh;max-height:94dvh;padding:14px}
+body.mobile .modal button{min-height:44px}
+body.mobile input,body.mobile select,body.mobile textarea{font-size:16px!important}
+body.mobile .choices button{flex:1 1 calc(50% - 7px)}
+body.mobile .interiorGrid{grid-template-columns:1fr 1fr}
+body.mobile .tabs button,body.mobile .content button{min-height:40px}
+body.mobile #creator{align-items:flex-start;padding:10px;min-height:100dvh}body.mobile .box{padding:16px}
+body.mobile .grid{grid-template-columns:1fr 1fr}body.mobile .stats{grid-template-columns:repeat(3,1fr)}
+body.mobile .rtitle{font-size:12px}body.mobile .massBubble{width:180px;font-size:11px}
+body.mobile #game{width:100%;max-width:100vw;overflow:hidden;grid-template-columns:minmax(0,1fr)}body.mobile .top{min-width:0;overflow:hidden}body.mobile .grow{display:none}body.mobile .statsline{flex:1 1 0;min-width:0}body.mobile .main{grid-template-columns:minmax(0,1fr)}body.mobile #modeBtn{font-size:11px;padding:7px 8px}
 </style>
 </head>
 <body>
+<div id="modeMenu"><h1>GENERATIONS</h1><p>Start as one person. Build a life, a family, a dynasty. Choose how you want to play:</p>
+ <div class="modeCards"><div class="modeCard" id="pickMobile"><span class="ic">📱</span><b>MOBILE</b><small>Touch joystick to walk, big E button to interact, slide-up menu for family, career, dating and events.</small><span id="recM"></span></div>
+ <div class="modeCard" id="pickPC"><span class="ic">🖥️</span><b>PC</b><small>Keyboard and mouse: WASD / arrows to walk, E to interact, SPACE to age a year, side panel always visible.</small><span id="recP"></span></div></div>
+ <p style="font-size:12px">You can switch mode at any time with the button at the top of the game.</p></div>
 <div id="creator">
   <div class="box">
-    <h1>GENERATIONS</h1>
+    <div style="text-align:right"><button id="modeBack" style="padding:5px 10px;font-size:12px">⚙ Change mode</button></div><h1>GENERATIONS</h1>
     <div class="sub">Create a person. Walk through town. Build relationships. Raise a family. Continue the dynasty.</div>
     <div class="grid">
       <div class="field"><label>First name</label><input id="first" value="Robert"></div>
@@ -53,13 +99,14 @@ h1,h2,h3{font-family:Georgia,serif}h1{margin:0;color:#efd28a;letter-spacing:2px}
 </div>
 
 <div id="game">
-  <div class="top"><div class="brand">GENERATIONS</div><div id="topstats" class="statsline"></div><div class="grow"></div><button id="names" title="Toggle English-friendly name spelling">🌐 NAMES</button><button id="save">SAVE</button><button id="new">NEW</button></div>
-  <div class="main"><div id="world" class="world"></div><div class="side"><div class="tabs">
+  <div class="top"><div class="brand">GENERATIONS</div><div id="topstats" class="statsline"></div><div class="grow"></div><button id="modeBtn">📱 Mobile</button><button id="names" title="Toggle English-friendly name spelling">🌐 NAMES</button><button id="save">SAVE</button><button id="new">NEW</button></div>
+  <div class="main"><div id="worldWrap"><div id="world" class="world"></div></div><div class="side"><div class="sheetHead"><span>☰ Menu</span><button id="sheetClose">✕ Close</button></div><div class="tabs">
     <button data-tab="home">HOME</button><button data-tab="family">FAMILY</button><button data-tab="world">WORLD</button><button data-tab="life">LIFE</button><button data-tab="events" id="evtab">EVENTS</button><button data-tab="dating">DATING</button>
   </div><div id="content" class="content"></div></div></div>
   <div id="status">WASD / arrow keys = walk • E = interact • SPACE = advance one year</div>
 </div>
 <div id="modalRoot"></div>
+<div id="touchUI"><div id="joy"><div id="knob"></div></div><button id="btnMenu">☰</button><button id="btnE" class="dim"><b>E</b><small id="eLabel">interact</small></button></div>
 
 <script>
 (function(){
@@ -333,7 +380,7 @@ function save(silent){if(!state)return;try{localStorage.setItem("GENERATIONS_SAV
 function normalize(){
  if(!state||!state.player||!Array.isArray(state.people))throw new Error("save data is incomplete");
  const pl=state.player,i=state.people.findIndex(x=>x.id===pl.id);if(i>=0)state.people[i]=pl;else state.people.push(pl);IDXs=null;
- state.events=Array.isArray(state.events)?state.events:[];state.evs=Array.isArray(state.evs)?state.evs:[];state.year=state.year||2026;if(state.clock==null)state.clock=480;
+ state.events=Array.isArray(state.events)?state.events:[];state.evs=Array.isArray(state.evs)?state.evs:[];state.year=state.year||2026;if(state.clock==null)state.clock=600;
  state.people.forEach(p=>{p.mem=p.mem||[];p.children=p.children||[];p.parents=p.parents||[];p.rel=p.rel||{};charInit(p);p.sch=0;p.vis=0;p.exit=0;p.dest=null;p.tx=p.ty=null;p.stuck=0;p.age=p.age||0;p.money=Number(p.money)||0;p.line=p.line||p.id;p.gen=p.gen||1;fixName(p,p===pl)});healLinks();VIS.clear();ROSTER.key="";FOCUS=[];CIRC=null;state.pop=state.pop||newPop();
  fixPlayer(pl);
  if(state.inside!=="jail"||!(state.jailLeft>0))state.inside=null;
@@ -391,7 +438,7 @@ function homePt(p){let s=hsh(String(p.id||"x"));const R=()=>(s=(s*1664525+101390
 function spot(pl,p){if(pl==="inhome")return homePt(p||{});if(pl==="park"||pl==="street")return rndSpot();return doorPos(pl)}
 function setDest(p,t){if(INDOOR.has(p.location)){const q=p.location==="inhome"?homePt(p):doorPos(p.location);p.x=q.x;p.y=q.y}const s=spot(t,p);p.dest=t;p.tx=s.x;p.ty=s.y;p.stuck=0;p.location="street"}
 function fixOutdoor(){if(!state)return;for(const p of VIS){if(!p.alive)continue;if(OUT.includes(p.location)&&blocked(p.x,p.y,2)){const s=safeSpot(p.x,p.y);p.x=s.x;p.y=s.y}if(p.tx!=null&&blocked(p.tx,p.ty,2)){const s=safeSpot(p.tx,p.ty);p.tx=s.x;p.ty=s.y}}}
-function ensureSched(){if(state.clock==null)state.clock=480;state.hr=nowH();const day=Math.floor(state.clock/1440);
+function ensureSched(){if(state.clock==null)state.clock=600;state.hr=nowH();const day=Math.floor(state.clock/1440);
  for(const p of state.people){if(p===state.player||!p.alive||p.sch)continue;p.sch=1;p.location=where(p,state.hr,day)}}
 function tick(){
  if(!state||state.ended||$("game").style.display==="none"||modalOpen())return;
@@ -458,7 +505,10 @@ function renderInterior(){
  }
  if(pl!=="home"&&ROSTER.more>0)w.insertAdjacentHTML("beforeend",'<div style="position:absolute;left:50%;top:6px;transform:translateX(-50%);background:#000a;color:#fff;padding:3px 10px;border-radius:10px;font-size:11px;z-index:6">👥 +'+ROSTER.more+' more people here, going about their day</div>');
 }
-function renderWorld(){ensureSched();fixOutdoor();if(state.inside)renderInterior();else{renderOutdoor();const wr=$("world").getBoundingClientRect();window.BR=[...document.querySelectorAll(".building")].map(b=>{const r=b.getBoundingClientRect();return{l:r.left-wr.left,t:r.top-wr.top,r:r.right-wr.left,b:r.bottom-wr.top}});const p=state.player;BR.forEach(r=>{if(p.x>r.l&&p.x<r.r&&p.y>r.t&&p.y<r.b){p.y=r.b+14;const e=$("person-"+p.id);if(e)e.style.top=p.y+"px"}})}}
+function cleanTrees(){const w=$("world"),wr=w.getBoundingClientRect(),hit=(a,b,m)=>a.left<b.right+m&&a.right>b.left-m&&a.top<b.bottom+m&&a.bottom>b.top-m;
+ const solid=[...w.querySelectorAll(".building,.water,.roadH,.roadV")].map(e=>e.getBoundingClientRect());
+ w.querySelectorAll(".treeObj").forEach(t=>{const r=t.getBoundingClientRect();if(solid.some(b=>hit(r,b,4)))t.remove()})}
+function renderWorld(){ensureSched();fixOutdoor();if(state.inside)renderInterior();else{renderOutdoor();cleanTrees();const wr=$("world").getBoundingClientRect();window.BR=[...document.querySelectorAll(".building")].map(b=>{const r=b.getBoundingClientRect();return{l:r.left-wr.left,t:r.top-wr.top,r:r.right-wr.left,b:r.bottom-wr.top}});const p=state.player;BR.forEach(r=>{if(p.x>r.l&&p.x<r.r&&p.y>r.t&&p.y<r.b){p.y=r.b+14;const e=$("person-"+p.id);if(e)e.style.top=p.y+"px"}})}}
 function target(){
  const p=state.player,W=$("world").clientWidth,H=$("world").clientHeight;let best=null,bd=1e9;
  const c=(d,l,run)=>{if(d<bd){bd=d;best={l,run}}};
@@ -670,10 +720,10 @@ function guests(e){const me=state.player,a=kinList(me).map(k=>k.p).concat(state.
 function evPanel(){const L=state.evs||[],open=L.filter(e=>e.s==="open"||e.s==="planned"),past=L.filter(e=>e.s==="done"||e.s==="missed").slice(-6).reverse();
  $("content").innerHTML='<div class="card"><h3>Upcoming events</h3>'+(open.map(e=>'<div class="event"><b>'+esc(e.t)+'</b> · '+EVL[e.type]+'<br><span class="muted">'+(e.s==="planned"?"Planned: "+TIERS[e.type][e.tier]+" (€"+e.cost+")":e.plan?"You can organise this":"You are invited")+' · attend before the year ends</span><br>'+(e.plan&&e.s==="open"?'<button class="small evOrg" data-id="'+e.id+'">ORGANISE</button> ':'')+'<button class="small evAtt" data-id="'+e.id+'">ATTEND</button></div>').join("")||'<span class="muted">No events right now. Weddings, funerals, births and milestones will appear here.</span>')+'</div><div class="card"><h3>Past events</h3>'+(past.map(e=>'<div class="event">'+(e.s==="done"?"✔ ":"✘ ")+esc(e.t)+' ('+e.y+')</div>').join("")||'<span class="muted">None yet.</span>')+'</div>';
  document.querySelectorAll(".evOrg").forEach(b=>b.onclick=()=>organise(b.dataset.id));document.querySelectorAll(".evAtt").forEach(b=>b.onclick=()=>attend(b.dataset.id))}
-function organise(id){const me=state.player,e=state.evs.find(x=>x.id===id);if(!e)return;
+function organise(id){const me=state.player,e=(state.evs||[]).find(x=>x.id===id);if(!e)return;
  modal('<h2>'+esc(e.t)+'</h2><p>How should it be organised? Bigger events bring people closer.</p><div class="choices">'+TIERS[e.type].map((n,i)=>'<button class="tier" data-i="'+i+'">'+n+' (€'+COST[i]+')</button>').join("")+'</div><br><button id="close">CLOSE</button>');
  $("close").onclick=closeModal;document.querySelectorAll(".tier").forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(me.money<COST[i]){status("You cannot afford that (€"+COST[i]+").");return}me.money-=COST[i];e.tier=i;e.cost=COST[i];e.s="planned";closeModal();renderTop();status("Arrangements made. You can attend now.");renderPanel()})}
-function attend(id){const me=state.player,e=state.evs.find(x=>x.id===id);if(!e||(e.s!=="open"&&e.s!=="planned"))return;
+function attend(id){const me=state.player,e=(state.evs||[]).find(x=>x.id===id);if(!e||(e.s!=="open"&&e.s!=="planned"))return;
  const G=guests(e),subj=(e.subj||[]).map(find).filter(Boolean),ch=CH[e.type]||CH.x;
  modal('<h2>'+EVL[e.type]+' — '+esc(e.t)+'</h2><p class="muted">'+INTRO[e.type]+(e.s==="planned"?" ("+TIERS[e.type][e.tier]+")":"")+'</p><p>Present: '+(G.map(x=>esc(x.first)).join(", ")||"a few quiet guests")+'.</p><div class="choices">'+ch.map((c,i)=>'<button class="evc" data-i="'+i+'">'+c[0]+'</button>').join("")+'</div><br><button id="close">LEAVE</button>');
  $("close").onclick=closeModal;document.querySelectorAll(".evc").forEach(b=>b.onclick=()=>finishEv(e,ch[+b.dataset.i][1],G,subj))}
@@ -1021,6 +1071,41 @@ window.GENDEBUG={
 fillCreator();initLook();document.body.insertAdjacentHTML("beforeend",'<div id="clock" style="position:fixed;right:10px;bottom:8px;background:#000a;color:#fff;padding:4px 10px;border-radius:6px;font:13px monospace;z-index:5"></div>');document.body.insertAdjacentHTML("beforeend",'<div id="hint"></div>');setInterval(move,30);setInterval(walkNPCs,30);setInterval(tick,1000);setInterval(()=>{const h=$("hint");if(!state||$("game").style.display==="none"||modalOpen()){h.style.display="none";return}const t=target();h.style.display=t?"block":"none";if(t)h.textContent="E — "+t.l},150);window.addEventListener("resize",()=>{if(state&&$("game").style.display!=="none")renderWorld()});
 window.addEventListener("error",e=>{if($("game").style.display!=="none")status("Game error: "+e.message);});
 try{if(localStorage.getItem("GENERATIONS_SAVE")){$("creatorMsg").innerHTML='<div style="margin-top:12px"><button id="load">↩ LOAD SAVED DYNASTY</button></div>';$("load").onclick=loadSaved;}}catch(e){}
+
+/* ===== mode menu + mobile controls ===== */
+const MM={mode:null};
+function closeSheet(){document.body.classList.remove("sheetOpen")}
+function setMode(m,fromMenu){
+ MM.mode=m;document.body.classList.toggle("mobile",m==="mobile");try{localStorage.setItem("GEN_MODE",m)}catch(e){}
+ $("modeBtn").textContent=m==="mobile"?"🖥 PC":"📱 Mobile";
+ if(fromMenu)$("modeMenu").style.display="none";
+ pressed={};closeSheet();
+ if(state&&$("game").style.display!=="none"){setTimeout(()=>{renderWorld();status(m==="mobile"?"Joystick = walk · E = interact · ☰ = menu":"WASD / arrow keys = walk · E = interact · SPACE = advance one year")},80)}
+}
+{let last=null;try{last=localStorage.getItem("GEN_MODE")}catch(e){}
+ const touch=window.matchMedia&&matchMedia("(pointer:coarse)").matches,rec=last||(touch?"mobile":"pc");
+ $(rec==="mobile"?"recM":"recP").innerHTML="<em>"+(last?"Last used":"Recommended")+"</em>";$(rec==="mobile"?"pickMobile":"pickPC").classList.add("rec");
+ $("pickMobile").onclick=()=>setMode("mobile",true);$("pickPC").onclick=()=>setMode("pc",true);
+ $("modeBack").onclick=()=>{$("modeMenu").style.display="flex"};
+ $("modeBtn").onclick=()=>setMode(MM.mode==="mobile"?"pc":"mobile");
+ MM.mode=rec;document.body.classList.toggle("mobile",rec==="mobile");}
+$("sheetClose").onclick=closeSheet;
+$("btnMenu").addEventListener("pointerdown",e=>{e.preventDefault();pressed={};document.body.classList.toggle("sheetOpen")});
+$("btnE").addEventListener("pointerdown",e=>{e.preventDefault();if(state&&!modalOpen())interact()});
+{const joy=$("joy"),knob=$("knob");let jid=null;
+ const dir=(dx,dy)=>{const t=.33;pressed.a=dx<-t;pressed.d=dx>t;pressed.w=dy<-t;pressed.s=dy>t};
+ const upd=e=>{const r=joy.getBoundingClientRect();let dx=(e.clientX-r.left-r.width/2)/(r.width/2),dy=(e.clientY-r.top-r.height/2)/(r.height/2);const m=Math.hypot(dx,dy);if(m>1){dx/=m;dy/=m}knob.style.transform="translate("+dx*34+"px,"+dy*34+"px)";dir(dx,dy)};
+ joy.addEventListener("pointerdown",e=>{e.preventDefault();joy.setPointerCapture(e.pointerId);jid=e.pointerId;upd(e)});
+ joy.addEventListener("pointermove",e=>{if(e.pointerId===jid)upd(e)});
+ const end=e=>{if(e.pointerId!==jid)return;jid=null;knob.style.transform="";dir(0,0)};
+ joy.addEventListener("pointerup",end);joy.addEventListener("pointercancel",end);joy.addEventListener("lostpointercapture",end);}
+setInterval(()=>{const on=MM.mode==="mobile"&&state&&$("game").style.display!=="none"&&!modalOpen()&&!document.body.classList.contains("sheetOpen");
+ $("touchUI").style.display=on?"block":"none";if(!on){return}
+ const h=$("hint"),has=h&&h.style.display!=="none"&&h.textContent;$("btnE").classList.toggle("dim",!has);$("eLabel").textContent=has?h.textContent.replace(/^E\s*[—-]\s*/,""):"interact"},150);
+(function cam(){requestAnimationFrame(cam);if(MM.mode!=="mobile"||!state||$("game").style.display==="none")return;
+ const w=$("worldWrap"),p=state.player;if(!p||p.x==null)return;
+ const tx=clamp(p.x-w.clientWidth/2,0,Math.max(0,w.scrollWidth-w.clientWidth)),ty=clamp(p.y-w.clientHeight/2,0,Math.max(0,w.scrollHeight-w.clientHeight));
+ const k=Math.abs(tx-w.scrollLeft)+Math.abs(ty-w.scrollTop)>300?1:.22;w.scrollLeft+=(tx-w.scrollLeft)*k;w.scrollTop+=(ty-w.scrollTop)*k})();
 })();
 </script>
 </body>
