@@ -1,0 +1,953 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GENERATIONS — Family Life Simulator</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;font-family:Arial,system-ui,sans-serif;background:#142018;color:#f5f1df}
+button,input,select,textarea{font:inherit}button{background:#334936;color:#fff;border:1px solid #61715d;border-radius:8px;padding:9px 12px;cursor:pointer}button:hover{filter:brightness(1.15)}.gold{background:#81642d;border-color:#d1aa58}
+#creator{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(circle,#3c513c,#101710)}
+.box{width:min(980px,96vw);background:#202d22;border:1px solid #697763;border-radius:18px;padding:28px;box-shadow:0 25px 80px #0008}
+h1,h2,h3{font-family:Georgia,serif}h1{margin:0;color:#efd28a;letter-spacing:2px}.sub{color:#bfc8bb;margin:4px 0 22px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.field label{display:block;color:#c6cfbf;font-size:12px;margin-bottom:5px}.field input,.field select{width:100%;padding:9px;background:#111811;color:#fff;border:1px solid #52614f;border-radius:7px}.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-top:12px}.stat{background:#172118;padding:9px;border-radius:8px}.stat input{width:100%}.actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
+#game{display:none;height:100vh;grid-template-rows:52px 1fr 30px}.top{display:flex;align-items:center;gap:14px;padding:8px 12px;background:#121912;border-bottom:1px solid #475445}.brand{font:bold 18px Georgia;color:#e7ca80}.grow{flex:1}.statsline{display:flex;gap:14px;color:#d2dacd}
+.main{display:grid;grid-template-columns:1fr 350px;min-height:0}.world{position:relative;overflow:hidden;background:#6d955a;background-image:linear-gradient(#ffffff0b 1px,transparent 1px),linear-gradient(90deg,#ffffff0b 1px,transparent 1px);background-size:32px 32px}.roadH{position:absolute;left:0;right:0;top:48%;height:60px;background:#9a8b70}.roadV{position:absolute;top:0;bottom:0;left:48%;width:60px;background:#9a8b70}.water{position:absolute;right:3%;top:3%;width:190px;height:125px;background:#4f86a5;border:5px solid #3d6e88;border-radius:14px}
+.building{position:absolute;background:#b87954;border:4px solid #5b3d30;border-radius:8px;z-index:2}.roof{height:17px;background:#693e34}.sign{text-align:center;padding:7px;font-weight:bold;font-size:11px}.treeObj{position:absolute;width:27px;height:27px;border-radius:50%;background:#315c37;box-shadow:0 7px 0 #6a4c2e}
+.person{position:absolute;width:24px;height:31px;z-index:5;transform:translate(-50%,-75%);user-select:none}.head{width:19px;height:19px;border-radius:50%;background:#e3b58e;border:2px solid #3a2b23;margin:auto}.body{width:22px;height:14px;background:#6c88b4;border-radius:4px}.you .body{background:#d19a3e}.name{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:9px;white-space:nowrap;text-shadow:0 1px 3px #000}
+.side{background:#1c271e;border-left:1px solid #475445;min-height:0;display:flex;flex-direction:column}.tabs{display:grid;grid-template-columns:repeat(4,1fr)}.tabs button{border:0;border-radius:0;background:#152017;font-size:11px;padding:11px 3px}.tabs .on{background:#394a3a;color:#f0cf80}.content{padding:12px;overflow:auto}.card{background:#253226;border:1px solid #4b5b49;border-radius:9px;padding:11px;margin-bottom:10px}.card h3{margin:0 0 8px;color:#e1c575}.row{display:flex;justify-content:space-between;gap:8px;margin:6px 0}.muted{color:#aeb9aa}.event{padding:6px 8px;background:#1b241c;border-left:3px solid #89956e;margin:5px 0}.bar{height:7px;background:#111;border-radius:8px;overflow:hidden}.bar i{display:block;height:100%;background:#d7ad55}.pill{display:inline-block;padding:3px 6px;background:#37483a;border-radius:10px;font-size:11px;margin:2px}.treeBox ul{margin:5px 0;padding-left:20px}.treeBox li{margin:5px 0}.alive{color:#e0e9d7}.dead{color:#888}.modalBg{position:fixed;inset:0;background:#0009;display:flex;align-items:center;justify-content:center;z-index:50}.modal{width:min(620px,92vw);max-height:88vh;overflow:auto;background:#202d22;border:1px solid #6a7762;border-radius:14px;padding:20px}.modal textarea,.modal input{width:100%;background:#111811;color:#fff;border:1px solid #52614f;border-radius:7px;padding:9px}.choices{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+#status{background:#111711;border-top:1px solid #394538;color:#bdc6b9;padding:6px 10px;white-space:nowrap;overflow:hidden}
+.error{background:#512d2d;border:1px solid #9d6666;padding:10px;border-radius:8px;margin-top:12px}
+.interiorGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px;margin-top:12px}
+.shopItem{background:#18231a;border:1px solid #4b5b49;border-radius:8px;padding:10px}
+.shopItem b{display:block;margin-bottom:4px;color:#e1c575}
+.modal .wide{width:min(820px,94vw)}
+.badge{display:inline-block;padding:4px 7px;border-radius:9px;background:#37483a;font-size:11px;margin:2px}
+
+@media(max-width:800px){.main{grid-template-columns:1fr}.side{display:none}.grid{grid-template-columns:1fr 1fr}.stats{grid-template-columns:repeat(3,1fr)}}
+.room{position:absolute;inset:0;border:6px solid #4a3426;box-shadow:inset 0 0 60px #0006;z-index:1}.rtitle{position:absolute;top:8px;left:12px;font-weight:bold;color:#3a2b23;background:#fff8;padding:3px 9px;border-radius:6px}.rdoor{position:absolute;bottom:0;transform:translateX(-50%);background:#5b3d30;color:#fff;padding:5px 18px;border-radius:8px 8px 0 0;font-size:12px}.obj{position:absolute;transform:translate(-50%,-50%);text-align:center}.obj span{font-size:34px;display:block}.obj small{white-space:nowrap;font-size:10px;background:#fffb;padding:1px 5px;border-radius:4px;color:#222}#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);background:#000c;color:#ffe9a8;padding:6px 14px;border-radius:8px;font:bold 14px sans-serif;z-index:30;display:none}
+.person{width:26px;height:38px}.legs{width:14px;height:7px;margin:0 auto;border-radius:0 0 3px 3px}.hr{position:absolute;display:block}.head{position:relative}.ey{position:absolute;left:4px;top:8px;width:3px;height:3px;border-radius:50%;box-shadow:8px 0 0 currentColor}.you:after{content:"";position:absolute;bottom:-3px;left:1px;width:24px;height:6px;border-radius:50%;background:#ffd24a99;z-index:-2}
+</style>
+</head>
+<body>
+<div id="creator">
+  <div class="box">
+    <h1>GENERATIONS</h1>
+    <div class="sub">Create a person. Walk through town. Build relationships. Raise a family. Continue the dynasty.</div>
+    <div class="grid">
+      <div class="field"><label>First name</label><input id="first" value="Robert"></div>
+      <div class="field"><label>Surname</label><input id="surname" value="Smith"></div>
+      <div class="field"><label>Culture</label><select id="cult"><option value="EN">English</option><option value="PL">Polish</option><option value="RU">Russian</option></select></div><div class="field"><label>Gender</label><select id="gender"><option value="M">Male</option><option value="F">Female</option></select></div>
+      <div class="field"><label>Starting age</label><input id="age" type="number" min="18" max="65" value="22"></div>
+      <div class="field"><label>Personality</label><select id="trait"></select></div>
+      <div class="field"><label>Education</label><select id="education"><option>Secondary</option><option>University</option><option>Vocational</option></select></div>
+      <div class="field"><label>Hair</label><select id="hair"><option>Brown</option><option>Black</option><option>Blond</option><option>Red</option><option>Gray</option></select></div>
+      <div class="field"><label>Eyes</label><select id="eyes"><option>Brown</option><option>Blue</option><option>Green</option><option>Gray</option></select></div>
+      <div class="field"><label>Career</label><select id="job"></select></div>
+      <div class="field"><label>Hair style</label><select id="hstyle"></select></div><div class="field"><label>Skin</label><select id="skin"></select></div><div class="field"><label>Top colour</label><select id="topc"></select></div><div class="field"><label>Trousers</label><select id="botc"></select></div>
+    </div>
+    <div id="preview" style="height:120px;display:flex;justify-content:center;align-items:flex-end;padding-bottom:6px"></div><div class="stats" id="stats"></div>
+    <div class="actions"><button id="random">🎲 RANDOMIZE</button><button class="gold" id="start">START MY LIFE</button></div>
+    <div id="creatorMsg"></div>
+  </div>
+</div>
+
+<div id="game">
+  <div class="top"><div class="brand">GENERATIONS</div><div id="topstats" class="statsline"></div><div class="grow"></div><button id="names" title="Toggle English-friendly name spelling">🌐 NAMES</button><button id="save">SAVE</button><button id="new">NEW</button></div>
+  <div class="main"><div id="world" class="world"></div><div class="side"><div class="tabs">
+    <button data-tab="home">HOME</button><button data-tab="family">FAMILY</button><button data-tab="world">WORLD</button><button data-tab="life">LIFE</button><button data-tab="events" id="evtab">EVENTS</button><button data-tab="dating">DATING</button>
+  </div><div id="content" class="content"></div></div></div>
+  <div id="status">WASD / arrow keys = walk • E = interact • SPACE = advance one year</div>
+</div>
+<div id="modalRoot"></div>
+
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const SP=t=>[...new Set(t.split(", "))],CULTS=["EN","PL","RU"],CN={EN:"English",PL:"Polish",RU:"Russian"};
+const NM={
+EN:{M:SP("James, John, William, Michael, Robert, David, Thomas, Richard, Joseph, Charles, Christopher, Daniel, Matthew, Anthony, Mark, Steven, Paul, Andrew, Joshua, Kenneth, Kevin, Brian, George, Edward, Jason, Ryan, Jacob, Nicholas, Eric, Jonathan, Adam, Nathan, Benjamin, Samuel, Alexander, Henry, Jack, Oliver, Harry, Leo, Arthur, Oscar, Charlie, Theo, Lucas, Ethan, Mason, Logan, Liam, Noah, Sebastian, Owen, Dylan, Luke, Isaac, Gabriel, Julian, Levi, Caleb, Adrian, Aaron, Connor, Cameron, Evan, Jordan, Tyler, Brandon, Justin, Zachary, Patrick, Peter, Simon, Max, Felix, Victor, Louis, Alfred, Albert, Frederick, Walter, Theodore"),
+F:SP("Mary, Elizabeth, Patricia, Jennifer, Linda, Barbara, Susan, Jessica, Sarah, Karen, Nancy, Lisa, Margaret, Betty, Sandra, Ashley, Kimberly, Emily, Donna, Michelle, Carol, Amanda, Melissa, Deborah, Stephanie, Rebecca, Laura, Sharon, Cynthia, Kathleen, Amy, Angela, Shirley, Anna, Brenda, Pamela, Nicole, Emma, Samantha, Olivia, Ava, Isabella, Mia, Sophia, Charlotte, Amelia, Harper, Evelyn, Abigail, Ella, Scarlett, Grace, Chloe, Victoria, Lily, Hannah, Zoe, Lucy, Eleanor, Alice, Ruby, Clara, Eva, Julia, Rose, Natalie, Audrey, Claire, Caroline, Madeline, Sophie, Elise, Lydia, Nora, Leah, Isabelle, Josephine, Vivian, Katherine, Florence, Violet")},
+PL:{M:SP("Jan, Piotr, Michal, Jakub, Tomasz, Pawel, Andrzej, Krzysztof, Marcin, Mateusz, Lukasz, Adam, Kamil, Wojciech, Szymon, Mariusz, Grzegorz, Rafal, Maciej, Damian, Sebastian, Bartosz, Dawid, Daniel, Adrian, Artur, Robert, Karol, Patryk, Filip, Oskar, Igor, Antoni, Aleksander, Franciszek, Stanislaw, Wladyslaw, Zbigniew, Ryszard, Henryk, Jerzy, Jozef, Tadeusz, Czeslaw, Kazimierz, Marian, Stefan, Edward, Leon, Maksymilian, Blazej, Konrad, Hubert, Norbert, Przemyslaw, Radoslaw, Dariusz, Jacek, Slawomir"),
+F:SP("Anna, Maria, Katarzyna, Agnieszka, Barbara, Malgorzata, Ewa, Magdalena, Joanna, Aleksandra, Monika, Natalia, Karolina, Paulina, Marta, Julia, Zuzanna, Wiktoria, Weronika, Patrycja, Klaudia, Sylwia, Justyna, Dominika, Martyna, Alicja, Oliwia, Amelia, Lena, Maja, Zofia, Hanna, Laura, Emilia, Gabriela, Antonina, Marcelina, Nikola, Kinga, Iga, Izabela, Elzbieta, Jadwiga, Danuta, Teresa, Halina, Grazyna, Bozena, Krystyna, Stanislawa, Wanda, Helena, Janina, Irena, Celina, Stefania, Bronislawa, Kazimiera")},
+RU:{M:SP("Alexander, Aleksandr, Alexei, Aleksey, Andrei, Andrey, Anton, Boris, Dmitri, Dmitry, Denis, Evgeny, Eugene, Fyodor, Fedor, Georgy, Gennady, Grigory, Igor, Ilya, Ivan, Kirill, Konstantin, Leonid, Maksim, Maxim, Mikhail, Nikolai, Oleg, Pavel, Roman, Sergei, Sergey, Stanislav, Stepan, Viktor, Vladimir, Vladislav, Yuri, Yury, Artem, Artyom, Vadim, Valery, Valentin, Vyacheslav, Semyon, Semion, Ruslan, Timur, Danil, Daniil"),
+F:SP("Anna, Anastasia, Alexandra, Aleksandra, Alina, Alisa, Alyona, Elena, Yelena, Ekaterina, Catherine, Irina, Marina, Maria, Mariya, Margarita, Natalia, Natalya, Olga, Polina, Sofia, Sofiya, Svetlana, Tatiana, Tatyana, Valentina, Vera, Victoria, Viktoria, Yulia, Julia, Daria, Darya, Diana, Galina, Inna, Ksenia, Kseniya, Larisa, Lidia, Lydia, Lyudmila, Nadezhda, Nina, Raisa, Tamara, Varvara, Zoya, Yekaterina, Kristina, Karina, Alena")}};
+const SN={
+EN:SP("Smith, Johnson, Williams, Brown, Jones, Miller, Davis, Wilson, Anderson, Taylor, Thomas, Moore, Martin, Jackson, Thompson, White, Harris, Clark, Lewis, Robinson, Walker, Hall, Allen, Young, King, Wright, Scott, Green, Baker, Adams, Nelson, Hill, Campbell, Mitchell, Roberts, Carter, Phillips, Evans, Turner, Parker, Collins, Edwards, Stewart, Morris, Rogers, Reed, Cook, Morgan, Bell, Murphy, Bailey, Cooper, Richardson, Cox, Howard, Ward, Peterson, Gray, James, Watson, Brooks, Kelly, Sanders, Price, Bennett, Wood, Barnes, Ross, Henderson, Coleman, Jenkins, Perry, Powell, Long, Patterson, Hughes, Flores, Washington, Butler, Simmons, Foster"),
+PL:SP("Nowak, Kowalski, Kowalczyk, Wisniewski, Wójcik, Kaminski, Lewandowski, Zielinski, Szymanski, Dabrowski, Kozlowski, Jankowski, Mazur, Wojciechowski, Kwiatkowski, Kaczmarek, Piotrowski, Grabowski, Zajac, Pawlowski, Michalski, Król, Wieczorek, Jasinski, Wroblewski, Pawlik, Nowicki, Majewski, Olszewski, Jaworski, Malinowski, Adamczyk, Stępień, Stelmach, Dudek, Górski, Walczak, Sikora, Baran, Rutkowski, Tomaszewski, Ostrowski, Duda, Marciniak, Szewczyk, Zalewski, Wolski, Kubiak, Czarnecki, Borkowski, Sawicki, Sokolowski, Maciejewski, Brzezinski, Lis, Mróz, Krawczyk, Urban, Wilk"),
+RU:SP("Ivanov, Petrov, Sidorov, Smirnov, Volkov, Morozov, Pavlov, Kozlov, Novikov, Fedorov, Mikhailov, Orlov, Popov, Kuznetsov, Vasilyev, Nikolaev, Alexandrov, Romanov, Sergeev, Dmitriev, Andreev, Lebedev, Egorov, Zaitsev, Tarasov, Belov, Komarov, Vinogradov, Bogdanov, Danilov, Maksimov, Antonov, Gusev, Titov, Makarov, Zakharov, Mironov")};
+const FR={Stanislaw:"Stanislav",Michal:"Michael",Mikhail:"Michael",Pawel:"Pavel",Lukasz:"Lukash",Rafal:"Rafael",Jozef:"Joseph",Aleksander:"Alexander",Aleksandr:"Alexander",Katarzyna:"Catherine",Malgorzata:"Margaret",Elzbieta:"Elizabeth",Wladyslaw:"Vladislav",Dmitri:"Dmitry",Alexei:"Alexey",Aleksey:"Alexey",Nikolai:"Nicholas",Fyodor:"Fedor",Yekaterina:"Ekaterina",Tatiana:"Tatyana",Yulia:"Julia",Aleksandra:"Alexandra"};
+function strip(t){return t.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ł/g,"l").replace(/Ł/g,"L")}
+function maleSur(t){if(/(ova|eva|ina)$/.test(t)&&SN.RU.includes(t.slice(0,-1)))return t.slice(0,-1);if(/(ska|cka|zka)$/.test(t)){const m=t.slice(0,-1)+"i";if(SN.PL.includes(m))return m}return t}
+function femSur(t){const m=maleSur(t);if(SN.RU.includes(m))return m+"a";if(SN.PL.includes(m)&&/(ski|cki|zki)$/.test(m))return m.slice(0,-1)+"a";return m}
+function knownSur(t){return t.split("-").every(x=>CULTS.some(c=>SN[c].includes(maleSur(x))))}
+function rndFirst(g,c){return pick(NM[CULTS.includes(c)?c:"EN"][g==="F"?"F":"M"])}
+function rndSur(c,g){const t=pick(SN[CULTS.includes(c)?c:"EN"]);return g==="F"?femSur(t):t}
+function applyName(p){const fr=typeof state!=="undefined"&&state&&state.friendly;p.first=fr?(FR[p.fn]||p.fn):p.fn;p.surname=fr?strip(p.sn):p.sn;p.name=p.first+" "+p.surname}
+function fixName(p,keep){
+ if(p.gender!=="M"&&p.gender!=="F")p.gender=pick(["M","F"]);
+ if(!CULTS.includes(p.cult))p.cult=pick(["EN","EN","PL","RU","RU"]);
+ if(keep){p.fn=p.fn||p.first||rndFirst(p.gender,p.cult);p.sn=p.sn||p.surname||rndSur(p.cult,p.gender)}
+ else{if(!NM[p.cult][p.gender].includes(p.fn))p.fn=rndFirst(p.gender,p.cult);if(!p.sn||!knownSur(p.sn))p.sn=rndSur(p.cult,p.gender);else p.sn=p.sn.split("-").map(x=>p.gender==="F"?femSur(x):maleSur(x)).join("-")}
+ applyName(p);
+}
+function weddingName(a,b){const w=a.gender==="F"?a:b,h=w===a?b:a;if(w===state.player||!w.sn||!h.sn)return;const r=Math.random(),hs=maleSur(h.sn.split("-")[0]);w.maiden=w.maiden||w.sn;
+ if(r<.6)w.sn=femSur(hs);else if(r<.75&&w.cult!=="RU"&&!w.sn.includes("-")&&femSur(hs)!==w.sn)w.sn=w.sn+"-"+femSur(hs);applyName(w)}
+const JOBS=["Teacher","Doctor","Nurse","Engineer","Programmer","Farmer","Chef","Police officer","Mechanic","Shop worker","Writer","Artist","Office worker","Business owner"];
+const TRAITS=["kind","ambitious","funny","serious","shy","outgoing","stubborn","family-oriented","creative","practical","generous","independent"];
+let state=null,tabName="home",pressed={};
+
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function uid(){return Math.random().toString(36).slice(2)+Date.now().toString(36)}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function esc(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function stage(a){return a<2?"Baby":a<5?"Toddler":a<13?"Child":a<18?"Teen":a<25?"Young Adult":a<65?"Adult":"Elder"}
+function adult(p){return p.age>=18}
+function person(g,age){
+  const c=pick(["EN","EN","PL","RU","RU"]),p={id:uid(),gender:g==="F"?"F":"M",cult:c,fn:rndFirst(g,c),sn:rndSur(c,g),age,job:pick(JOBS),trait:pick(TRAITS),money:Math.round(500+Math.random()*5000),x:80+Math.random()*650,y:90+Math.random()*430,mem:[],parents:[],children:[],spouse:null,dating:null,alive:true,rel:{}};p.line=p.id;p.gen=1;
+  applyName(p);return p;
+}
+function fillCreator(){
+  $("trait").innerHTML=TRAITS.map(x=>"<option>"+x+"</option>").join("");
+  $("job").innerHTML=JOBS.map(x=>"<option>"+x+"</option>").join("");
+  $("stats").innerHTML=["Intelligence","Charisma","Health","Creativity","Ambition"].map((x,i)=>'<div class="stat"><b>'+x+'</b><input id="stat'+i+'" type="range" min="20" max="100" value="'+(60+i*6)+'"><span id="val'+i+'">'+(60+i*6)+'</span></div>').join("");
+  for(let i=0;i<5;i++)$("stat"+i).oninput=()=>{$("val"+i).textContent=$("stat"+i).value};
+}
+function randomize(){
+  {const c=pick(CULTS),g=pick(["M","F"]);$("cult").value=c;$("gender").value=g;$("first").value=rndFirst(g,c);$("surname").value=rndSur(c,g)}
+  $("age").value=18+Math.floor(Math.random()*43);$("trait").value=pick(TRAITS);$("education").value=pick(["Secondary","University","Vocational"]);
+  $("hair").value=pick(["Brown","Black","Blond","Red","Gray"]);$("eyes").value=pick(["Brown","Blue","Green","Gray"]);$("job").value=pick(JOBS);
+  for(let i=0;i<5;i++){let v=30+Math.floor(Math.random()*71);$("stat"+i).value=v;$("val"+i).textContent=v}
+}
+function makeState(){
+  const first=$("first").value.trim()||"Robert", surname=$("surname").value.trim()||"Smith";
+  const p={id:uid(),first,surname,name:first+" "+surname,gender:$("gender").value,age:clamp(parseInt($("age").value)||22,18,65),job:$("job").value,trait:$("trait").value,money:2000,x:330,y:260,mem:["Started a new life in the town."],parents:[],children:[],spouse:null,alive:true,rel:{},education:$("education").value,stats:{},location:"home"};
+  ["intelligence","charisma","health","creativity","ambition"].forEach((x,i)=>p.stats[x]=parseInt($("stat"+i).value));
+  p.look=readLook();p.cult=$("cult").value;p.fn=first;{const m=maleSur(surname);p.sn=p.gender==="F"?femSur(m):m}fixName(p,true);const people=[p];
+  return {year:2026,player:p,people,events:["2026 — "+p.name+" began a new life."],pending:null};
+}
+function start(){
+  try{
+    state=makeState();VIS.clear();ROSTER.key="";FOCUS=[];CIRC=null;seedTown();$("creator").style.display="none";$("game").style.display="grid";render();status("Welcome to your new life.");
+  }catch(e){$("creatorMsg").innerHTML='<div class="error">The game could not start: '+esc(e.message)+'</div>';console.error(e)}
+}
+let IDX=new Map(),IDXn=-1,IDXs=null;
+function find(id){const L=state.people;if(IDXs!==state||IDXn>L.length){IDX=new Map();IDXn=0;IDXs=state}if(IDXn<L.length){for(let i=IDXn;i<L.length;i++)IDX.set(L[i].id,L[i]);IDXn=L.length}return IDX.get(id)}
+function status(s){$("status").textContent=s}
+function render(){renderTop();renderWorld();renderPanel()}
+function renderTop(){
+ const p=state.player;$("topstats").innerHTML="<span>📅 <b>"+state.year+"</b></span><span>👤 <b>"+esc(p.name)+"</b></span><span>💰 <b>€"+Math.round(p.money)+"</b></span><span>👶 <b>"+p.children.length+" children</b></span>";
+}
+function building(x,y,w,h,label,place){return '<div class="building" data-place="'+place+'" style="left:'+x+'%;top:'+y+'%;width:'+w+'px;height:'+h+'px"><div class="roof"></div><div class="sign">'+label+"</div></div>"}
+function personHTML(p,you,pre){return '<div class="person'+(you?' you':'')+'" id="'+(pre||"person-")+p.id+'" style="left:'+p.x+'px;top:'+p.y+'px"><div class="name">'+esc(p.first)+'</div>'+avatar(lookOf(p))+'</div>'}
+function renderOutdoor(){ensureSched();
+ const w=$("world");
+ w.innerHTML='<div class="roadH"></div><div class="roadV"></div><div class="water"></div>'+
+ building(7,8,145,100,"🏠 HOME","home")+building(73,9,145,100,"🏫 SCHOOL","school")+building(7,69,145,100,"🏥 HOSPITAL","hospital")+
+ building(74,69,145,100,"🏪 SHOP","shop")+building(43,4,105,72,"☕ CAFÉ","cafe")+building(42,80,115,65,"⚒️ WORK","work")+
+ building(25,34,125,68,"⛪ CHURCH","church")+building(72,35,145,68,"⚰️ CEMETERY","cemetery");
+ if(!window.TREES)window.TREES=Array.from({length:35},()=>[3+Math.random()*93,3+Math.random()*92]);TREES.forEach(t=>w.insertAdjacentHTML("beforeend",'<div class="treeObj" style="left:'+t[0]+'%;top:'+t[1]+'%"></div>'));
+ syncVisible(true);VIS.forEach(p=>{if(p.alive)w.insertAdjacentHTML("beforeend",personHTML(p,false))});
+ w.insertAdjacentHTML("beforeend",personHTML(state.player,true));
+}
+function renderPanel(){
+ const buttons=document.querySelectorAll(".tabs button");buttons.forEach(b=>b.classList.toggle("on",b.dataset.tab===tabName));
+ if(tabName==="home")homePanel();else if(tabName==="family")familyPanel();else if(tabName==="world")worldPanel();else if(tabName==="events")evPanel();else if(tabName==="dating")datingPanel();else lifePanel();const n=(state.evs||[]).filter(e=>e.s==="open"||e.s==="planned").length;$("evtab").textContent="EVENTS"+(n?" ("+n+")":"");
+}
+function homePanel(){
+ const p=state.player;
+ $("content").innerHTML='<div class="card"><h3>'+esc(p.name)+'</h3><div class="row"><span>Age</span><b>'+p.age+' · '+stage(p.age)+'</b></div><div class="row"><span>Personality</span><b>'+p.trait+'</b></div><div class="row"><span>Career</span><b>'+p.job+'</b></div><div class="row"><span>Education</span><b>'+p.education+'</b></div></div>'+
+ '<div class="card"><h3>Attributes</h3>'+Object.entries(p.stats).map(([k,v])=>'<div class="row"><span>'+k+'</span><b>'+v+'</b></div><div class="bar"><i style="width:'+v+'%"></i></div>').join("")+'</div>'+
+ '<div class="card"><h3>Family</h3><div class="row"><span>Status</span><b>'+myStatus()+'</b></div><div class="row"><span>Children</span><b>'+p.children.length+'</b></div><button class="gold" id="advance">📅 AGE ONE YEAR</button></div>'+
+ '<div class="card"><h3>Chronicle</h3>'+state.events.slice(-7).reverse().map(e=>'<div class="event">'+esc(e)+'</div>').join("")+'</div>';
+ $("advance").onclick=advanceYear;
+}
+function familyPanel(){
+ const me=state.player,L=kinList(me),names=L.map(k=>k.p.name);
+ const row=k=>{const x=k.p;return '<div class="event"><b>'+esc(x.name)+'</b> · '+k.role+'<br><span class="muted">'+(x.alive?x.age+' · '+stage(x.age)+' · '+esc(x.job)+(x.away?' · moved away':'')+' · ❤ '+relation(x.id):'† died at '+x.age)+'</span><br>'+(x.alive?'<button class="small profileBtn" data-id="'+x.id+'">PROFILE</button> <button class="small visitBtn" data-id="'+x.id+'">🏡 VISIT</button>':'')+'</div>'};
+ $("content").innerHTML='<div class="card"><h3>Family ('+L.length+')</h3>'+(L.map(row).join("")||'<span class="muted">No relatives yet.</span>')+'</div>'+extCard(me,L)+'<div class="card"><h3>Family news</h3>'+(state.events.filter(e=>names.some(n=>e.includes(n))).slice(-8).reverse().map(e=>'<div class="event">'+esc(e)+'</div>').join("")||'<span class="muted">Nothing yet.</span>')+'</div><div class="card treeBox"><h3>Family Tree</h3>'+tree(me.id)+'</div>';
+ document.querySelectorAll(".profileBtn").forEach(b=>b.onclick=()=>profile(b.dataset.id));document.querySelectorAll(".visitBtn").forEach(b=>b.onclick=()=>visitHome(b.dataset.id));
+}
+function tree(id){
+ const p=find(id);if(!p)return "";const kids=p.children.map(find).filter(Boolean);
+ return '<ul><li><span class="'+(p.alive?"alive":"dead")+'"><b>'+esc(p.first)+'</b> ('+p.age+') '+(p.alive?"":"†")+'</span>'+(kids.length?kids.map(k=>tree(k.id)).join(""):"")+'</li></ul>';
+}
+function worldPanel(){
+ $("content").innerHTML='<div class="card"><h3>The Town</h3><p class="muted">Walk around with WASD or arrow keys. Press E near a person or building to enter/interact. While a window is open, movement and time are paused.</p><div class="row"><span>Living people</span><b>'+state.people.filter(p=>p.alive).length+'</b></div><div class="row"><span>Town year</span><b>'+state.year+'</b></div></div>'+popCard()+famCard()+gazetteCard()+'<div class="card"><h3>Places</h3><p>🏠 Home · 🏫 School · 🏥 Hospital · 🏪 Shop · ☕ Café · ⚒️ Work · ⛪ Church · ⚰️ Cemetery</p></div>';
+}
+function relation(id){return state.player.rel[id]||0}
+function changeRel(id,n){const p=find(id);state.player.rel[id]=clamp(relation(id)+n,-100,100);if(p)p.rel[state.player.id]=state.player.rel[id]}
+function enterBuilding(place){
+ const names={home:"Your Home",school:"Town School",hospital:"Town Hospital",shop:"General Shop",cafe:"Town Café",work:"Workplace",church:"Church",cemetery:"Cemetery"};
+ const labels={home:"Your home is quiet and comfortable.",school:"Classes are taking place today.",hospital:"Doctors and nurses are working.",shop:"Shelves are stocked and the shop is open.",cafe:"People are eating, talking and having coffee.",work:"People are at work.",church:"A peaceful place to visit.",cemetery:"The town's family history rests here."};
+ const inside=insideNPCs(place);
+ let body='<div class="card"><h2>🚪 '+names[place]+'</h2><p class="muted">'+labels[place]+'</p>';
+ if(place==="shop"){
+   body+='<div class="interiorGrid">'+
+   shopItem("🥖 Groceries",20,"A bag of food.", "food")+
+   shopItem("👕 Clothes",60,"A new outfit.", "clothes")+
+   shopItem("📚 Book",25,"Something to read.", "book")+
+   shopItem("🎁 Gift",30,"A nice gift for someone.", "gift")+
+   shopItem("🪑 Furniture",120,"Something for your home.", "furniture")+
+   '</div>';
+ }else if(place==="cafe"){
+   body+='<div class="interiorGrid">'+
+   shopItem("☕ Coffee",5,"A warm cup.", "coffee")+
+   shopItem("🍲 Meal",15,"A proper meal.", "meal")+
+   '</div>';
+ }else if(place==="hospital"){
+   body+='<div class="choices"><button id="heal">🩺 Health check (€30)</button></div>';
+ }else if(place==="work"){
+   body+='<div class="choices"><button id="workInside">💼 Work a day</button></div>';
+ }else if(place==="church"){
+   body+='<div class="choices"><button id="pray">🕯️ Spend some quiet time</button></div>';
+ }else if(place==="cemetery"){
+   body+='<p>Walk through the cemetery and remember relatives. Deceased family members remain in your family history.</p>';
+ }else if(place==="home"){
+   body+='<p>This is where you rest, keep your belongings, and build your family life.</p>';
+ }
+ if(inside.length){
+   body+='<h3>People inside</h3><div class="interiorGrid">'+inside.map(p=>
+     '<div class="shopItem"><b>'+esc(p.first)+'</b><span class="badge">'+esc(p.job)+'</span><br><button class="insideTalk" data-id="'+p.id+'">💬 TALK</button></div>'
+   ).join("")+'</div>';
+ }else if(["school","hospital","shop","cafe","work"].includes(place)){
+   body+='<p class="muted">Nobody is available to talk right now.</p>';
+ }
+ body+='<div class="choices"><button id="exitBuilding">🚪 EXIT</button></div></div>';
+ modal(body);
+ document.querySelectorAll(".insideTalk").forEach(b=>b.onclick=()=>profile(b.dataset.id));
+ $("exitBuilding").onclick=closeModal;
+ if($("heal"))$("heal").onclick=()=>{if(state.player.money<30){status("You need €30.");return}state.player.money-=30;state.player.stats.health=clamp(state.player.stats.health+8,0,100);renderTop();status("The health check helped.");};
+ if($("workInside"))$("workInside").onclick=()=>{closeModal();startShift()};
+ if($("pray"))$("pray").onclick=()=>{state.player.mem.push(state.year+" — Spent quiet time at church.");closeModal();status("You spent some peaceful time at church.");};
+ document.querySelectorAll(".buyItem").forEach(b=>b.onclick=()=>buyItem(b.dataset.item,+b.dataset.price,b.dataset.label));
+}
+function shopItem(label,price,desc,item){
+ return '<div class="shopItem"><b>'+label+'</b><span class="muted">'+desc+'</span><br><span>€'+price+'</span> <button class="buyItem" data-item="'+item+'" data-price="'+price+'" data-label="'+label+'">BUY</button></div>';
+}
+function buyItem(item,price,label){
+ if(state.player.money<price){status("You cannot afford "+label+".");return}
+ state.player.money-=price;
+ state.player.mem.push(state.year+" — Bought "+label+" at the shop.");
+ if(item==="gift")state.player.mem.push("A gift is ready to give to someone.");
+ renderTop();
+ status("Bought "+label+" for €"+price+".");
+}
+function buildingAction(place){enterBuilding(place);}
+function profile(id){
+ healLinks();const p=find(id);if(!p)return;focusOn(id);
+ let buttons='<button id="talk">💬 TALK</button><button id="gift">🎁 GIFT</button><button id="argue">⚡ ARGUE</button><button id="askmem">🧠 MEMORIES</button>';
+ const me=state.player,rl=role(me,p),ad=adult(p)&&adult(me)&&p!==me&&!kin(p,me),free=!pOf(me)&&!pOf(p),mine=pOf(me)===p,r0=relation(id);
+ if(ad&&!mine)buttons+='<button id="flirt">😉 FLIRT</button><button id="romance" class="gold">❤️ GET CLOSER</button><button id="date" class="gold">🌹 ASK TO DATE</button>';
+ if(ad&&(free||mine)&&r0>=55)buttons+='<button id="marry" class="gold">💍 MARRY</button>';
+ if(mine)buttons+='<button id="split">💔 '+(me.spouse===id?"DIVORCE":"BREAK UP")+'</button>';
+ if(me.spouse===id&&p.gender!==me.gender)buttons+='<button id="baby">👶 PROCREATE</button>';
+ if(ad&&!mine&&r0>=15)buttons+='<button id="fling">🔥 SECRET HOOKUP</button>';buttons+='<button id="ftree">🌳 FAMILY TREE</button>';
+ if(role(me,p))buttons+='<button id="visit">🏡 VISIT HOME</button><button id="spend">🤝 SPEND TIME</button>';
+ if(state.inside&&["shop","cafe"].includes(state.inside)&&workPlace(p.job)===state.inside&&adult(p))buttons+='<button id="rob">🥷 ROB THEM</button>';
+ modal('<h2>'+esc(p.name)+'</h2><div class="row"><span>Age</span><b>'+p.age+' · '+stage(p.age)+'</b></div><div class="row"><span>Background</span><b>'+(CN[p.cult]||"")+'</b></div><div class="row"><span>Job</span><b>'+esc(p.job)+'</b></div><div class="row"><span>Personality</span><b>'+p.trait+'</b></div><div class="row"><span>Lives</span><b>'+esc(p.addr||"somewhere in town")+(p.away?" (moved away)":"")+'</b></div><div class="row"><span>Status</span><b>'+statusOf(p)+'</b></div><div class="row"><span>Relationship</span><b>'+relation(id)+'</b></div><p>'+p.mem.slice(-4).map(x=>'<span class="pill">'+esc(x)+'</span>').join(" ")+'</p><div class="choices">'+buttons+'</div><br><button id="close">CLOSE</button>');
+ $("talk").onclick=()=>talk(id);$("gift").onclick=()=>gift(id);$("argue").onclick=()=>argue(id);$("askmem").onclick=()=>memory(id);if($("romance"))$("romance").onclick=()=>romance(id);if($("marry"))$("marry").onclick=()=>marry(id);if($("baby"))$("baby").onclick=()=>baby(id);if($("rob"))$("rob").onclick=()=>rob(id);$("close").onclick=closeModal;const H=(i,f)=>{if($(i))$(i).onclick=f};H("date",()=>dateAsk(id));H("flirt",()=>flirt(id));H("ftree",()=>famTree(id));H("split",()=>breakUp(id));H("fling",()=>fling(id));H("visit",()=>visitHome(id));H("spend",()=>spend(id));
+}
+function modal(body){$("modalRoot").innerHTML='<div class="modalBg"><div class="modal wide">'+body+'</div></div>';pressed={}}
+function closeModal(){$("modalRoot").innerHTML="";pressed={}}
+function gift(id){if(state.player.money<25){status("You need €25 for a gift.");closeModal();return}state.player.money-=25;changeRel(id,10);find(id).mem.push(state.year+" — Received a gift from "+state.player.first+".");closeModal();status("They appreciated the gift.");renderTop()}
+function argue(id){changeRel(id,-15);find(id).mem.push(state.year+" — Had an argument with "+state.player.first+".");state.player.mem.push("Argued with "+find(id).first+".");closeModal();status("The argument has been remembered.");renderPanel()}
+function romance(id){changeRel(id,15);find(id).mem.push(state.year+" — Grew closer to "+state.player.first+".");closeModal();status("The relationship is growing.");renderPanel()}
+function marry(id){if(relation(id)<55){status("You need a relationship of 55+ first.");return}const p=find(id);state.player.spouse=id;p.spouse=state.player.id;state.player.dating=p.dating=null;state.player.wed=state.year;addEv("wedding","Your wedding to "+p.name,[p.id],state.player.id,true);changeRel(id,25);state.events.push(state.year+" — "+state.player.name+" married "+p.name+".");closeModal();status("You are married.");render()}
+function baby(id){
+ const p=find(id);if(state.pending){closeModal();status("A baby is already expected.");return}const mom=p.gender==="F"?p:state.player;if(mom.age>45){closeModal();status("The game's childbearing system ends around the mid-40s.");return}
+ const g=pick(["M","F"]),n=rndFirst(g,state.player.cult);
+ modal('<h2>A new family member</h2><p>A baby will arrive next year.</p><input id="babyName" value="'+n+'"><div class="choices"><button id="nameBaby" class="gold">NAME CHILD</button></div>');
+ $("nameBaby").onclick=()=>{state.pending={partner:id,name:$("babyName").value.trim()||n,gender:g};closeModal();status("A baby is expected next year.");}
+}
+function makeChild(parent,other,name,g){
+ const c=person(g,0);c.cult=CULTS.includes(parent.cult)?parent.cult:"EN";c.gender=g;{const opp=NM[c.cult][g==="F"?"M":"F"].includes(name)&&!NM[c.cult][g].includes(name);c.fn=opp?rndFirst(g,c.cult):name;const m=maleSur((parent.sn||parent.surname).split("-")[0]);c.sn=g==="F"?femSur(m):m;applyName(c)}c.job="Child";c.money=0;c.parents=[parent.id,other.id];c.addr=parent.addr;c.gen=(parent.gen||1)+1;c.line=parent.line||parent.id;c.x=(parent.x||200)+25;c.y=(parent.y||200)+20;c.mem=["Born into the "+parent.surname+" family."];return c;
+}
+function salary(j){return ({Teacher:1800,Doctor:3200,Nurse:2200,Engineer:2800,Programmer:3000,Farmer:1500,Chef:1800,"Police officer":2400,Mechanic:2100,"Shop worker":1400,Writer:1800,Artist:1700,"Office worker":1900,"Business owner":2500}[j]||1200)/12}
+function advanceYear(){
+ if(!state||state.ended||!state.player.alive)return;
+ state.year++;state.lastYD=Math.floor(state.clock/1440);expireEvs();healLinks();const p=state.player;p.age++;p.money+=salary(p.job)-350;
+ bgYearStart();
+ for(const x of state.people.slice()){if(x===p||!x.alive)continue;x.age++;x.money+=salary(x.job)-250;npcYear(x)}
+ if(state.pending){const o=find(state.pending.partner);if(o&&o.alive&&p.spouse===o.id){const c=makeChild(p,o,state.pending.name,state.pending.gender);state.people.push(c);p.children.push(c.id);o.children.push(c.id);state.events.push(state.year+" — "+c.name+" was born.");evBirth(c)}state.pending=null}
+ socialYear();milestones();
+ if(p.age>=85&&Math.random()<.4)die(p);
+ if(state.ended)return;
+ state.events.push(state.year+" — A year passed. "+state.people.filter(x=>x.alive).length+" people are alive in the town.");
+ worldYear();if(state.events.length>400)state.events=state.events.slice(-400);
+ save(true);render();status("A new year began.");
+}
+function die(p){
+ p.alive=false;p.died=state.year;VIS.delete(p);p.vis=0;p.exit=0;if(state.pop)state.pop.died++;p.mem.push(state.year+" — Died at age "+p.age+".");chron(p.name+" died at age "+p.age+".",p);
+ if(p.spouse){const sp=find(p.spouse);if(sp){sp.spouse=null;sp.mem.push(state.year+" — "+p.name+" died.")}}
+ if(p.dating){const d=find(p.dating);if(d&&d.dating===p.id)d.dating=null;p.dating=null}state.aff=(state.aff||[]).filter(x=>x.a!==p.id&&x.b!==p.id);
+ if(p!==state.player){inherit(p);notifyDeath(p);archive(p)}
+ if(p===state.player)resolveDeath();
+}
+function lineage(p){const out=[],seen=new Set([p.id]),q=[p];while(q.length){const c=q.shift();for(const id of(c.children||[])){if(seen.has(id))continue;seen.add(id);const k=find(id);if(!k)continue;q.push(k);if(k.alive)out.push(k)}}return out}
+function resolveDeath(){
+ const p=state.player,all=lineage(p);let heirs=all.filter(x=>adult(x));if(!heirs.length)heirs=all.filter(x=>x.age>=13);
+ if(!heirs.length)return endLineage();
+ heirs.sort((a,b)=>b.age-a.age);
+ modal('<h2>Your life has ended</h2><p>'+esc(p.name)+' died at '+p.age+'. Choose a descendant to continue the family dynasty (they inherit €'+Math.max(0,Math.round(p.money||0))+').</p><div class="choices">'+heirs.map(x=>'<button class="gold heir" data-id="'+x.id+'">'+esc(x.name)+' ('+x.age+')</button>').join("")+'</div>');
+ document.querySelectorAll(".heir").forEach(b=>b.onclick=()=>continueAs(b.dataset.id));
+}
+function endLineage(){
+ const p=state.player;if(!state.ended){state.ended=true;state.events.push(state.year+" — The "+p.surname+" line ended with "+p.name+".");save(true)}
+ modal('<h2>The family line ends</h2><p>'+esc(p.name)+' died at '+p.age+' with no living descendants to carry on. This life is over.</p><div class="choices"><button id="newLife" class="gold">🌱 START A NEW LIFE</button></div>');
+ $("newLife").onclick=freshStart;
+}
+function freshStart(){
+ try{localStorage.removeItem("GENERATIONS_SAVE")}catch(e){}
+ state=null;VIS.clear();ROSTER.key="";FOCUS=[];tabName="home";pressed={};closeModal();$("game").style.display="none";$("creator").style.display="flex";$("creatorMsg").innerHTML="";$("hint").style.display="none";
+}
+function fixPlayer(p){
+ p.stats=Object.assign({intelligence:50,charisma:50,health:60,creativity:50,ambition:50},p.stats||{});
+ p.education=p.education||"Secondary";if(!p.job||(p.job==="Child"&&p.age>=18))p.job=pick(JOBS);
+ p.career=p.career||{level:1,rep:0,shifts:0};p.mem=p.mem||[];p.children=p.children||[];p.parents=p.parents||[];p.rel=p.rel||{};p.money=Number(p.money)||0;
+ p.sch=0;p.dest=null;p.tx=p.ty=null;p.look=lookOf(p);
+}
+function continueAs(id){
+ const old=state.player,h=find(id);if(!h)return;
+ h.money=Math.round((Number(h.money)||0)+Math.max(0,Number(old.money)||0));old.money=0;
+ const sp=h.spouse?find(h.spouse):null;if(!sp||!sp.alive)h.spouse=null;
+ fixPlayer(h);state.player=h;state.inside=null;state.jailLeft=0;state.pending=null;
+ closeModal();const d=doorPos("home");h.x=d.x;h.y=d.y+10;
+ state.events.push(state.year+" — "+h.name+" took over the family after "+old.name+".");addEv("funeral","Funeral of "+old.name,[old.id],h.id,true);
+ save(true);render();status("The dynasty continues through "+h.name+".");
+}
+function workDay(){const gain=100+Math.floor(Math.random()*220);state.player.money+=gain;state.events.push(state.year+" — "+state.player.name+" earned €"+gain+" at work.");renderTop();status("You worked and earned €"+gain+".")}
+function changeJob(){const j=pick(JOBS.filter(x=>x!==state.player.job));state.player.job=j;state.player.career={level:1,rep:0,shifts:0};state.events.push(state.year+" — "+state.player.name+" became a "+j+".");renderPanel();status("New career: "+j)}
+function teacher(){modal('<h2>Teacher career</h2><p>Choose your teaching style.</p><div class="choices"><button id="strict">Strict rules</button><button id="support">Supportive</button><button id="creative">Creative lesson</button><button id="test">Give a test</button></div>');["strict","support","creative","test"].forEach(id=>$(id).onclick=()=>{state.player.mem.push(state.year+" — Teacher choice: "+id);closeModal();status("Your students will remember today's lesson.");})}
+function memory(id){const p=find(id);modal('<h2>Memories of '+esc(p.first)+'</h2>'+(p.mem.slice(-8).map(x=>'<div class="event">'+esc(x)+'</div>').join("")||"<p>No memories yet.</p>")+'<button id="close">CLOSE</button>');$("close").onclick=closeModal}
+function save(silent){if(!state)return;try{localStorage.setItem("GENERATIONS_SAVE",packState());if(!silent)status("Game saved.");}catch(e){try{trimForSave();localStorage.setItem("GENERATIONS_SAVE",packState());if(!silent)status("Game saved (older records compacted).")}catch(e2){status("Save unavailable in this browser.")}}}
+function normalize(){
+ if(!state||!state.player||!Array.isArray(state.people))throw new Error("save data is incomplete");
+ const pl=state.player,i=state.people.findIndex(x=>x.id===pl.id);if(i>=0)state.people[i]=pl;else state.people.push(pl);IDXs=null;
+ state.events=state.events||[];state.year=state.year||2026;if(state.clock==null)state.clock=480;
+ state.people.forEach(p=>{p.mem=p.mem||[];p.children=p.children||[];p.parents=p.parents||[];p.rel=p.rel||{};p.sch=0;p.vis=0;p.exit=0;p.dest=null;p.tx=p.ty=null;p.stuck=0;p.age=p.age||0;p.money=Number(p.money)||0;p.line=p.line||p.id;p.gen=p.gen||1;fixName(p,p===pl)});healLinks();VIS.clear();ROSTER.key="";FOCUS=[];CIRC=null;state.pop=state.pop||newPop();
+ fixPlayer(pl);
+ if(state.inside!=="jail"||!(state.jailLeft>0))state.inside=null;
+ if(state.inside==="jail"){const B=RB();pl.x=B.x+B.w/2;pl.y=B.y+B.h-45}else{const d=doorPos("home");pl.x=d.x;pl.y=d.y+10}
+ ensureSched();
+}
+function loadSaved(){try{
+ const x=localStorage.getItem("GENERATIONS_SAVE");if(!x)return false;state=JSON.parse(x);
+ $("creator").style.display="none";$("game").style.display="grid";normalize();render();status("Saved dynasty loaded.");
+ if(state.ended)endLineage();else if(!state.player.alive)resolveDeath();
+ return true}catch(e){console.error(e);state=null;$("game").style.display="none";$("creator").style.display="flex";$("creatorMsg").innerHTML='<div class="error">The saved game could not be loaded ('+esc(e.message)+'). You can start a new life instead.</div>';return false}}
+function newGame(){if(confirm("Start a new life?")){localStorage.removeItem("GENERATIONS_SAVE");location.reload()}}
+function modalOpen(){return !!$("modalRoot").querySelector(".modalBg")}
+
+/* ===== v2: day clock, NPC schedules & walking ===== */
+const INDOOR=new Set(["inhome","school","hospital","shop","cafe","work","church"]);
+const DAYS=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+function hsh(s){let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;return h}
+function workPlace(j){return ({Teacher:"school",Doctor:"hospital",Nurse:"hospital",Chef:"cafe","Shop worker":"shop","Business owner":"shop",Farmer:"park","Police officer":"street",Mechanic:"work","Office worker":"work",Engineer:"work",Programmer:"work",Writer:"cafe",Artist:"cafe"})[j]||"street"}
+function sched(p,h,day){
+ if(p.away)return "inhome";const d=day%7,wk=d<5,v=(p.h||(p.h=hsh(p.id)))%10;
+ if(h>=22||h<7||p.age<5)return "inhome";
+ if(p.age<18){if(wk&&h>=8&&h<15)return "school";return h>=15&&h<18?"park":"inhome"}
+ if(d===6&&h>=10&&h<11&&(v<4||p.age>=65))return "church";
+ if(p.age>=65)return h>=10&&h<12?"park":h>=15&&h<17?"cafe":"inhome";
+ if(wk&&h>=9&&h<17)return(h===12&&v<4)?"cafe":workPlace(p.job);
+ if(h>=17&&h<20)return(p.trait==="outgoing"||v<3)?"cafe":v<6?"park":"inhome";
+ if(!wk&&h>=10&&h<18)return v<4?"park":v<7?"cafe":"inhome";
+ return "inhome";
+}
+function nowH(){return Math.floor(state.clock/60)%24}
+const BLD={home:[7,8,145,100],school:[73,9,145,100],hospital:[7,69,145,100],shop:[74,69,145,100],cafe:[43,4,105,72],work:[42,80,115,65],church:[25,34,125,68],cemetery:[72,35,145,68]};
+let obK="",obL=[];
+function WH(){return[Math.max(300,$("world").clientWidth),Math.max(250,$("world").clientHeight)]}
+function OB(){const[W,H]=WH(),k=W+"x"+H;if(k!==obK){obK=k;obL=Object.values(BLD).map(b=>({l:b[0]*W/100,t:b[1]*H/100,r:b[0]*W/100+b[2],b:b[1]*H/100+b[3]}));obL.push({l:W*.97-190,t:H*.03,r:W*.97,b:H*.03+125})}return obL}
+function blocked(x,y,pad){pad=pad==null?12:pad;const[W,H]=WH();if(!(x>=20&&x<=W-20&&y>=30&&y<=H-20))return true;return OB().some(r=>x>r.l-pad&&x<r.r+pad&&y>r.t-pad&&y<r.b+pad)}
+function rndSpot(){const[W,H]=WH();for(let i=0;i<60;i++){const x=40+Math.random()*(W-80),y=60+Math.random()*(H-100);if(!blocked(x,y))return{x,y}}return{x:W*.48+30,y:H*.48+30}}
+function safeSpot(x,y){if(!isFinite(x)||!isFinite(y))return rndSpot();if(!blocked(x,y))return{x,y};for(let r=12;r<=300;r+=12)for(let a=0;a<12;a++){const nx=x+Math.cos(a*Math.PI/6)*r,ny=y+Math.sin(a*Math.PI/6)*r;if(!blocked(nx,ny))return{x:nx,y:ny}}return rndSpot()}
+function doorPos(pl){const[W,H]=WH(),b=BLD[pl];if(!b)return rndSpot();return safeSpot(b[0]*W/100+b[2]/2,b[1]*H/100+b[3]+16)}
+function homePt(p){let s=hsh(String(p.id||"x"));const R=()=>(s=(s*1664525+1013904223)>>>0)/4294967296,[W,H]=WH();for(let i=0;i<40;i++){const x=30+R()*(W-60),y=40+R()*(H-70);if(!blocked(x,y))return{x,y}}return rndSpot()}
+function spot(pl,p){if(pl==="inhome")return homePt(p||{});if(pl==="park"||pl==="street")return rndSpot();return doorPos(pl)}
+function setDest(p,t){if(INDOOR.has(p.location)){const q=p.location==="inhome"?homePt(p):doorPos(p.location);p.x=q.x;p.y=q.y}const s=spot(t,p);p.dest=t;p.tx=s.x;p.ty=s.y;p.stuck=0;p.location="street"}
+function fixOutdoor(){if(!state)return;for(const p of VIS){if(!p.alive)continue;if(OUT.includes(p.location)&&blocked(p.x,p.y,2)){const s=safeSpot(p.x,p.y);p.x=s.x;p.y=s.y}if(p.tx!=null&&blocked(p.tx,p.ty,2)){const s=safeSpot(p.tx,p.ty);p.tx=s.x;p.ty=s.y}}}
+function ensureSched(){if(state.clock==null)state.clock=480;state.hr=nowH();const day=Math.floor(state.clock/1440);
+ for(const p of state.people){if(p===state.player||!p.alive||p.sch)continue;p.sch=1;p.location=where(p,state.hr,day)}}
+function tick(){
+ if(!state||state.ended||$("game").style.display==="none"||modalOpen())return;
+ state.clock+=10;const h=nowH(),day=Math.floor(state.clock/1440);if(state.lastYD==null)state.lastYD=day;if(day-state.lastYD>=30){advanceYear();return}
+ if(h!==state.hr){state.hr=h;hourUpdate(h,day);renderWorld()}
+ VIS.forEach(p=>{if(p.alive&&!p.exit&&p.tx==null&&!INDOOR.has(p.location)&&p.location!=="cemetery"&&Math.random()<.2){const[W,H]=WH(),s=safeSpot(clamp(p.x+(Math.random()-.5)*120,30,W-30),clamp(p.y+(Math.random()-.5)*100,40,H-30));p.tx=s.x;p.ty=s.y}});
+ $("clock").textContent=DAYS[day%7]+" "+String(h).padStart(2,"0")+":"+String(state.clock%60).padStart(2,"0")+" · "+state.year;
+}
+function moveEl(p){const e=$("person-"+p.id);if(e){e.style.left=p.x+"px";e.style.top=p.y+"px"}}
+function walkNPCs(){
+ if(!state||state.ended||$("game").style.display==="none"||modalOpen())return;
+ for(const p of VIS){
+  if(!p.alive||p.tx==null)continue;
+  const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy);
+  if(!(d>=3)||(p.stuck||0)>60){
+   p.stuck=0;if(d>=3){p.x=p.tx;p.y=p.ty}p.tx=null;if(p.exit){unspawn(p);continue}
+   if(p.dest){const loc=p.dest;p.location=loc;p.dest=null;
+    if(INDOOR.has(loc)){VIS.delete(p);p.vis=0;ROSTER.key="";const e=$("person-"+p.id);if(e)e.remove();if(state.inside&&(state.inside===loc||(state.inside==="home"&&loc==="inhome")))renderWorld()}
+    else if(!state.inside)moveEl(p)}
+   continue}
+  const sx=dx/d*1.4,sy=dy/d*1.4,stuckNow=blocked(p.x,p.y,6);let moved=false;
+  if(stuckNow||!blocked(p.x+sx,p.y,6)){p.x+=sx;moved=true}
+  if(stuckNow||!blocked(p.x,p.y+sy,6)){p.y+=sy;moved=true}
+  p.stuck=moved?0:(p.stuck||0)+1;
+  if(!state.inside)moveEl(p);
+ }
+}
+/* ===== v2: personality/memory-driven offline dialogue ===== */
+ /* ===== v3: interiors, interaction, careers, crime, NPC life ===== */
+const OUT=["street","park","churchyard"],TITLES=["Trainee","Junior","Experienced","Senior","Lead","Master"];
+const INT={home:{t:"🏠 Your Home",f:"#d9b88c",o:[["🛏️",14,30,"Bed","rest"],["🧊",34,18,"Fridge","fx:You grab a snack.|health|1|0"],["🍳",52,18,"Kitchen","fx:You cook and eat a proper meal.|health|1|0"],["📺",84,30,"TV","fx:You watch TV and unwind.|creativity|1|0"],["📚",14,62,"Bookshelf","fx:You read a book from the shelf.|intelligence|1|0"],["🖥️",36,64,"Computer","fx:You browse and learn something new.|intelligence|1|0"],["🪴",58,64,"Plant","fx:You water the plant. Peaceful.|creativity|0|0"],["🚿",85,64,"Shower","fx:You freshen up and feel confident.|charisma|1|0"]]},
+school:{t:"🏫 Town School",f:"#c3cee0",o:[["📋",50,24,"Teacher's desk","svc"],["📝",24,20,"Blackboard","fx:You study the lesson on the board.|intelligence|1|0"],["📚",82,62,"Library corner","fx:You read in the library.|intelligence|1|0"],["🥪",16,62,"Cafeteria","fx:You buy a school lunch.|health|1|4"],["🌍",50,66,"Globe","fx:You study the world map.|intelligence|1|0"],["💼",90,15,"Work station","work"]]},
+shop:{t:"🏪 General Shop",f:"#e2d3ae",o:[["🧺",18,42,"Shelves","svc"],["🧾",50,24,"Cashier counter","svc"],["🧴",82,42,"Shelves","svc"],["🥤",16,70,"Drinks fridge","fx:You drink a cold juice.|health|1|3"],["🎁",50,68,"Gift display","svc"],["💼",92,15,"Work station","work"]]},
+cafe:{t:"☕ Town Café",f:"#d8b99a",o:[["☕",50,24,"Café counter","svc"],["🍽️",20,48,"Table","fx:You sit down for a quiet meal.|health|1|8"],["🍽️",50,58,"Table","fx:You sit and people-watch.|charisma|1|0"],["🎵",86,48,"Jukebox","fx:You play a song and the café cheers up.|charisma|1|1"],["📰",16,72,"Newspaper","fx:You read the local paper.|intelligence|1|0"],["💼",92,15,"Work station","work"]]},
+hospital:{t:"🏥 Town Hospital",f:"#dfeaf0",o:[["🩺",50,24,"Reception","svc"],["🛏️",18,44,"Ward bed","fx:You rest in a bed for a while.|health|2|0"],["💊",84,48,"Pharmacy","fx:You buy vitamins.|health|1|10"],["🪑",50,66,"Waiting chairs","fx:You wait and read old magazines.|creativity|1|0"],["💼",92,15,"Work station","work"]]},
+work:{t:"⚒️ Workplace",f:"#c9c9c9",o:[["🖥️",24,26,"Work station","work"],["🖥️",72,26,"Work station","work"],["☕",16,66,"Coffee machine","fx:A strong coffee from the machine.|ambition|1|2"],["📌",50,66,"Notice board","fx:You read the notice board.|intelligence|1|0"],["🚰",84,66,"Water cooler","fx:A chat by the water cooler.|charisma|1|0"]]},
+church:{t:"⛪ Church",f:"#e9dcc4",o:[["🕯️",50,20,"Altar","pray"],["🪑",24,48,"Pews","fx:You sit quietly in a pew.|health|1|0"],["🕯️",78,48,"Candles","fx:You light a candle for your family.|creativity|0|1"],["🎹",16,72,"Organ","fx:You listen to the organ.|creativity|1|0"],["💰",84,72,"Donation box","fx:You donate a few coins.|charisma|1|2"]]},
+cemetery:{t:"⚰️ Cemetery",f:"#7f9d6e",o:[]},jail:{t:"🚔 Jail Cell",f:"#8e8e98",o:[["🛏️",20,38,"Bunk (serve sentence)","serve"],["🪟",72,26,"Window","fx:You stare out of the window.|health|0|0"],["🚽",80,62,"Toilet","fx:Not pleasant.|health|0|0"]]}};
+function doFx(def,label){const p=state.player,[txt,st,d,c]=def.split("|"),day=Math.floor(state.clock/1440);p.fxd=p.fxd||{};if(+c>p.money){status("You can't afford that (€"+c+").");return}p.money-=+c;let g="";if(+d>0&&p.fxd[label]!==day&&p.stats[st]!=null){p.fxd[label]=day;p.stats[st]=clamp(p.stats[st]+ +d,0,100);g=" (+"+d+" "+st+")"}status(txt+g);renderTop()}
+function objsFor(pl){const d=INT[pl]||INT.work;if(pl!=="cemetery")return d.o;return state.people.filter(x=>!x.alive).slice(-18).map((x,i)=>["🪦",12+(i%6)*15,28+Math.floor(i/6)*22,x.name+(x.died?" †"+x.died:""),"grave:"+x.id])}
+function insideNPCs(pl){return rosterFor(pl)}
+function RB(){const W=$("world").clientWidth,H=$("world").clientHeight,w=Math.min(W-40,620),h=Math.min(H-40,400);return{x:(W-w)/2,y:(H-h)/2,w,h}}
+function ipos(p,pl,i,B){if(pl!=="home"&&workPlace(p.job)===pl&&p.age>=18)return{x:B.x+B.w*(.5+((i%3)-1)*.14),y:B.y+B.h*.12};const h=hsh(p.id);return{x:B.x+B.w*(.15+(h%70)/100),y:B.y+B.h*(.4+((h>>4)%25)/100)}}
+function renderInterior(){
+ const w=$("world"),pl=state.inside,B=RB(),d=INT[pl]||INT.work;
+ w.innerHTML='<div style="position:absolute;inset:0;background:#171210"></div><div class="room" style="left:'+B.x+'px;top:'+B.y+'px;width:'+B.w+'px;height:'+B.h+'px;background:'+d.f+'"><div class="rtitle">'+d.t+'</div><div class="rdoor" style="left:50%">🚪 EXIT</div>'+objsFor(pl).map(o=>'<div class="obj" style="left:'+o[1]+'%;top:'+o[2]+'%"><span>'+o[0]+'</span><small>'+esc(o[3])+'</small></div>').join("")+'</div>';
+ let wi=0;insideNPCs(pl).forEach(p=>{const q=ipos(p,pl,wi,B);if(pl!=="home"&&workPlace(p.job)===pl&&p.age>=18)wi++;p.ix=q.x;p.iy=q.y;w.insertAdjacentHTML("beforeend",personHTML(Object.assign({},p,{x:q.x,y:q.y}),false,"ip-"))});
+ w.insertAdjacentHTML("beforeend",personHTML(state.player,true));
+ if(pl!=="home"&&ROSTER.more>0)w.insertAdjacentHTML("beforeend",'<div style="position:absolute;left:50%;top:6px;transform:translateX(-50%);background:#000a;color:#fff;padding:3px 10px;border-radius:10px;font-size:11px;z-index:6">👥 +'+ROSTER.more+' more people here, going about their day</div>');
+}
+function renderWorld(){ensureSched();fixOutdoor();if(state.inside)renderInterior();else{renderOutdoor();const wr=$("world").getBoundingClientRect();window.BR=[...document.querySelectorAll(".building")].map(b=>{const r=b.getBoundingClientRect();return{l:r.left-wr.left,t:r.top-wr.top,r:r.right-wr.left,b:r.bottom-wr.top}});const p=state.player;BR.forEach(r=>{if(p.x>r.l&&p.x<r.r&&p.y>r.t&&p.y<r.b){p.y=r.b+14;const e=$("person-"+p.id);if(e)e.style.top=p.y+"px"}})}}
+function target(){
+ const p=state.player,W=$("world").clientWidth,H=$("world").clientHeight;let best=null,bd=1e9;
+ const c=(d,l,run)=>{if(d<bd){bd=d;best={l,run}}};
+ if(state.inside){const pl=state.inside;
+  insideNPCs(pl).forEach(n=>{const d=Math.hypot((n.ix||0)-p.x,(n.iy||0)-p.y);if(d<70)c(d,"Talk to "+n.first,()=>profile(n.id))});
+  objsFor(pl).forEach(o=>{const B=RB(),d=Math.hypot(B.x+o[1]*B.w/100-p.x,B.y+o[2]*B.h/100-p.y);if(d<65)c(d,o[3],()=>runObj(pl,o))});
+  {const B=RB();if(p.y>B.y+B.h-60&&Math.abs(p.x-B.x-B.w/2)<70)c(0,"Exit",leave)}
+ }else{
+  VIS.forEach(n=>{if(!n.alive||n.exit||!$("person-"+n.id))return;const d=Math.hypot(n.x-p.x,n.y-p.y);if(d<55)c(d,"Talk to "+n.first,()=>profile(n.id))});
+  const wr=$("world").getBoundingClientRect();
+  document.querySelectorAll(".building").forEach(b=>{const r=b.getBoundingClientRect(),L=r.left-wr.left,T=r.top-wr.top,d=Math.hypot(Math.max(L-p.x,0,p.x-L-r.width),Math.max(T-p.y,0,p.y-T-r.height));if(d<42)c(d+5,"Enter "+b.querySelector(".sign").textContent,()=>enterInterior(b.dataset.place))});
+ }
+ return best;
+}
+function interact(){if(!state||state.ended||modalOpen())return;const t=target();if(t)t.run();else status("Nothing to interact with here.")}
+function nearby(){return null}
+function enterInterior(pl){ROSTER.key="";const p=state.player;state.out={x:p.x,y:p.y};state.inside=pl;const B=RB();p.x=B.x+B.w/2;p.y=B.y+B.h-45;renderWorld();status("You entered. Walk to the 🚪 EXIT and press E to leave.")}
+function leave(){
+ if(state.jailLeft>0){status("The cell door is locked. Serve your sentence on the bunk.");return}
+ const pl=state.inside,p=state.player;state.inside=null;renderWorld();const d=doorPos(pl==="jail"?"work":pl);p.x=d.x;p.y=d.y+22;const e=$("person-"+p.id);if(e){e.style.left=p.x+"px";e.style.top=p.y+"px"}
+}
+function runObj(pl,o){const a=o[4];
+ if(a==="svc")enterBuilding(pl);else if(a==="work")startShift();else if(a==="rest")sleep();
+ else if(a==="eat"){state.player.stats.health=clamp(state.player.stats.health+1,0,100);status("You ate at home.")}
+ else if(a==="sofa")status("You relax on the sofa.");
+ else if(a==="pray"){state.player.mem.push(state.year+" — Spent quiet time at church.");status("You spent some peaceful time at church.")}
+ else if(a==="serve")serve();else if(a.startsWith("fx:"))doFx(a.slice(3),o[3]);
+ else if(a.startsWith("grave:")){const g=find(a.slice(6));modal('<h2>🪦 '+esc(g.name)+'</h2><p>Died at age '+g.age+(g.died?' in '+g.died:'')+'. Career: '+esc(g.job)+'.</p>'+g.mem.slice(-3).map(x=>'<div class="event">'+esc(x)+'</div>').join("")+'<br><button id="close">CLOSE</button>');$("close").onclick=closeModal}
+}
+function sleep(){const d=Math.floor(state.clock/1440);state.clock=(d+(nowH()>=7?1:0))*1440+420;state.player.stats.health=clamp(state.player.stats.health+4,0,100);status("You slept until morning.");renderTop()}
+/* careers */
+const GEN=[["A deadline is closing in.",[["Work carefully","intelligence",45,"The result was solid.","It was sloppy."],["Push through fast","ambition",40,"You delivered early.","It fell apart."]]],["A colleague asks for help.",[["Help properly","charisma",35,"They're grateful.","You lost the afternoon."],["Politely decline","ambition",30,"You stayed focused.","They resent you."]]],["Your boss wants an idea.",[["Propose something bold","creativity",50,"They loved it.","It was dismissed."],["Play it safe","intelligence",35,"A reliable plan.","Nobody noticed."]]]];
+const CAR={
+Teacher:{pl:"school",t:[["{N} keeps disrupting the lesson.",[["Be strict","ambition",40,"{N} settled down.","{N} got resentful."],["Talk kindly","charisma",42,"{N} opened up.","{N} ignored you."]]],["Test day. How do you grade {N}'s paper?",[["Fairly and strictly","intelligence",45,"The class respects it.","There were complaints."],["Give extra help","charisma",38,"{N} improved.","It wasn't enough."]]],["Plan today's lesson.",[["Creative group project","creativity",48,"The students loved it.","It got chaotic."],["Textbook lesson","intelligence",34,"Solid learning.","Students were bored."]]]]},
+Doctor:{pl:"hospital",t:[["{N} arrives with chest pain.",[["Order tests","intelligence",50,"You found the cause.","Inconclusive results."],["Treat at once","ambition",45,"{N} recovered.","Wrong call."]]],["{N} fears the treatment.",[["Explain calmly","charisma",40,"{N} trusted you.","{N} left worried."],["Be direct","intelligence",42,"Clear and honest.","{N} was upset."]]],["A busy ward.",[["Prioritise carefully","intelligence",45,"Everyone was seen.","Someone waited too long."],["Work faster","health",40,"You kept up.","You were exhausted."]]]]},
+"Police officer":{pl:"work",t:[["A noise complaint about {N}.",[["Warn them","charisma",38,"{N} calmed down.","{N} argued back."],["Issue a fine","ambition",35,"Order restored.","{N} resents you."]]],["A theft is reported.",[["Investigate carefully","intelligence",48,"You solved it.","The trail went cold."],["Patrol the area","health",38,"The street felt safer.","Nothing found."]]],["A crowd gathers.",[["Disperse them","charisma",45,"Peace restored.","It got heated."],["Call backup","ambition",30,"Handled safely.","It took too long."]]]]},
+Chef:{pl:"cafe",t:[["{N} orders the special.",[["Cook it perfectly","creativity",45,"{N} praised it.","It was overcooked."],["Serve it fast","ambition",38,"Quick service.","{N} had to wait."]]],["A food shortage.",[["Improvise a dish","creativity",50,"A new favourite!","Customers were confused."],["Use substitutes","intelligence",36,"Nobody noticed.","They noticed."]]],["Lunch rush.",[["Stay calm","health",42,"Smooth service.","Orders got mixed up."],["Push the team","ambition",34,"Done on time.","The team is upset."]]]]},
+Farmer:{pl:"work",t:[["Dry weather threatens the crops.",[["Irrigate more","health",42,"A good harvest.","It cost too much."],["Wait for rain","intelligence",40,"The rain came.","The crop suffered."]]],["Market day with {N}.",[["Haggle for more","charisma",42,"A good price.","{N} walked away."],["Sell fast","ambition",34,"Quick sale.","You undersold."]]],["A fence breaks.",[["Repair it yourself","health",38,"Fixed.","Still loose."],["Hire help","intelligence",30,"Fixed properly.","Costly."]]]]}};
+function carFor(j){return CAR[j]||{pl:workPlace(j),t:GEN}}
+function npcFor(j){const kids=j==="Teacher",l=state.people.filter(x=>x.alive&&x!==state.player&&!x.away&&(kids?x.age>=5&&x.age<18:x.age>=18));return l.length?pick(l):null}
+function startShift(){
+ const p=state.player,c=carFor(p.job),day=Math.floor(state.clock/1440);p.career=p.career||{level:1,rep:0,shifts:0};
+ if(c.pl!==state.inside){status("This isn't your workplace. As a "+p.job+" you work at the "+(INT[c.pl]||{t:c.pl}).t+".");return}
+ if(p.lastShift===day){status("You already worked today. Sleep or come back tomorrow.");return}
+ let n=0,pay=40+p.career.level*12,rep=0;
+ const step=()=>{
+  if(n>=3)return endShift(pay,rep);
+  const t=pick(c.t),who=npcFor(p.job),nm=who?who.first:"a customer",fx=x=>x.replace(/\{N\}/g,nm);
+  modal('<h2>💼 '+esc(p.job)+' — task '+(n+1)+'/3</h2><p>'+esc(fx(t[0]))+'</p><div class="choices">'+t[1].map((o,i)=>'<button class="opt" data-i="'+i+'">'+o[0]+'</button>').join("")+'</div>');
+  document.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+   const o=t[1][+b.dataset.i],ok=(p.stats[o[1]]||40)+p.career.level*4+Math.random()*70>=o[2]+40,msg=fx(ok?o[3]:o[4]);
+   if(ok){pay+=20;rep++}else rep--;
+   if(who){changeRel(who.id,ok?6:-6);who.mem.push(state.year+" — "+p.first+", the "+p.job+", "+(ok?"treated me well: ":"let me down: ")+msg)}
+   p.clog=(p.clog||[]).concat(state.year+" — "+(ok?"✔ ":"✘ ")+msg).slice(-8);n++;
+   modal('<h2>'+(ok?"✔ Success":"✘ It went badly")+'</h2><p>'+esc(msg)+'</p><button id="next">CONTINUE</button>');$("next").onclick=step;
+  });
+ };step();
+}
+function endShift(pay,rep){
+ const p=state.player,cr=p.career;p.money+=pay;cr.rep=Math.max(0,cr.rep+rep);cr.shifts++;p.lastShift=Math.floor(state.clock/1440);state.clock+=300;
+ let up="";if(cr.level<6&&cr.rep>=cr.level*5){cr.level++;cr.rep=0;up='<p><b>🎉 Promoted to '+TITLES[cr.level-1]+' '+esc(p.job)+'!</b></p>';state.events.push(state.year+" — "+p.name+" was promoted to "+TITLES[cr.level-1]+" "+p.job+".")}
+ modal('<h2>Shift complete</h2><p>You earned €'+pay+'. Reputation '+(rep>=0?"+":"")+rep+'.</p>'+up+'<button id="close">CLOSE</button>');$("close").onclick=closeModal;renderTop();
+}
+function lifePanel(){
+ const p=state.player;p.career=p.career||{level:1,rep:0,shifts:0};const c=carFor(p.job),L=p.career.level;
+ $("content").innerHTML='<div class="card"><h3>'+esc(p.job)+' — '+TITLES[L-1]+'</h3><div class="row"><span>Level</span><b>'+L+'</b></div><div class="row"><span>Reputation</span><b>'+p.career.rep+' / '+L*5+'</b></div><div class="bar"><i style="width:'+Math.min(100,p.career.rep/(L*5)*100)+'%"></i></div><div class="row"><span>Shifts worked</span><b>'+p.career.shifts+'</b></div><div class="row"><span>Workplace</span><b>'+esc((INT[c.pl]||{t:c.pl}).t)+'</b></div><p class="muted">Enter your workplace and press E at the 💼 work station (one shift per day).</p><button id="changeJob">Apply for another job</button></div><div class="card"><h3>Recent work</h3>'+((p.clog||[]).slice().reverse().map(x=>'<div class="event">'+esc(x)+'</div>').join("")||"<p>No shifts yet.</p>")+'</div>'+(p.crime?'<div class="card"><h3>Criminal record</h3><div class="row"><span>Offences</span><b>'+p.crime+'</b></div></div>':"");
+ $("changeJob").onclick=changeJob;
+}
+/* crime */
+function rob(id){
+ const p=find(id),me=state.player,pl=state.inside;me.crime=(me.crime||0)+1;
+ p.mem.push(state.year+" — Was robbed by "+me.first+".");changeRel(id,-45);
+ insideNPCs(pl).forEach(x=>{if(x!==p)x.mem.push(state.year+" — Saw "+me.first+" rob "+p.first+".")});
+ if(Math.random()<.5+((me.stats.intelligence||50)-50)/250&&Math.random()<.7){const g=80+Math.floor(Math.random()*320);me.money+=g;state.events.push(state.year+" — "+me.name+" robbed "+p.name+" and got away with €"+g+".");modal('<h2>🥷 You got away!</h2><p>You took €'+g+'. People will remember what you did.</p><button id="close">CLOSE</button>');$("close").onclick=closeModal;renderTop()}
+ else arrest("robbing "+p.name);
+}
+function arrest(why){
+ const me=state.player,days=3+Math.floor(Math.random()*16)+(me.crime||0)*2,fine=Math.min(Math.round(me.money),150);
+ me.money-=fine;if(me.career)me.career.rep=Math.max(0,me.career.rep-5);state.jailLeft=days;
+ state.events.push(state.year+" — "+me.name+" was arrested for "+why+" and jailed for "+days+" days.");me.mem.push(state.year+" — Jailed for "+why+".");
+ state.inside="jail";{const B=RB();me.x=B.x+B.w/2;me.y=B.y+B.h-45}renderWorld();
+ modal('<h2>🚔 Arrested</h2><p>You were arrested for '+esc(why)+'. Sentence: '+days+' days and a €'+fine+' fine. Find the bunk and serve your time.</p><button id="close">OK</button>');$("close").onclick=closeModal;renderTop();
+}
+function serve(){const d=state.jailLeft;if(!d){status("You are free to go.");return}state.clock+=d*1440;state.jailLeft=0;state.events.push(state.year+" — "+state.player.name+" was released from jail.");modal('<h2>🔓 Released</h2><p>You served '+d+' days. Walk to the door to leave.</p><button id="close">OK</button>');$("close").onclick=closeModal}
+const _die=die;die=function(p){p.died=state.year;_die(p)};
+/* NPC life */
+const STREETS=["Akmeņu iela","Liepu iela","Ozolu iela","Rīgas iela","Dārza iela","Mežu iela","Skolas iela","Upes iela","Parka iela","Baznīcas iela"];
+function addr(){return(1+Math.floor(Math.random()*220))+" "+pick(STREETS)}
+function kin(a,b){return inappropriate(a,b)}
+
+/* ===== v6: families, dating, affairs ===== */
+function lg(t){state.events.push(state.year+" — "+t)}
+function pOf(p){const x=p.spouse||p.dating,q=x&&find(x);if(q&&q.alive&&(q.spouse===p.id||q.dating===p.id))return q;if(x&&p.alive!==false){if(p.spouse===x)p.spouse=null;if(p.dating===x)p.dating=null}return null}
+function healLinks(){state.people.forEach(p=>{if(!p.alive)return;["spouse","dating"].forEach(k=>{const q=p[k]&&find(p[k]);if(p[k]&&(!q||!q.alive||(q.spouse!==p.id&&q.dating!==p.id)))p[k]=null});if(p.spouse&&p.dating)p.dating=null})}
+function myStatus(){const q=pOf(state.player);return q?(state.player.spouse?"Married to ":"In a relationship with ")+esc(q.name):"Single"}
+function statusOf(p){const q=pOf(p),r=relLabel(state.player,p);return(q?(p.spouse?"Married to ":"Dating ")+esc(q.name):"Single")+(r?" · "+r:"")}
+function kinList(me){const out=[],seen=new Set([me.id]),add=(x,r)=>{if(x&&!seen.has(x.id)){seen.add(x.id);out.push({p:x,role:r})}},g=(x,m,f)=>x&&x.gender==="F"?m:f;
+ add(me.spouse&&find(me.spouse),"Spouse");add(me.dating&&find(me.dating),"Partner");
+ const par=(me.parents||[]).map(find).filter(Boolean);par.forEach(x=>add(x,g(x,"Mother","Father")));
+ par.forEach(x=>(x.children||[]).forEach(i=>{const t=find(i);add(t,g(t,"Sister","Brother"))}));
+ par.forEach(x=>(x.parents||[]).forEach(i=>{const t=find(i);add(t,g(t,"Grandmother","Grandfather"))}));
+ const ch=(me.children||[]).map(find).filter(Boolean);ch.forEach(x=>add(x,g(x,"Daughter","Son")));
+ ch.forEach(x=>(x.children||[]).forEach(i=>{const t=find(i);add(t,g(t,"Granddaughter","Grandson"));if(t)(t.children||[]).forEach(j=>add(find(j),"Great-grandchild"))}));
+ return out}
+function role(me,p){const k=kinList(me).find(x=>x.p.id===p.id);return k?k.role:""}
+function bump(x,y,n){const me=state.player;if(y===me)changeRel(x.id,n);else if(x===me)changeRel(y.id,n);else x.rel[y.id]=clamp((x.rel[y.id]||0)+n,-100,100)}
+function splitUp(a,b){const m=a.spouse===b.id;[[a,b],[b,a]].forEach(([x,y])=>{if(x.spouse===y.id)x.spouse=null;if(x.dating===y.id)x.dating=null;x.mem.push(state.year+" — "+(m?"Divorced ":"Broke up with ")+y.name+".")});return m}
+function startAffair(a,b){state.aff=state.aff||[];if(state.aff.some(x=>[x.a,x.b].some(i=>i===a.id||i===b.id)))return false;state.aff.push({a:a.id,b:b.id,y:state.year});[[a,b],[b,a]].forEach(([x,y])=>x.sec=(x.sec||[]).concat(state.year+" — Secret affair with "+y.name));return true}
+function cheatHit(c,o,v){
+ const me=state.player,sp=v.spouse===c.id;
+ bump(v,c,-50);bump(c,v,-20);bump(v,o,-30);
+ v.mem.push(state.year+" — Found out "+c.first+" was unfaithful.");c.mem.push(state.year+" — "+v.first+" found out about my affair.");
+ (c.children||[]).forEach(id=>{const k=find(id);if(k&&k.alive&&(v.children||[]).includes(id))bump(k,c,-12)});
+ lg(c.name+" was caught cheating on "+v.name+" with "+o.name+".");
+ if(v===me){askPlayer(c,o);return}
+ if(Math.random()<(sp?.5:.8)){splitUp(c,v);lg(v.name+" and "+c.name+(sp?" divorced":" broke up")+" after the affair.")}else lg(v.name+" and "+c.name+" had a huge argument but stayed together.");
+ if(c===me){modal('<h2>💔 You were caught</h2><p>'+esc(v.name)+' found out about you and '+esc(o.name)+'. '+(pOf(me)?"They are still with you, but trust is badly damaged.":"They left you.")+'</p><button id="close">CLOSE</button>');$("close").onclick=closeModal}
+}
+function askPlayer(c,o){const me=state.player;
+ modal('<h2>💔 Betrayal</h2><p>You found out that '+esc(c.name)+' has been secretly seeing '+esc(o.name)+'.</p><div class="choices"><button id="fg">Forgive</button><button id="cf">Confront</button><button id="en" class="gold">End it</button></div>');
+ $("fg").onclick=()=>{changeRel(c.id,35);lg(me.name+" forgave "+c.name+".");closeModal();render()};
+ $("cf").onclick=()=>{changeRel(c.id,-10);c.mem.push(state.year+" — Argued with "+me.first+" about the affair.");lg(me.name+" confronted "+c.name+" about the affair.");closeModal();render()};
+ $("en").onclick=()=>{splitUp(me,c);lg(me.name+" ended things with "+c.name+" over the affair.");closeModal();render()}}
+function socialYear(){
+ const me=state.player;state.aff=(state.aff||[]).filter(af=>{const A=find(af.a),B=find(af.b);if(!A||!B||!A.alive||!B.alive)return false;let hit=false;
+  for(const[c,o]of[[A,B],[B,A]]){const v=pOf(c);if(v&&v!==o&&!hit&&Math.random()<.3){hit=true;cheatHit(c,o,v)}}
+  return !hit&&Math.random()>.2});
+ me.fi=me.fi||{};kinList(me).forEach(k=>{if(k.p.alive&&k.role!=="Spouse"&&k.role!=="Partner"&&me.fi[k.p.id]!==state.year)changeRel(k.p.id,-2)});
+}
+function dateAsk(id){const p=find(id),me=state.player;healLinks();closeModal();const mp=pOf(me),tp=pOf(p);
+ if(mp&&mp!==p){status("You're with "+mp.first+" right now. End that relationship first.");return}
+ if(tp&&tp!==me){status(p.first+" is already with "+tp.name+".");return}
+ if(relation(id)<20){status("You barely know each other — try flirting or getting closer first.");return}
+ if(relation(id)+((me.stats||{}).charisma||50)*.3+Math.random()*30>=55){me.dating=id;p.dating=me.id;changeRel(id,10);lg(me.name+" started dating "+p.name+".");status(p.first+" said yes!")}else{changeRel(id,-3);status(p.first+" isn't ready for that yet.")}render()}
+function breakUp(id){const p=find(id),me=state.player,m=splitUp(me,p);changeRel(id,-30);if(state.pending&&state.pending.partner===id)state.pending=null;healLinks();lg(me.name+(m?" divorced ":" broke up with ")+p.name+".");closeModal();status((m?"You are divorced":"You broke up")+" — you are single again and free to meet someone new.");render()}
+function flirt(id){const p=find(id),me=state.player,d=Math.floor(state.clock/1440);me.fl=me.fl||{};closeModal();
+ if(me.fl[id]===d){status("You already flirted with "+p.first+" today.");return}me.fl[id]=d;
+ if(((me.stats||{}).charisma||50)*.5+relation(id)*.3+Math.random()*50>=40){changeRel(id,6);status(p.first+" smiled back. 😊")}else{changeRel(id,-2);status(p.first+" wasn't interested right now.")}render()}
+function meetNew(){const me=state.player;if(state.people.filter(x=>x.alive&&!x.away).length>=Math.round(popTarget()*1.3)){status("The town is full right now — try the people already here.");return}
+ const a=[];for(let i=0;i<3;i++){const p=person(pick(["M","F"]),clamp(me.age+Math.floor(Math.random()*13)-6,18,75));p.addr=addr();p.mem=[state.year+" — Moved to town."];state.people.push(p);a.push(p);changeRel(p.id,5)}
+ lg(a.map(x=>x.name).join(", ")+" moved to town.");status("New in town: "+a.map(x=>x.first).join(", ")+".");render()}
+function datingPanel(){healLinks();const me=state.player,c=datingPool(me);
+ $("content").innerHTML='<div class="card"><h3>💘 Dating Center</h3><div class="row"><span>Your status</span><b>'+myStatus()+'</b></div><p class="muted">You can meet, flirt with and get closer to anyone. Ask someone out once you know each other.</p><button class="gold" id="meetNew">🔎 MEET NEW PEOPLE</button></div><div class="card"><h3>People you could meet</h3>'+c.map(x=>{const q=pOf(x);return'<div class="event"><b>'+esc(x.name)+'</b> · '+x.age+' · '+esc(x.job)+'<br><span class="muted">'+(q?(x.spouse?"Married to ":"With ")+esc(q.first):"Single")+' · ❤ '+relation(x.id)+'</span><br><button class="small profileBtn" data-id="'+x.id+'">PROFILE</button> <button class="small flirtBtn" data-id="'+x.id+'">😉 FLIRT</button></div>'}).join("")+'</div>';
+ $("meetNew").onclick=meetNew;document.querySelectorAll(".profileBtn").forEach(b=>b.onclick=()=>profile(b.dataset.id));document.querySelectorAll(".flirtBtn").forEach(b=>b.onclick=()=>flirt(b.dataset.id))}
+function fling(id){const p=find(id),me=state.player;
+ const sc=relation(id)*.5+((me.stats||{}).charisma||50)*.3+Math.random()*40-(pOf(p)&&["family-oriented","kind","serious"].includes(p.trait)?15:0);closeModal();
+ if(sc>=45){changeRel(id,10);if(pOf(me)||pOf(p)){startAffair(me,p);status("A secret affair begins... don't get caught.")}else status("A passionate night. It stays between you two.")}else{changeRel(id,-10);status(p.first+" turned you down.")}render()}
+function spend(id){const p=find(id),me=state.player;me.fi=me.fi||{};closeModal();
+ if(me.fi[id+"s"]===state.year){status("You already spent quality time with "+p.first+" this year.");return}
+ me.fi[id]=me.fi[id+"s"]=state.year;changeRel(id,8);state.clock+=120;p.mem.push(state.year+" — Spent time with "+me.first+".");me.mem.push(state.year+" — Spent time with "+p.first+".");status("You spent a lovely afternoon with "+p.first+".");render()}
+function visitHome(id){const x=find(id),me=state.player;if(!x)return;
+ const head=x.age<18?((x.parents||[]).map(find).find(q=>q&&q.alive&&adult(q))||x):x;
+ const hh=[head,head.spouse&&find(head.spouse)].concat((head.children||[]).map(find).filter(k=>k&&k.age<18)).filter((k,i,a)=>k&&k.alive&&k!==me&&a.indexOf(k)===i);
+ modal('<h2>🏡 '+(head===me?"Your home":esc(head.first)+"'s home")+'</h2><p class="muted">'+(head.away?"They moved to another town — you can only phone.":esc(head.addr||"A family home")+" — "+(head.location==="inhome"?"they are home.":"they are out, but family is welcome."))+'</p><div class="interiorGrid">'+(hh.map(k=>'<div class="shopItem"><b>'+esc(k.first)+'</b><span class="badge">'+k.age+' · '+(role(me,k)||"relative")+'</span><br><button class="vTalk" data-id="'+k.id+'">💬 TALK</button> <button class="vSpend" data-id="'+k.id+'">🤝 TIME</button></div>').join("")||"<p>Nobody else is home.</p>")+'</div><br><button id="close">CLOSE</button>');
+ $("close").onclick=closeModal;document.querySelectorAll(".vTalk").forEach(b=>b.onclick=()=>profile(b.dataset.id));document.querySelectorAll(".vSpend").forEach(b=>b.onclick=()=>spend(b.dataset.id));}
+
+/* ===== v8: life events ===== */
+const EVL={funeral:"⚰️ Funeral",wedding:"💍 Wedding",christening:"👶 Christening",birthday:"🎂 Birthday",anniv:"💞 Anniversary"};
+const TIERS={funeral:["Simple farewell","Traditional service","Grand memorial"],wedding:["Small ceremony","Family wedding","Grand wedding"],christening:["Quiet blessing","Family gathering","Big celebration"],birthday:["Quiet dinner","Party","Big celebration"],anniv:["Quiet dinner","Party","Big celebration"]},COST=[100,400,1200];
+const CH={funeral:[["🎤 Give a eulogy","speech"],["🤝 Comfort the family","comfort"],["🕯️ Pay quiet respects","quiet"]],wedding:[["🥂 Give a toast","speech"],["💃 Dance with the guests","dance"],["🎁 Give a gift (€50)","gift"]],x:[["🎤 Make a speech","speech"],["🎁 Give a gift (€50)","gift"],["💬 Spend time with guests","dance"]]};
+const INTRO={funeral:"Mourners gather at the church and cemetery.",wedding:"Flowers, music and a joyful crowd fill the church.",christening:"Family gathers around the font for the blessing.",birthday:"Friends and family gather to celebrate.",anniv:"A warm evening to celebrate years together."};
+function addEv(type,t,subj,host,plan){state.evs=(state.evs||[]).filter(e=>e.s==="open"||e.s==="planned"||state.year-e.y<4);if(state.evs.length>25)return;const e={id:uid(),type,t,subj,host,plan:!!plan,s:"open",y:state.year,tier:1,cost:0};state.evs.push(e);status("New event: "+t);return e}
+function expireEvs(){const me=state.player;(state.evs||[]).forEach(e=>{if((e.s==="open"||e.s==="planned")&&e.y<state.year){e.s="missed";lg("You missed: "+e.t+".");
+ const d=find((e.subj||[])[0]),base=e.type==="funeral"&&d?kinList(d).map(k=>k.p):(e.subj||[]).map(find);base.filter(x=>x&&x.alive&&x!==me).forEach(x=>changeRel(x.id,-4))}})}
+function notifyDeath(p){const me=state.player;if(!me||!me.alive)return;kinList(p).forEach(k=>{if(k.p.alive&&k.p!==me)k.p.mem.push(state.year+" — Mourned "+p.first)});chron("A funeral was held for "+p.name+".",p);
+ const r=role(me,p),close=["Spouse","Partner","Mother","Father","Son","Daughter"].includes(r);if(r||relation(p.id)>=40)addEv("funeral","Funeral of "+p.name,[p.id],close?me.id:null,close)}
+function wedEv(p,q){const me=state.player;if(p===me||q===me)return;if([p,q].some(x=>role(me,x)||relation(x.id)>=40))addEv("wedding",p.first+" & "+q.first+"'s wedding",[p.id,q.id],null,false)}
+function evBirth(c){const me=state.player,own=c.parents.includes(me.id);if(own||c.parents.some(i=>{const x=find(i);return x&&role(me,x)}))addEv("christening","Christening of "+c.name,[c.id],own?me.id:null,own)}
+function milestones(){const me=state.player,close=["Spouse","Partner","Mother","Father","Son","Daughter"];
+ kinList(me).forEach(k=>{if(k.p.alive&&close.includes(k.role)&&[18,30,50,60,70,80,90].includes(k.p.age))addEv("birthday",k.p.first+" turns "+k.p.age,[k.p.id],null,false)});
+ if([30,40,50,60,70,80].includes(me.age))addEv("birthday","Your "+me.age+"th birthday",[],me.id,true);
+ const sp=me.spouse&&find(me.spouse);if(sp&&sp.alive&&me.wed&&[5,10,25,50].includes(state.year-me.wed))addEv("anniv",(state.year-me.wed)+"-year wedding anniversary",[sp.id],me.id,true)}
+function guests(e){const me=state.player,a=kinList(me).map(k=>k.p).concat(state.people.filter(x=>x.alive&&x!==me&&relation(x.id)>=40));return a.filter((x,i)=>x.alive&&a.indexOf(x)===i).slice(0,12)}
+function evPanel(){const L=state.evs||[],open=L.filter(e=>e.s==="open"||e.s==="planned"),past=L.filter(e=>e.s==="done"||e.s==="missed").slice(-6).reverse();
+ $("content").innerHTML='<div class="card"><h3>Upcoming events</h3>'+(open.map(e=>'<div class="event"><b>'+esc(e.t)+'</b> · '+EVL[e.type]+'<br><span class="muted">'+(e.s==="planned"?"Planned: "+TIERS[e.type][e.tier]+" (€"+e.cost+")":e.plan?"You can organise this":"You are invited")+' · attend before the year ends</span><br>'+(e.plan&&e.s==="open"?'<button class="small evOrg" data-id="'+e.id+'">ORGANISE</button> ':'')+'<button class="small evAtt" data-id="'+e.id+'">ATTEND</button></div>').join("")||'<span class="muted">No events right now. Weddings, funerals, births and milestones will appear here.</span>')+'</div><div class="card"><h3>Past events</h3>'+(past.map(e=>'<div class="event">'+(e.s==="done"?"✔ ":"✘ ")+esc(e.t)+' ('+e.y+')</div>').join("")||'<span class="muted">None yet.</span>')+'</div>';
+ document.querySelectorAll(".evOrg").forEach(b=>b.onclick=()=>organise(b.dataset.id));document.querySelectorAll(".evAtt").forEach(b=>b.onclick=()=>attend(b.dataset.id))}
+function organise(id){const me=state.player,e=state.evs.find(x=>x.id===id);if(!e)return;
+ modal('<h2>'+esc(e.t)+'</h2><p>How should it be organised? Bigger events bring people closer.</p><div class="choices">'+TIERS[e.type].map((n,i)=>'<button class="tier" data-i="'+i+'">'+n+' (€'+COST[i]+')</button>').join("")+'</div><br><button id="close">CLOSE</button>');
+ $("close").onclick=closeModal;document.querySelectorAll(".tier").forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(me.money<COST[i]){status("You cannot afford that (€"+COST[i]+").");return}me.money-=COST[i];e.tier=i;e.cost=COST[i];e.s="planned";closeModal();renderTop();status("Arrangements made. You can attend now.");renderPanel()})}
+function attend(id){const me=state.player,e=state.evs.find(x=>x.id===id);if(!e||(e.s!=="open"&&e.s!=="planned"))return;
+ const G=guests(e),subj=(e.subj||[]).map(find).filter(Boolean),ch=CH[e.type]||CH.x;
+ modal('<h2>'+EVL[e.type]+' — '+esc(e.t)+'</h2><p class="muted">'+INTRO[e.type]+(e.s==="planned"?" ("+TIERS[e.type][e.tier]+")":"")+'</p><p>Present: '+(G.map(x=>esc(x.first)).join(", ")||"a few quiet guests")+'.</p><div class="choices">'+ch.map((c,i)=>'<button class="evc" data-i="'+i+'">'+c[0]+'</button>').join("")+'</div><br><button id="close">LEAVE</button>');
+ $("close").onclick=closeModal;document.querySelectorAll(".evc").forEach(b=>b.onclick=()=>finishEv(e,ch[+b.dataset.i][1],G,subj))}
+function finishEv(e,k,G,subj){const me=state.player,bonus=e.s==="planned"?e.tier:0,cha=(me.stats||{}).charisma||50;let m="";
+ const alive=subj.filter(x=>x.alive&&x!==me),dead=subj[0]&&!subj[0].alive?subj[0]:null;
+ if(k==="speech"){const ok=cha+Math.random()*60+bonus*10>=75;G.forEach(x=>changeRel(x.id,ok?4+bonus:-1));m=ok?"Your words moved everyone.":"You stumbled over your words. It was awkward."}
+ else if(k==="comfort"){const f=(dead?kinList(dead).map(z=>z.p):alive).filter(x=>x.alive&&x!==me);f.forEach(x=>changeRel(x.id,7));m=f.length?"You comforted the family. They will remember it.":"You offered quiet support."}
+ else if(k==="gift"){if(me.money<50){m="You couldn't afford a gift, but your presence mattered."}else{me.money-=50;alive.forEach(x=>changeRel(x.id,10));m="Your gift was warmly received.";renderTop()}}
+ else if(k==="dance"){const g=G.slice().sort(()=>Math.random()-.5).slice(0,4);g.forEach(x=>changeRel(x.id,5));m="You danced and chatted with the guests."}
+ else{alive.concat(G.slice(0,3)).forEach(x=>changeRel(x.id,3));m="You paid your respects quietly."}
+ if(e.plan)G.forEach(x=>changeRel(x.id,2+bonus*2));
+ if(G.length>1&&Math.random()<.12){const a=G[0],b=G[G.length-1];if(a!==b){bump(a,b,-25);lg("Tempers flared between "+a.name+" and "+b.name+" at "+e.t+".");m+=" Tempers flared between "+a.first+" and "+b.first+"."}}
+ if(dead)lg(dead.name+" was laid to rest in the town cemetery.");
+ G.forEach(x=>x.mem.push(state.year+" — Attended "+e.t));me.mem.push(state.year+" — Attended "+e.t);
+ e.s="done";state.clock+=180;lg(me.name+" attended "+e.t+".");
+ modal('<h2>'+EVL[e.type]+'</h2><p>'+esc(m)+'</p><button id="close">CLOSE</button>');$("close").onclick=closeModal;render()}
+
+/* ===== v10: persistent genealogy & multi-generation world ===== */
+function anc(p,max){const m=new Map([[p.id,0]]);let fr=[p];for(let g=1;g<=max;g++){const nx=[];fr.forEach(x=>(x.parents||[]).forEach(i=>{if(!m.has(i)){m.set(i,g);const q=find(i);if(q)nx.push(q)}}));fr=nx}return m}
+function kinDist(a,b){const A=anc(a,5),B=anc(b,5);let best=null;for(const[i,da]of A){const db=B.get(i);if(db!=null&&(!best||da+db<best.da+best.db))best={da,db}}return best}
+function inappropriate(a,b){if(!a||!b||a===b)return true;const k=kinDist(a,b);if(k&&(k.da+k.db<=4||k.da===0||k.db===0))return true;
+ const sx=x=>[x.spouse,x.dating].filter(Boolean);return sx(a).some(i=>(b.parents||[]).includes(i))||sx(b).some(i=>(a.parents||[]).includes(i))}
+function kinLabel(a,b){const k=kinDist(a,b);if(!k)return"";const{da,db}=k,f=b.gender==="F",g=(m,w)=>f?w:m;
+ if(db===0)return da===1?g("Father","Mother"):da===2?g("Grandfather","Grandmother"):g("Great-grandfather","Great-grandmother");
+ if(da===0)return db===1?g("Son","Daughter"):db===2?g("Grandson","Granddaughter"):"Great-grandchild";
+ if(da===1&&db===1)return g("Brother","Sister");if(da===1)return db===2?g("Nephew","Niece"):"Grand-nephew/niece";
+ if(db===1)return da===2?g("Uncle","Aunt"):"Great-uncle/aunt";
+ if(da===2&&db===2)return"Cousin";if(da===3&&db===3)return"Second cousin";if(Math.abs(da-db)===1)return"Cousin once removed";return"Distant relative"}
+function relLabel(me,p){return role(me,p)||kinLabel(me,p)}
+function extList(me,skip){const out=[],A=anc(me,4),seen=new Set([me.id]),outIds=new Set();
+ for(const[aid]of A){if(out.length>=16)break;const a=find(aid);if(!a)continue;const st=[a];
+  while(st.length&&out.length<16){const x=st.pop();if(seen.has(x.id)&&x!==a)continue;seen.add(x.id);
+   if(x.alive&&x!==me&&!skip.has(x.id)&&!outIds.has(x.id)){const k=kinDist(me,x);if(k&&k.da<=4&&k.db<=4){outIds.add(x.id);out.push({x,l:kinLabel(me,x)})}}
+   (x.children||[]).forEach(i=>{const c=find(i);if(c&&!seen.has(c.id))st.push(c)})}}
+ return out}
+function extCard(me,L){const e=extList(me,new Set(L.map(k=>k.p.id)));return'<div class="card"><h3>Extended family ('+e.length+')</h3>'+(e.map(r=>'<div class="event"><b>'+esc(r.x.name)+'</b> · '+r.l+' <span class="muted">· '+r.x.age+'</span> <button class="small profileBtn" data-id="'+r.x.id+'">PROFILE</button></div>').join("")||'<span class="muted">No cousins, aunts or uncles yet — families grow over the generations.</span>')+'</div>'}
+function famTree(id){const p=find(id);if(!p)return;const lv=[];let cur=[p];for(let g=0;g<3;g++){const nx=[];cur.forEach(x=>(x.parents||[]).forEach(i=>{const q=find(i);if(q)nx.push(q)}));lv.push(nx);cur=nx}
+ const nm=x=>esc(x.name)+" ("+(x.alive?x.age:"†"+x.age)+")",lab=["Parents","Grandparents","Great-grandparents"],e=extList(p,new Set());
+ modal('<h2>🌳 '+esc(p.name)+'</h2><div class="muted">Generation '+(p.gen||1)+'</div>'+lv.map((a,i)=>a.length?'<div class="event"><b>'+lab[i]+':</b> '+a.map(nm).join(", ")+'</div>':"").join("")+'<div class="card treeBox"><h3>Descendants</h3>'+tree(p.id)+'</div><div class="event"><b>Relatives:</b> '+(e.map(r=>esc(r.x.name)+" ("+r.l+")").join(", ")||"none known")+'</div><br><button id="close">CLOSE</button>');$("close").onclick=closeModal}
+function famCard(){const m={};state.people.forEach(p=>{if(!p.alive)return;const k=p.line||p.id,e=m[k]=m[k]||{n:0,a:99,b:0,nm:""};e.n++;e.a=Math.min(e.a,p.gen||1);e.b=Math.max(e.b,p.gen||1);if(!e.nm||p.id===k)e.nm=maleSur((p.sn||p.surname).split("-")[0])});
+ const L=Object.values(m).sort((a,b)=>b.n-a.n);return'<div class="card"><h3>Family lines ('+L.length+')</h3>'+L.slice(0,8).map(e=>'<div class="row"><span>'+esc(e.nm)+'</span><b>'+e.n+' living · gen '+e.a+(e.b>e.a?'–'+e.b:'')+'</b></div>').join("")+'</div>'}
+function mkP(g,age,c){const p=person(g,age);p.cult=c;p.fn=rndFirst(g,c);p.sn=rndSur(c,g);applyName(p);return p}
+function foundFamily(young,cult,how){const c=cult||pick(["EN","EN","PL","RU","RU"]),ha=young?22+Math.floor(Math.random()*12):22+Math.floor(Math.random()*40),wa=clamp(ha-4+Math.floor(Math.random()*9),20,70);
+ const h=mkP("M",ha,c),w=mkP("F",wa,c);w.maiden=w.sn;h.spouse=w.id;w.spouse=h.id;h.addr=w.addr=addr();state.people.push(h,w);weddingName(h,w);
+ const n=Math.floor(Math.random()*4),mx=Math.min(wa,ha)-19;
+ for(let i=0;i<n&&mx>0;i++){const g=pick(["M","F"]),a=Math.floor(Math.random()*mx),k=makeChild(h,w,rndFirst(g,c),g);k.age=a;if(a>=18){k.job=pick(JOBS);k.addr=addr()}h.children.push(k.id);w.children.push(k.id);state.people.push(k)}
+ chron("The "+maleSur(h.sn)+" family "+(how||"settled in town")+".",h);return h}
+function seedTown(){const ev=state.events.slice();state.pop=newPop(true);state.gaz=[];CIRC=null;
+ const live=()=>state.people.filter(x=>x.alive).length;let g=0;
+ while(live()<POP.seed*.82&&g++<1500)foundFamily();
+ seedElders(Math.round(POP.seed*.03));
+ for(let i=0;i<Math.round(POP.seed*.07);i++){const p=mkP(pick(["M","F"]),18+Math.floor(Math.random()*62),pick(["EN","EN","PL","RU","RU"]));p.addr=addr();if(p.age>=65)p.job="Retired";state.people.push(p)}
+ state.events=ev;state.gaz=[];state.pop.hist=[{y:state.year,n:live()}];state.player.line=state.player.id;state.player.gen=1}
+function mortality(a){return a<1?.01:a<40?.001:a<55?.004:a<65?.012:a<75?.035:a<85?.09:a<105?.22:1}
+function inherit(p){const m=Math.max(0,p.money||0);if(m<50)return;const sp=p.spouse&&find(p.spouse),k=(p.children||[]).map(find).filter(x=>x&&x.alive&&adult(x));let rest=m;
+ if(sp&&sp.alive){sp.money=(sp.money||0)+Math.round(m/2);rest=m/2}if(k.length)k.forEach(x=>x.money=Math.round((x.money||0)+rest/k.length));else if(sp&&sp.alive)sp.money+=Math.round(rest);p.money=0}
+function archive(p){p.rel={};p.mem=(p.mem||[]).slice(-6);p.sec=[];p.tx=p.ty=null;p.dest=null;delete p.fxd;delete p.clog}
+/* worldYear lives in the v11 block */
+function npcYear(p){
+ if(!p.addr)p.addr=addr();
+ if(Math.random()<mortality(p.age)){die(p);return}
+ const me=state.player,sp=p.spouse?find(p.spouse):null,log=(t,...o)=>chron(t,p,sp,...o),P=state.pop||(state.pop=newPop());
+ if(p.age===18&&p.job==="Child"){const uni=Math.random()<.4,par=(p.parents||[]).map(find).find(Boolean);p.education=uni?"University":"High school";p.job=uni?"Student":pick(JOBS);p.money=600+Math.round(Math.random()*900);p.addr=(par&&par.addr&&Math.random()<.6)?nearAddr(par.addr):addr();p.mem.push(state.year+" — Left home to start an independent life.");log(p.name+" moved out of the family home"+(uni?" to study.":" and became a "+p.job+"."))}
+ if(p.job==="Student"&&p.age>=22){p.job=pick(JOBS);log(p.name+" graduated and became a "+p.job+".")}
+ if(p.age>=65&&p.job!=="Retired"){p.job="Retired";log(p.name+" retired.")}
+ if(p.age>=22&&p.age<62&&p.job!=="Retired"&&Math.random()<.04){const j=pick(JOBS);if(j!==p.job){p.job=j;log(p.name+" changed careers and became a "+j+".")}}
+ if(p.away){if(p.age<18){if(!(p.parents||[]).some(i=>{const q=find(i);return q&&q.alive&&q.away}))p.away=false;return}
+  if(!p.gone&&Math.random()<.08){p.away=false;if(sp&&sp.alive&&!sp.gone)sp.away=false;(p.children||[]).forEach(i=>{const k=find(i);if(k&&k.alive&&k.age<18)k.away=false});log(p.name+" returned to town.")}return}
+ if(p.age>=20&&Math.random()<.05&&(!sp||p.gender==="M")){const a=Math.random()<.45?nearAddr(p.addr):addr(),kids=(p.children||[]).map(find).filter(k=>k&&k.alive&&k.age<18);p.addr=a;if(sp)sp.addr=a;kids.forEach(k=>k.addr=a);
+  if(Math.random()<.3*YR.press){setAway(p);if(sp)setAway(sp);kids.forEach(setAway);P.left+=1+(sp?1:0)+kids.length;log(p.name+" moved to another town.")}else log(p.name+" moved to "+a+(p.money>6000?" — a nicer home.":"."))}
+ if(adult(p)){const q=(sp&&Math.random()<.5)?sp:socialPick(p);
+  if(q&&q.alive&&q!==p&&q!==me&&adult(q)&&!q.away){const k=p.rel[q.id]||0,hot=["stubborn","serious","selfish"].includes(p.trait)||["stubborn","selfish"].includes(q.trait);
+   if(Math.random()<(hot?.09:.03)){p.rel[q.id]=k-25;q.rel[p.id]=(q.rel[p.id]||0)-25;p.mem.push(state.year+" — Argued with "+q.first+".");q.mem.push(state.year+" — Argued with "+p.first+".");if(q===sp||hot)log(p.name+" had a serious argument with "+q.name+".",q)}
+   else if(k<0&&(p.trait==="kind"||Math.random()<.1)&&Math.random()<.3){p.rel[q.id]=k+30;q.rel[p.id]=(q.rel[p.id]||0)+30;log(p.name+" and "+q.name+" made up after an argument.",q)}
+   else if(q!==sp&&Math.random()<.5){const g=3+Math.floor(Math.random()*9),nk=clamp(k+g,-100,100);p.rel[q.id]=nk;q.rel[p.id]=clamp((q.rel[p.id]||0)+g,-100,100);if(nk>=60&&k<60)log(p.name+" and "+q.name+" became close friends.",q)}}}
+ if(sp&&(p.rel[sp.id]||0)<-35&&Math.random()<.3){p.spouse=null;sp.spouse=null;log(p.name+" and "+sp.name+" divorced.")}
+ if(adult(p)&&p.age<80&&!p.spouse&&!p.dating&&Math.random()<.2){const q=findMate(p);if(q){p.dating=q.id;q.dating=p.id;log(p.name+" started dating "+q.name+".",q)}}
+ else if(p.dating){const q=find(p.dating);if(!q||!q.alive)p.dating=null;else if(q!==me&&p.id<q.id){const r=Math.random();
+  if(r<.25){p.spouse=q.id;q.spouse=p.id;p.dating=q.dating=null;{const hh=p.gender==="M"?p:q;p.addr=q.addr=hh.addr||addr()}log(p.name+" married "+q.name+".",q);weddingName(p,q);wedEv(p,q);gather("wedding",p,q)}
+  else if(r<.4){splitUp(p,q);log(p.name+" and "+q.name+" broke up.",q)}}}
+ {const v=pOf(p);if(v&&adult(p)&&!(state.aff||[]).some(x=>x.a===p.id||x.b===p.id)){const t=p.trait,pr=["independent","ambitious","funny","outgoing"].includes(t)?.04:["family-oriented","kind","serious"].includes(t)?0:.02;
+  if(Math.random()<.015+pr+((p.rel[v.id]||0)<0?.04:0)){const q=sampleAdult(x=>x.alive&&x!==p&&x!==v&&x!==me&&!x.away&&x.gender!==p.gender&&Math.abs(x.age-p.age)<=15&&Math.random()<.3&&!kin(p,x),12);if(q)startAffair(p,q)}}}
+ if(p.gender==="F"&&p.age>=18&&p.age<=44&&p.spouse&&p.job!=="Student"&&p.children.length<5&&Math.random()<.14*YR.fert){const o=find(p.spouse);
+  if(o&&o.alive&&o!==me&&!o.away&&p.children.filter(k=>{const c=find(k);return c&&c.age<3}).length<2){const g=pick(["M","F"]),c=makeChild(o,p,rndFirst(g,o.cult),g);state.people.push(c);p.children.push(c.id);o.children.push(c.id);P.born++;log(c.name+" was born to "+o.name+" and "+p.name+".",o,c);evBirth(c);gather("christening",c)}}
+ if(p.mem.length>10)p.mem=p.mem.slice(-8);pruneRel(p);
+}
+
+/* ===== v4: looks ===== */
+const SK={Fair:"#f6d5b8",Light:"#e8bf99",Tan:"#cf9a6c",Brown:"#a8693f",Dark:"#6f4328"};
+const HC={Brown:"#5a3a22",Black:"#1e1a18",Blond:"#e0bf6a",Red:"#a8431f",Gray:"#a8a8a8","Dark brown":"#3a2416",Auburn:"#7b3a22",White:"#eeeeee",Blue:"#3b6fd4",Pink:"#e87ab0"};
+const TC={Red:"#c0392b",Blue:"#2e86c1",Green:"#27ae60",Yellow:"#e5b82a",Purple:"#8e44ad",Orange:"#e67e22",White:"#ecf0f1",Navy:"#2c3e6b",Teal:"#16a085",Brown:"#8d6e4b",Pink:"#e48aa8",Black:"#2b2b2b"};
+const BC={Navy:"#2c3e50",Black:"#1b1b1b",Brown:"#5d4037",Gray:"#7f8c8d",Khaki:"#a8956a",Denim:"#3f6a9c"};
+const EYE={Brown:"#4a2c17",Blue:"#2f7fd0",Green:"#2f9a52",Gray:"#7a8590"};
+const HS={long:"Long",short:"Short",bun:"Bun",spiky:"Spiky",bald:"Bald",cap:"Cap"};
+const NATH=["Brown","Black","Blond","Red","Gray","Dark brown","Auburn"];
+function genLook(p){const h=hsh(p.id),f=p.gender==="F",ks=Object.keys(SK),ts=Object.keys(TC),bs=Object.keys(BC),hs=f?["long","long","bun","short"]:["short","short","spiky","cap","bald"];
+ return{skin:SK[ks[h%ks.length]],hair:p.age>=65?HC.Gray:HC[NATH[(h>>3)%NATH.length]],hs:p.age<2?"bald":hs[(h>>5)%hs.length],top:TC[ts[(h>>7)%ts.length]],bottom:BC[bs[(h>>11)%bs.length]],eyes:Object.keys(EYE)[(h>>13)%4]}}
+function lookOf(p){return p.look||(p.look=genLook(p))}
+function avatar(L){const hc=L.hair,hs=L.hs||"short";let back="",front="";
+ if(hs==="long")back='<i class="hr" style="z-index:-1;left:0;top:5px;width:26px;height:24px;border-radius:10px 10px 6px 6px;background:'+hc+'"></i>';
+ if(hs==="bun")front+='<i class="hr" style="left:9px;top:-5px;width:9px;height:9px;border-radius:50%;background:'+hc+'"></i>';
+ if(hs!=="bald"&&hs!=="cap")front+='<i class="hr" style="left:3px;top:1px;width:20px;height:9px;border-radius:'+(hs==="spiky"?"3px 9px 3px 9px":"10px 10px 3px 3px")+';background:'+hc+'"></i>';
+ if(hs==="cap")front='<i class="hr" style="left:3px;top:0;width:20px;height:8px;border-radius:10px 10px 0 0;background:'+L.top+'"></i><i class="hr" style="left:3px;top:6px;width:27px;height:3px;background:'+L.top+'"></i>';
+ const ec=EYE[L.eyes]||"#222";
+ return back+'<div class="head" style="background:'+L.skin+'"><b class="ey" style="color:'+ec+';background:'+ec+'"></b></div>'+front+'<div class="body" style="background:'+L.top+'"></div><div class="legs" style="background:'+L.bottom+'"></div>'}
+function readLook(){return{skin:SK[$("skin").value],hair:HC[$("hair").value],hs:$("hstyle").value,top:TC[$("topc").value],bottom:BC[$("botc").value],eyes:$("eyes").value}}
+function prev(){$("preview").innerHTML='<div class="person" style="position:relative;transform:scale(3);transform-origin:bottom center;left:auto;top:auto">'+avatar(readLook())+'</div>'}
+function initLook(){const fill=(id,o,fn)=>{$(id).innerHTML=o.map(x=>'<option value="'+(fn?fn[0](x):x)+'">'+(fn?fn[1](x):x)+'</option>').join("")};
+ fill("hair",Object.keys(HC));fill("skin",Object.keys(SK));fill("topc",Object.keys(TC));fill("botc",Object.keys(BC));fill("hstyle",Object.keys(HS),[x=>x,x=>HS[x]]);
+ $("hstyle").value="short";["hair","skin","topc","botc","hstyle","eyes","gender"].forEach(i=>$(i).addEventListener("change",prev));
+ const rz=randomize;randomize=function(){rz();const f=$("gender").value==="F";$("hair").value=pick(NATH);$("skin").value=pick(Object.keys(SK));$("topc").value=pick(Object.keys(TC));$("botc").value=pick(Object.keys(BC));$("hstyle").value=pick(f?["long","long","bun","short"]:["short","spiky","cap","bald","short"]);prev()};
+ $("random").onclick=randomize;prev()}
+const _mk=makeChild;makeChild=function(a,b,n,g){const c=_mk(a,b,n,g),L=Object.assign({},lookOf(Math.random()<.5?a:b));L.top=pick(Object.values(TC));L.bottom=pick(Object.values(BC));L.hs=g==="F"?"long":"short";c.look=L;return c};
+/* ===== v4: dialogue ===== */
+const QS=[["How are you?","how"],["What do you think of me?","me"],["Tell me about your family.","family"],["What are your plans?","plans"],["Do you remember me?","remember"],["What's new in town?","news"],["What do you do for fun?","fun"],["Do you need any help?","help"],["Tell me a joke.","joke"]];
+const KW=[["angry",["angry","mad at","trust","argument","fight"]],["sorry",["sorry","forgive","apolog"]],["invite",["wedding","reunion","come to","come live","borrow","please","stay","don't move","dont move","join"]],["house",["house","expensive","afford","invest","buy"]],["advice",["should i","advice","what would you do"]],["love",["love","date","marry","girlfriend","boyfriend","wife","husband","relationship","kiss"]],["me",["like me","think of me","about me"]],["how",["how are","how's it","how do you feel","you ok"]],["family",["family","child","kids","brother","sister","parent","mother","father","spouse"]],["plans",["plan","future","going to do","tomorrow"]],["remember",["remember","recall","back then"]],["news",["news","happening","town","gossip"]],["fun",["fun","hobby","hobbies","free time","like to do"]],["help",["help","need money","lend"]],["work",["job","work","career","quit","boss"]],["money",["money","rich","poor","salary"]],["home",["where do you live","your home","address","move"]],["joke",["joke","funny","laugh"]],["name",["your name","who are you"]],["age",["how old","your age"]],["weather",["weather","rain","sunny","snow","cold","warm"]],["time",["what time","what day"]],["thanks",["thank"]],["insult",["stupid","idiot","hate you","ugly","shut up","dumb"]],["praise",["pretty","handsome","smart","amazing","beautiful","awesome","kind"]]];
+function topicOf(q){const l=q.toLowerCase();if(/\b(hello|hi|hey)\b/.test(l)&&l.length<22)return"hi";for(const[k,w]of KW)if(w.some(x=>l.includes(x)))return k;return"?"}
+function moodOf(p){const r=relation(p.id),d=Math.floor(state.clock/1440);if(p.mem.some(m=>/robbed/.test(m)))return"afraid";if(p.mem.some(m=>m.startsWith(state.year+" — Mourned")))return"grieving";if(p.mem.some(m=>/argument|insult/i.test(m))&&r<10)return"upset";return r>45?"cheerful":["calm","tired","stressed","thoughtful","cheerful"][hsh(p.id+d)%5]}
+const TFX={funny:" Ha!",serious:" Let's keep this serious.",shy:" ...sorry, I'm not good at this.",stubborn:" And that's final.",kind:" I hope that helps.",selfish:" Mostly I think about myself, honestly.",ambitious:" Time is money, after all.","family-oriented":" Family comes first.",creative:" I see it like a painting.",practical:" Be practical about it.",generous:" Let me know if you need more.",independent:" I make my own choices."};
+function answer(p,tp,q){
+ const me=state.player,r=relation(p.id),t=p.trait,mood=moodOf(p),cha=(me.stats||{}).charisma||50,l=(q||"").toLowerCase(),day=Math.floor(state.clock/1440),h=nowH();
+ const res=p.mem.filter(m=>/argument|insult|robbed/i.test(m)).length,strip=m=>m.replace(/^\d+ — /,"").replace(/\.$/,""),tier=r<-20?0:r<15?1:r<50?2:3;
+ const roll=n=>r*.6+cha*.3+(t==="kind"||t==="generous"?10:0)+(t==="stubborn"?-18:0)+(t==="shy"?-6:0)+(t==="selfish"?-8:0)-res*8+Math.random()*30-10>=n;
+ const last=p.mem.filter(m=>/gift|married|died|grew closer|apology|helped|treated|Agreed/i.test(m)).slice(-1)[0],kids=p.children.length,sp=p.spouse?find(p.spouse):null;
+ const fam=(kids?kids+(kids>1?" children":" child"):"no children yet")+(sp?" and a spouse, "+sp.first:" and no partner right now");
+ const W=(l.match(/[a-zāčēģīķļņšūž]{5,}/g)||[]).sort((a,b)=>b.length-a.length)[0];
+ const MOOD={cheerful:["I'm great today! Everything is going well.","Can't complain — it's a good day.","Wonderful, actually. Thanks for asking!"],calm:["Quiet and steady. I like days like this.","I'm fine. Just taking things as they come.","Calm. Nothing dramatic today."],tired:["Tired, honestly. I could use a long rest.","Long week. My feet hurt.","I'd be better with more sleep."],stressed:["Stressed. There's too much on my plate.","Not great. Work and money keep nagging me.","Busy and a bit overwhelmed."],thoughtful:["I've been thinking about my life a lot lately.","Lost in thought, sorry. How are you?","Reflective today. The years go by fast."],upset:["Not great, and you know why.","I'd rather not talk about how I feel with you.","Upset. Things between us still bother me."],grieving:["I'm grieving. We just lost someone dear.","It's a heavy time. The funeral was hard."],afraid:["Please... just don't hurt me.","I'm shaking. After what happened I don't feel safe near you.","Get away from me."]}[mood];
+ const A={
+ how:()=>MOOD,
+ me:()=>[["I don't like you. You've given me reasons.","Honestly? I'd avoid you if I could.","You're trouble. That's my opinion."],["I don't know you well enough yet.","You seem alright, but we're barely acquainted.","Not sure. Ask me again later."],["I like you. You're good to have around.","You're becoming a real friend.","You're decent, kind of, and I respect that."],["You mean a lot to me.","I trust you. That's rare for me.","You're one of the best people I know."]][tier],
+ family:()=>["I have "+fam+".","Family? "+fam+(t==="family-oriented"?" — they're everything to me.":"."),"Well, "+fam+". Life is full of surprises."],
+ plans:()=>p.age<18?["I want to play and finish school.","I'm going to be a "+pick(JOBS)+" when I grow up!","Homework, then friends. That's my plan."]:p.age>=65?["Rest, family, a little garden.","Spend time with the grandchildren if I can.","Slow mornings and a walk to church."]:t==="ambitious"?["I want a promotion — and then another.","Climb the ladder as a "+p.job+".","Build something bigger than myself."]:t==="family-oriented"?["More time with family. Maybe a bigger family.","Be there for the people I love."]:["Keep working as a "+p.job+" and see what happens.","Save some money and maybe move.","No big plans. Life will decide."],
+ remember:()=>last?["I do. "+strip(last)+".","Yes — "+strip(last)+". I haven't forgotten.","How could I forget? "+strip(last)+"."]:[["I remember you, unfortunately.","Yes. Not fondly."],["Vaguely. We've only met a few times.","I recognise you. That's about it."],["Of course I remember you.","Yes — good memories, mostly."],["Always. You're part of my life.","I'd never forget you."]][tier],
+ news:()=>{const ev=state.events.slice(-14).filter(x=>!/year passed|earned/.test(x));return ev.length?[ "I heard: "+strip(pick(ev))+".","People are saying "+strip(pick(ev))+".","Big talk in town: "+strip(pick(ev))+"."]:["It's quiet around here lately.","Nothing new. Same old town."]},
+ fun:()=>t==="shy"?["I like reading alone.","Quiet walks. Not many people."]:t==="outgoing"?["Parties, cafés, anything with people!","I love meeting new people at the café."]:t==="creative"?["I make things — sketches, songs, anything.","I like to create things."]:t==="funny"?["Telling bad jokes. It's my hobby.","Making people laugh."]:["Walking in the park.","Cooking, mostly.","A coffee at the café and some peace."],
+ help:()=>{if(r>=30&&(t==="kind"||t==="generous")&&p.money>800&&p.helped!==day){p.helped=day;p.money-=50;me.money+=50;renderTop();return"Here, take €50. Pay me back someday."}return r<15?["Why would I help you?","No. Ask someone else."]:["I'm a bit short myself right now.","Not today, sorry. Maybe another time."]},
+ joke:()=>t==="serious"?"I don't really do jokes.":["Why did the family tree go to therapy? Too many issues with the roots.","I told my cousin a secret. Now the whole town knows.","Why don't skeletons fight each other? They don't have the guts.","My grandpa says he's not old, he's vintage.","I'd tell you a chemistry joke, but I know I wouldn't get a reaction."],
+ work:()=>p.job==="Retired"?["I'm retired now. Finally some peace.","Retired. I earned it."]:p.job==="Child"?["I'm too young to work!","Work? I go to school."]:["I work as a "+p.job+(t==="ambitious"?", and I want to rise higher.":". Some days are better than others."),"I'm a "+p.job+". It pays the bills."],
+ money:()=>p.money>8000?["I'm doing well, financially.","Money's good. I can't complain."]:p.money<1500?["Money is tight, to be honest.","I'm barely getting by."]:["Enough to live on. Not more.","I get by."],
+ home:()=>p.away?["I moved to another town.","I don't live here anymore."]:["I live at "+(p.addr||"a quiet street here")+".","Around "+(p.addr||"town")+". It's home."],
+ love:()=>p.age<18?"I'm too young for that kind of talk.":sp?"I'm married to "+sp.first+". Let's not go there.":r>55?["Maybe... you do mean a lot to me.","I won't lie — I've thought about it."]:r>20?["We're friends. Let's take our time.","Hm. I need to know you better."]:["No. We're nowhere near that.","Please don't ask me that."],
+ name:()=>"I'm "+p.name+".",age:()=>"I'm "+p.age+" years old.",
+ weather:()=>["Looks like a decent day.","A bit cold, but I don't mind.","I like weather where you can walk outside."],
+ time:()=>"It's about "+String(h).padStart(2,"0")+":"+String(state.clock%60).padStart(2,"0")+".",
+ hi:()=>(tier===0?["...Hello.","What do you want?"]:[h<12?"Good morning!":h<18?"Good afternoon!":"Good evening!","Hey! Good to see you.","Hello there."]),
+ thanks:()=>["You're welcome.","Anytime.","No problem at all."],
+ insult:()=>{changeRel(p.id,-8);p.mem.push(state.year+" — "+me.first+" insulted me.");return t==="kind"?"That hurt. I thought better of you.":t==="funny"?"Wow. Rude. Even for a Tuesday.":t==="stubborn"?"Say that again and we're done.":"Watch your mouth."},
+ praise:()=>{changeRel(p.id,2);return t==="shy"?"Oh... thank you. I'm blushing.":t==="selfish"?"Obviously. But thanks.":["That's kind of you to say.","Thank you — that made my day.","You're sweet."]},
+ angry:()=>res?"Yes. We had a falling-out, and I haven't forgotten it.":r<0?"We simply haven't gotten along.":"I'm not angry. Why do you ask?",
+ sorry:()=>{if(!res&&r>=0)return"There's nothing to forgive.";if(roll(35+res*6)){p.mem=p.mem.filter(m=>!/argument|insult/i.test(m));p.mem.push(state.year+" — Accepted an apology from "+me.first+".");changeRel(p.id,12);return t==="kind"?"Thank you. I forgive you.":"Fine. Let's leave it behind us."}return t==="stubborn"?"No. Not yet.":"I hear you, but I need more time."},
+ invite:()=>{if(roll(/borrow/.test(l)?55:40)){changeRel(p.id,3);p.mem.push(state.year+" — Agreed to a request from "+me.first+".");return t==="funny"?"Ha! Alright, count me in.":"Yes. I'll do it for you."}return r<20?"We're not close enough for me to say yes.":t==="selfish"?"What's in it for me? No.":"I can't. Please don't push."},
+ house:()=>t==="ambitious"?"Take the risk. Fortune favours the bold.":(t==="practical"||t==="serious")?(me.money<5000?"No. You have €"+Math.round(me.money)+". You'll regret it.":"If the numbers work, go ahead."):(t==="shy"||t==="independent")?"I don't really care. It's your money.":r>30?"Absolutely, if it makes you happy.":"Honestly, I'd be careful.",
+ advice:()=>["Follow your gut, but think about your family first.","Sleep on it. Big decisions look different in the morning.",t==="ambitious"?"Aim higher.":"Keep it simple."],
+ "?":()=>r<0?["I'd rather not discuss that with you.","Why should I answer you?"]:["Hm, I haven't thought much about that. What do you think?",W?"\""+W+"\"... why do you bring that up?":"Interesting question.","I don't have a strong opinion on that.","Ask me something else — about my family or my work, maybe?"]
+ };
+ let a=(A[tp]||A["?"])();if(Array.isArray(a))a=pick(a);
+ if(TFX[t]&&Math.random()<.25&&!/^(insult|sorry|invite|help)$/.test(tp)&&mood!=="afraid")a+=TFX[t];
+ return a;
+}
+function talk(id){
+ const p=find(id),mood=moodOf(p);
+ modal('<h2>💬 '+esc(p.name)+'</h2><p class="muted">Mood: <b>'+mood+'</b> · Relationship: '+relation(id)+'</p><div id="ans" class="card" style="min-height:76px"><i>Say something to '+esc(p.first)+'…</i></div><div class="choices">'+QS.map(x=>'<button class="q" data-t="'+x[1]+'">'+x[0]+'</button>').join("")+'</div><textarea id="question" placeholder="Type anything… (Enter to send, Shift+Enter = new line)"></textarea><div class="choices"><button id="send" class="gold">SEND</button><button id="close">CLOSE</button></div>');
+ const say=(tp,q,shown)=>{const a=answer(p,tp,q),d=Math.floor(state.clock/1440);$("ans").innerHTML='<b>You:</b> '+esc(shown)+'<br><br><b>'+esc(p.first)+':</b> '+esc(a);if(p.talkd!==d){p.talkd=d;changeRel(id,1)}(state.player.fi=state.player.fi||{})[id]=state.year;};
+ document.querySelectorAll(".q").forEach((b,i)=>b.onclick=()=>say(b.dataset.t,"",QS[i][0]));
+ $("send").onclick=()=>{const q=$("question").value.trim();if(!q)return;say(topicOf(q),q,q);$("question").value="";$("question").focus()};
+ $("close").onclick=closeModal;$("question").focus();
+}
+function move(){
+ if(!state||$("game").style.display==="none"||modalOpen())return;
+ const dx=(pressed.ArrowRight||pressed.d?1:0)-(pressed.ArrowLeft||pressed.a?1:0),dy=(pressed.ArrowDown||pressed.s?1:0)-(pressed.ArrowUp||pressed.w?1:0);if(!dx&&!dy)return;
+ const p=state.player,W=$("world").clientWidth,H=$("world").clientHeight,ins=!!state.inside;
+ const B=ins?RB():null;let nx=ins?clamp(p.x+dx*4,B.x+24,B.x+B.w-24):clamp(p.x+dx*4,20,Math.max(300,W-20)),ny=ins?clamp(p.y+dy*4,B.y+50,B.y+B.h-14):clamp(p.y+dy*4,25,Math.max(250,H-20));
+ if(!ins){const hit=(x,y)=>(window.BR||[]).some(r=>x>r.l&&x<r.r&&y>r.t&&y<r.b);if(hit(nx,p.y))nx=p.x;if(hit(p.x,ny))ny=p.y}
+ p.x=nx;p.y=ny;const el=$("person-"+p.id);if(el){el.style.left=p.x+"px";el.style.top=p.y+"px"}
+}
+document.addEventListener("keydown",e=>{
+ if(modalOpen()){const t=e.target;if(t&&/^(TEXTAREA|INPUT|SELECT)$/.test(t.tagName)){if(e.key==="Enter"&&!e.shiftKey&&$("send")){e.preventDefault();$("send").click()}return}
+   if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key))e.preventDefault();
+   return;
+ }
+ {const tg=e.target;if(tg&&/^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName))return}
+ if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key))e.preventDefault();
+ pressed[e.key]=true;
+ if((e.key==="e"||e.key==="E")&&!e.repeat)interact();
+ if(e.key===" "&&!e.repeat&&state)advanceYear();
+});
+document.addEventListener("keyup",e=>pressed[e.key]=false);
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{tabName=b.dataset.tab;renderPanel()});
+$("random").onclick=randomize;$("start").onclick=start;$("save").onclick=()=>save(false);$("new").onclick=newGame;$("names").onclick=()=>{if(!state)return;state.friendly=!state.friendly;state.people.forEach(applyName);render();status(state.friendly?"Showing English-friendly name spellings.":"Showing original cultural spellings.")};
+/* ===== v11: population tiers — visible NPCs vs. background ("rabbit-hole") simulation =====
+   Every person lives in state.people and is simulated by the SAME life code (aging, jobs, dating,
+   marriage, births, moving, death, friendships, events, inheritance, family lines).
+   What differs is only whether they are PHYSICALLY SPAWNED on screen:
+     • background  = pure data, a logical location (p.location) and no coordinates, no DOM, no walking
+     • visible     = in VIS: has x/y, walks, is drawn. Capped per place and time of day.
+   Spawning is prioritised: spouse/partner > family > people tied to open events > friends/rivals >
+   anyone you recently opened a profile for > everyone else (rotating hourly for variety). */
+const POP={base:1200,min:700,max:2600,seed:900};
+const VIS=new Set();
+let ROSTER={key:"",list:[],more:0},FOCUS=[],KINS=new Set(),WARM=new Set(),EVSET=new Set(),CIRC=null;
+let YR={n:0,adults:[],singles:[],hood:{},job:{},press:1,fert:1};
+const ORIGIN={EN:"England",PL:"Poland",RU:"Russia"};
+const CAPIN={shop:[3,6],cafe:[3,8],school:[3,9],hospital:[3,4],work:[4,3],church:[2,14],cemetery:[0,6]};
+
+function hhash(p,x){let a=p.h||(p.h=hsh(String(p.id))),t=(a^Math.imul(x|0,2654435761))>>>0;t=Math.imul(t^(t>>>15),2246822519)>>>0;return(t%1000)/1000}
+function hoodOf(p){return String(p.addr||"").replace(/^\d+\s*/,"")||"?"}
+function nearAddr(a){const s=String(a||"").replace(/^\d+\s*/,"");return s?(1+Math.floor(Math.random()*220))+" "+s:addr()}
+function setAway(x){x.away=true;if(x.vis){VIS.delete(x);x.vis=0}x.exit=0;x.tx=x.ty=null;x.dest=null}
+function newPop(fresh){const n=fresh?0:state.people.filter(x=>x.alive&&!x.away).length;return{target:fresh?POP.base:Math.max(POP.base,n),trend:0,born:0,died:0,arr:0,left:0,hist:[],last:null}}
+function popTarget(){return(state.pop||(state.pop=newPop())).target}
+
+/* ---- who is on screen ---- */
+function where(p,h,day){const b=sched(p,h,day);
+ if(b==="inhome"&&p.age>=14&&h>=9&&h<21&&!p.away&&hhash(p,h*31+day*7)<.05)return "street"; /* running errands */
+ return b}
+function focusOn(id){FOCUS=FOCUS.filter(x=>x!==id);FOCUS.unshift(id);if(FOCUS.length>6)FOCUS.pop()}
+function buildFocus(){const me=state.player;KINS=new Set(kinList(me).map(k=>k.p.id));if(me.spouse)KINS.add(me.spouse);if(me.dating)KINS.add(me.dating);
+ WARM=new Set();for(const id in me.rel)if(Math.abs(me.rel[id])>=25)WARM.add(id);
+ EVSET=new Set();(state.evs||[]).forEach(e=>{if(e.s==="open"||e.s==="planned"){(e.subj||[]).forEach(i=>EVSET.add(i));if(e.host)EVSET.add(e.host)}});
+ if(state.pending&&state.pending.partner)EVSET.add(state.pending.partner)}
+function prio(p,h){const me=state.player;let s=0;const fi=FOCUS.indexOf(p.id);if(fi>=0)s+=1000-fi*10;
+ if(p.id===me.spouse||p.id===me.dating)s+=300;if(KINS.has(p.id))s+=200;if(EVSET.has(p.id))s+=150;
+ if(WARM.has(p.id))s+=60+Math.min(40,Math.abs(me.rel[p.id]||0)/3);
+ return s+hhash(p,h)*20}
+function topN(a,n,h){if(a.length<=n)return a;return a.map(p=>[prio(p,h),p]).sort((x,y)=>y[0]-x[0]).slice(0,n).map(x=>x[1])}
+function capOut(pl,h,day){const wkend=day%7>=5;
+ if(pl==="park"){if(h>=10&&h<19)return wkend?14:8;if(h>=7&&h<22)return 4;return 0}
+ if(pl==="street"){if(h>=8&&h<19)return 10;if(h>=6&&h<23)return 6;return 2}
+ return 0}
+function spawn(p,pl,snap){const prev=p.location;p.vis=1;p.exit=0;VIS.add(p);
+ if(snap){const s=spot(pl,p);p.x=s.x;p.y=s.y;p.location=pl;p.dest=null;p.tx=null}
+ else{p.location=INDOOR.has(prev)?prev:"inhome";setDest(p,pl)}}
+function despawn(p){const[W,H]=WH();p.exit=1;p.dest=null;const s=safeSpot((p.x||W/2)<W/2?24:W-24,clamp(p.y||H/2,40,H-30));p.tx=s.x;p.ty=s.y;p.stuck=0}
+function unspawn(p){p.exit=0;p.vis=0;p.tx=p.ty=null;p.dest=null;VIS.delete(p);const e=$("person-"+p.id);if(e)e.remove()}
+function syncVisible(snap){if(!state||state.inside)return;
+ const h=nowH(),day=Math.floor(state.clock/1440),me=state.player;buildFocus();
+ const pool={park:[],street:[]},cnt={park:0,street:0},mine={park:[],street:[]};
+ for(const p of state.people){if(p===me||!p.alive||p.away)continue;
+  if(p.vis){if(p.exit)continue;const l=p.dest||p.location;if(l==="park"||l==="street"){cnt[l]++;mine[l].push(p)}}
+  else if(p.location==="park"||p.location==="street")pool[p.location].push(p)}
+ for(const pl of["park","street"]){const cap=capOut(pl,h,day);
+  if(cnt[pl]>cap){mine[pl].filter(p=>!FOCUS.includes(p.id)).map(p=>[prio(p,h),p]).sort((a,b)=>a[0]-b[0]).slice(0,cnt[pl]-cap).forEach(x=>despawn(x[1]))}
+  else if(cnt[pl]<cap)topN(pool[pl],cap-cnt[pl],h).forEach(p=>spawn(p,pl,snap))}}
+function hourUpdate(h,day){const me=state.player;
+ for(const p of state.people){if(p===me||!p.alive)continue;p.sch=1;const t=where(p,h,day);
+  if(p.vis&&!p.exit){if(t!==(p.dest||p.location))setDest(p,t)}else p.location=t}
+ syncVisible(false)}
+function rosterFor(pl){if(!state||pl==="jail")return[];
+ const k=pl+"|"+Math.floor(state.clock/60)+"|"+state.year;if(ROSTER.key===k)return ROSTER.list;
+ const me=state.player,h=nowH();buildFocus();let list=[],more=0;
+ if(pl==="home"){list=[me.spouse].concat(me.children||[]).map(find).filter((p,i,a)=>p&&p.alive&&!p.away&&p.location==="inhome"&&(p.id===me.spouse||p.age<18)&&a.indexOf(p)===i).slice(0,8)}
+ else{const pool=[];for(const p of state.people)if(p.alive&&p!==me&&!p.away&&p.location===pl)pool.push(p);
+  const c=CAPIN[pl]||[2,5],st=[],cu=[];pool.forEach(p=>((adult(p)&&workPlace(p.job)===pl)?st:cu).push(p));
+  list=topN(st,c[0],h).concat(topN(cu,c[1],h));more=pool.length-list.length}
+ ROSTER={key:k,list,more};return list}
+
+/* ---- the yearly background simulation ---- */
+function circleSet(){const me=state.player,s=new Set([me.id]);kinList(me).forEach(k=>s.add(k.p.id));
+ const sp=me.spouse&&find(me.spouse);if(sp)kinList(sp).forEach(k=>s.add(k.p.id));
+ extList(me,new Set()).forEach(r=>s.add(r.x.id));for(const id in me.rel)if(me.rel[id]>=30)s.add(id);return s}
+function chron(t,...ps){if(!CIRC)CIRC=circleSet();const near=ps.some(x=>x&&(x===state.player||CIRC.has(x.id))),line=state.year+" — "+t;
+ if(near)state.events.push(line);else{const g=state.gaz=state.gaz||[];g.push(line);if(g.length>160)state.gaz=g.slice(-120)}}
+function bgYearStart(){const me=state.player,adults=[],singles=[],hood={},job={};let n=0;
+ for(const x of state.people){if(!x.alive||x.away)continue;n++;
+  if(x!==me&&adult(x)){adults.push(x);const hd=hoodOf(x),w=workPlace(x.job);(hood[hd]=hood[hd]||[]).push(x);(job[w]=job[w]||[]).push(x);if(!x.spouse&&!x.dating&&x.age<62)singles.push(x)}}
+ const T=popTarget();CIRC=circleSet();
+ YR={n,adults,singles,hood,job,press:clamp(n/T,.6,1.5),fert:clamp(1+(T-n)/T*1.3,.5,1.6)}}
+function socialPick(p){const r=Math.random();let pool=r<.4?YR.hood[hoodOf(p)]:r<.7?YR.job[workPlace(p.job)]:YR.adults;if(!pool||!pool.length)pool=YR.adults;return pool.length?pool[Math.floor(Math.random()*pool.length)]:null}
+function sampleAdult(pred,tries){const a=YR.adults;if(!a.length)return null;for(let i=0;i<tries;i++){const x=a[Math.floor(Math.random()*a.length)];if(pred(x))return x}return null}
+function findMate(p){const me=state.player,pools=[YR.hood[hoodOf(p)],YR.job[workPlace(p.job)],YR.singles];
+ for(let t=0;t<14;t++){const pool=pools[t<4?0:t<7?1:2];if(!pool||!pool.length)continue;const x=pool[Math.floor(Math.random()*pool.length)];
+  if(x&&x.alive&&x!==p&&x!==me&&adult(x)&&x.age<82&&!x.spouse&&!x.dating&&!x.away&&x.gender!==p.gender&&Math.abs(x.age-p.age)<=12&&!kin(p,x)&&((p.rel[x.id]||0)>=15||Math.random()<.5))return x}
+ return null}
+function pruneRel(p){const ks=Object.keys(p.rel);if(ks.length<=12)return;const me=state.player.id,keep=new Set([me,p.spouse,p.dating]),
+ rest=ks.filter(k=>!keep.has(k)).sort((a,b)=>Math.abs(p.rel[b])-Math.abs(p.rel[a])).slice(0,12-keep.size),o={};
+ ks.forEach(k=>{if(keep.has(k)||rest.includes(k))o[k]=p.rel[k]});p.rel=o}
+function gather(kind,a,b){const me=state.player,S=new Set(),add=x=>{if(x&&x.alive&&x!==me&&!x.away&&x!==a&&x!==b)S.add(x.id)};
+ [a,b].forEach(s=>{if(!s)return;(s.parents||[]).forEach(i=>{const q=find(i);add(q);if(q)(q.children||[]).forEach(j=>add(find(j)))});(s.children||[]).forEach(j=>add(find(j)))});
+ const G=[...S].map(find).filter(Boolean).slice(0,14),nm=b?a.first+" & "+b.first:a.first;
+ G.forEach(g=>{if(g.age>=5)g.mem.push(state.year+" — Attended the "+kind+" of "+nm+".");[a,b].forEach(s=>{if(s)g.rel[s.id]=clamp((g.rel[s.id]||0)+4,-100,100)})});
+ for(let i=0;i+1<G.length;i+=2){G[i].rel[G[i+1].id]=clamp((G[i].rel[G[i+1].id]||0)+3,-100,100);G[i+1].rel[G[i].id]=clamp((G[i+1].rel[G[i].id]||0)+3,-100,100)}}
+function festival(live){const me=state.player,ad=live.filter(x=>x!==me&&adult(x));if(ad.length<4)return;const k=Math.min(90,Math.floor(ad.length*.08));let met=0;
+ for(let i=0;i<k;i++){const a=ad[Math.floor(Math.random()*ad.length)],b=ad[Math.floor(Math.random()*ad.length)];if(a===b||(a.rel[b.id]!=null&&Math.random()<.5))continue;
+  const g=6+Math.floor(Math.random()*10);a.rel[b.id]=clamp((a.rel[b.id]||0)+g,-100,100);b.rel[a.id]=clamp((b.rel[a.id]||0)+g,-100,100);
+  a.mem.push(state.year+" — Met "+b.first+" at the summer fair.");b.mem.push(state.year+" — Met "+a.first+" at the summer fair.");met++}
+ chron("The summer fair brought "+met+" new acquaintances together across town.")}
+function immigrate(kind){const r=Math.random(),k=kind||(r<.36?"family":r<.66?"worker":r<.84?"abroad":"retiree"),b=state.people.length;
+ if(k==="family"){foundFamily(true,null,"moved to town from elsewhere");for(let i=b;i<state.people.length;i++)state.people[i].mem.push(state.year+" — Moved to town from another town.")}
+ else if(k==="abroad"){const c=pick(CULTS);foundFamily(Math.random()<.4,c,"immigrated from "+ORIGIN[c]);for(let i=b;i<state.people.length;i++){const x=state.people[i];x.origin=ORIGIN[c];x.mem.push(state.year+" — Immigrated from "+ORIGIN[c]+".")}}
+ else if(k==="worker"){const c=pick(CULTS),p=mkP(pick(["M","F"]),18+Math.floor(Math.random()*22),c);p.addr=addr();p.mem=[state.year+" — Moved to town for work."];state.people.push(p);chron(p.name+" moved to town to work as a "+p.job+".",p)}
+ else{const c=pick(CULTS),p=mkP(pick(["M","F"]),62+Math.floor(Math.random()*14),c);p.job="Retired";p.addr=addr();p.mem=[state.year+" — Retired to the town."];state.people.push(p);chron(p.name+" retired to the town.",p)}}
+function emigrate(k){if(k<=0)return;const P=state.pop,me=state.player,A=YR.adults;let gone=0,guard=0;
+ while(gone<k&&guard++<80&&A.length){const p=A[Math.floor(Math.random()*A.length)];if(!p.alive||p.away||p===me||p.age<20||p.age>58||(CIRC&&CIRC.has(p.id)))continue;
+  const sp=p.spouse&&find(p.spouse),grp=[p];if(sp&&sp.alive&&!sp.away)grp.push(sp);(p.children||[]).forEach(i=>{const c=find(i);if(c&&c.alive&&c.age<18&&!c.away)grp.push(c)});
+  if(grp.some(x=>x===me||(CIRC&&CIRC.has(x.id))))continue;grp.forEach(x=>{setAway(x);x.gone=true});gone+=grp.length;
+  chron("The "+maleSur((p.sn||p.surname||"").split("-")[0])+" household left town to seek work elsewhere.",p)}
+ P.left+=gone}
+function pruneDead(){const me=state.player,keep=new Set(),best=new Map();
+ for(const x of state.people){if(!x.alive)continue;let fr=(x.parents||[]).slice(),d=6;
+  while(fr.length&&d>0){const nx=[];for(const i of fr){if((best.get(i)||0)>=d)continue;best.set(i,d);keep.add(i);const q=find(i);if(q)(q.parents||[]).forEach(j=>nx.push(j))}fr=nx;d--}}
+ /* the whole dynasty (every descendant of the player's line) stays on record forever */
+ const seeds=state.people.filter(x=>x.line===me.line||x===me),seen=new Set();let q=seeds.slice();
+ while(q.length){const c=q.pop();if(seen.has(c.id))continue;seen.add(c.id);keep.add(c.id);(c.children||[]).forEach(i=>{const k=find(i);if(k)q.push(k)})}
+ const before=state.people.length;
+ state.people=state.people.filter(x=>x.alive||x===me||keep.has(x.id)||x.line===me.line||x.died==null||state.year-x.died<30);
+ state.people.forEach(x=>{if(!x.alive&&x.died!=null&&state.year-x.died>=15){x.mem=(x.mem||[]).slice(-2);x.rel={};delete x.look;delete x.stats}});
+ if(state.people.length!==before)IDXs=null}
+function worldYear(){const P=state.pop||(state.pop=newPop()),me=state.player;
+ P.trend=clamp((P.trend||0)*.75+(Math.random()-.5)*.035,-.04,.04);
+ P.target=Math.round(clamp(P.target*(1+P.trend)+(POP.base-P.target)*.02,POP.min,POP.max));
+ const live=state.people.filter(x=>x.alive&&!x.away),n=live.length,T=P.target,gap=T-n;
+ festival(live);
+ /* the town only draws people in when it is below what it can sustain — deaths are NOT replaced one-for-one */
+ let want=gap>0?gap*.07+T*.003:(n<T*1.12?T*.0012:0);want=Math.round(want*(.6+Math.random()*.8));
+ const b0=state.people.length;let guard=0;while(state.people.length-b0<want&&guard++<300)immigrate();
+ const singles=live.filter(x=>adult(x)&&x.age<45&&!x.spouse&&!x.dating&&x!==me).length;
+ if(singles<n*.05&&n<T*1.15)for(let i=0;i<3;i++)immigrate("worker");
+ P.arr+=state.people.length-b0;
+ if(n>T*1.08)emigrate(Math.round((n-T*1.05)*.1));
+ if(state.year%5===0)pruneDead();
+ const now=state.people.filter(x=>x.alive&&!x.away).length;
+ P.last={born:P.born,died:P.died,arr:P.arr,left:P.left};P.born=P.died=P.arr=P.left=0;
+ (P.hist=P.hist||[]).push({y:state.year,n:now});if(P.hist.length>80)P.hist=P.hist.slice(-80);
+ CIRC=null}
+function popCard(){const P=state.pop||(state.pop=newPop()),live=state.people.filter(p=>p.alive),res=live.filter(p=>!p.away).length,vis=VIS.size,L=P.last||{born:0,died:0,arr:0,left:0},H=(P.hist||[]).slice(-60);let spark="";
+ if(H.length>1){const mn=Math.min(...H.map(x=>x.n)),mx=Math.max(...H.map(x=>x.n)),rg=Math.max(1,mx-mn);
+  spark='<svg viewBox="0 0 240 44" style="width:100%;height:44px;margin-top:6px"><polyline fill="none" stroke="#d19a3e" stroke-width="2" points="'+H.map((x,i)=>(i*240/(H.length-1)).toFixed(1)+","+(40-(x.n-mn)/rg*36).toFixed(1)).join(" ")+'"/></svg><div class="muted" style="font-size:11px">Residents '+H[0].y+' → '+H[H.length-1].y+'</div>'}
+ return'<div class="card"><h3>Population</h3><div class="row"><span>Residents</span><b>'+res+'</b></div><div class="row"><span>Seen on the map now</span><b>'+vis+'</b></div><div class="row"><span>Living in the background</span><b>'+Math.max(0,res-vis)+'</b></div><div class="row"><span>Town can sustain (drifts)</span><b>~'+P.target+'</b></div><div class="row"><span>Away in other towns</span><b>'+(live.length-res)+'</b></div><div class="row"><span>Last year</span><b>+'+L.born+' born · '+L.died+' died · +'+L.arr+' arrived · −'+L.left+' left</b></div>'+spark+'</div>'}
+function gazetteCard(){return'<div class="card"><h3>Town gazette</h3>'+((state.gaz||[]).slice(-8).reverse().map(e=>'<div class="event">'+esc(e)+'</div>').join("")||'<span class="muted">Quiet so far.</span>')+'</div>'}
+function datingPool(me){const pre=state.people.filter(x=>x.alive&&x!==me&&adult(x)&&!x.away).sort((a,b)=>relation(b.id)-relation(a.id)||Math.abs(a.age-me.age)-Math.abs(b.age-me.age)),out=[];
+ for(const x of pre){if(out.length>=15)break;if(!kin(x,me))out.push(x)}return out}
+function seedElders(k){for(let i=0;i<k;i++){const c=pick(CULTS),ha=62+Math.floor(Math.random()*24),wa=clamp(ha-4+Math.floor(Math.random()*9),60,90),h=mkP("M",ha,c),w=mkP("F",wa,c);
+ h.job=w.job="Retired";w.maiden=w.sn;h.spouse=w.id;w.spouse=h.id;h.addr=w.addr=addr();state.people.push(h,w);weddingName(h,w);
+ const n=Math.floor(Math.random()*3);for(let j=0;j<n;j++){const g=pick(["M","F"]),a=clamp(wa-24-Math.floor(Math.random()*12),20,58),kd=makeChild(h,w,rndFirst(g,c),g);kd.age=a;kd.job=pick(JOBS);kd.addr=Math.random()<.5?nearAddr(h.addr):addr();h.children.push(kd.id);w.children.push(kd.id);state.people.push(kd)}}}
+function packState(){const DROP=new Set(["x","y","tx","ty","dest","stuck","sch","ix","iy","vis","exit","look","h"]),pl=state.player,
+ /* the dead keep only what the family tree, cemetery and kinship checks need */
+ GRAVE=new Set(["id","name","first","surname","fn","sn","maiden","gender","age","died","job","trait","education","parents","children","spouse","line","gen","alive","cult","origin","addr"]);
+ return JSON.stringify(state,function(k,v){if(this&&this.gender&&this!==pl){if(this.alive===false){if(k!==""&&!GRAVE.has(k))return undefined}else if(DROP.has(k))return undefined}return v})}
+function trimForSave(){state.people.forEach(p=>{if(p===state.player)return;p.mem=(p.mem||[]).slice(p.alive?-4:-1);const ks=Object.keys(p.rel||{});if(ks.length>6){const o={};ks.sort((a,b)=>Math.abs(p.rel[b])-Math.abs(p.rel[a])).slice(0,6).forEach(k=>o[k]=p.rel[k]);p.rel=o}});state.events=state.events.slice(-120);state.gaz=(state.gaz||[]).slice(-40)}
+window.GENDEBUG={
+ stats(){const live=state.people.filter(x=>x.alive),res=live.filter(x=>!x.away).length;return{total:state.people.length,living:live.length,residents:res,visible:VIS.size,background:res-VIS.size,target:state.pop.target,year:state.year,saveKB:Math.round(packState().length/1024)}},
+ stress(n){let g=0;while(state.people.filter(x=>x.alive&&!x.away).length<n&&g++<4000)foundFamily();state.pop.target=Math.max(state.pop.target,n);state.people.forEach(p=>{p.sch=0});IDXs=null;render();return this.stats()},
+ years(k){const t=performance.now();for(let i=0;i<k;i++)advanceYear();return{ms:Math.round(performance.now()-t),stats:this.stats()}}};
+
+fillCreator();initLook();document.body.insertAdjacentHTML("beforeend",'<div id="clock" style="position:fixed;right:10px;bottom:8px;background:#000a;color:#fff;padding:4px 10px;border-radius:6px;font:13px monospace;z-index:5"></div>');document.body.insertAdjacentHTML("beforeend",'<div id="hint"></div>');setInterval(move,30);setInterval(walkNPCs,30);setInterval(tick,1000);setInterval(()=>{const h=$("hint");if(!state||$("game").style.display==="none"||modalOpen()){h.style.display="none";return}const t=target();h.style.display=t?"block":"none";if(t)h.textContent="E — "+t.l},150);window.addEventListener("resize",()=>{if(state&&$("game").style.display!=="none")renderWorld()});
+window.addEventListener("error",e=>{if($("game").style.display!=="none")status("Game error: "+e.message);});
+if(localStorage.getItem("GENERATIONS_SAVE")){$("creatorMsg").innerHTML='<div style="margin-top:12px"><button id="load">↩ LOAD SAVED DYNASTY</button></div>';$("load").onclick=loadSaved;}
+})();
+</script>
+</body>
+</html>
