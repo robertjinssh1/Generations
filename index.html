@@ -22,6 +22,7 @@ h1,h2,h3{font-family:Georgia,serif}h1{margin:0;color:#efd28a;letter-spacing:2px}
 .shopItem b{display:block;margin-bottom:4px;color:#e1c575}
 .modal .wide{width:min(820px,94vw)}
 .badge{display:inline-block;padding:4px 7px;border-radius:9px;background:#37483a;font-size:11px;margin:2px}
+.massBubble{position:absolute;left:50%;bottom:42px;transform:translateX(-50%);width:230px;background:#fffdf2;color:#2b3028;border:2px solid #675d47;border-radius:14px;padding:9px 11px;font:13px Georgia,serif;line-height:1.25;text-align:center;box-shadow:0 5px 14px #0005;z-index:20}.massBubble:after{content:"";position:absolute;left:50%;bottom:-10px;transform:translateX(-50%);border:10px solid transparent;border-top-color:#675d47;border-bottom:0}.massLabel{position:absolute;left:50%;bottom:-16px;transform:translateX(-50%);font-size:9px;white-space:nowrap;background:#0009;color:#fff;padding:2px 6px;border-radius:6px;z-index:21}
 
 @media(max-width:800px){.main{grid-template-columns:1fr}.side{display:none}.grid{grid-template-columns:1fr 1fr}.stats{grid-template-columns:repeat(3,1fr)}}
 .room{position:absolute;inset:0;border:6px solid #4a3426;box-shadow:inset 0 0 60px #0006;z-index:1}.rtitle{position:absolute;top:8px;left:12px;font-weight:bold;color:#3a2b23;background:#fff8;padding:3px 9px;border-radius:6px}.rdoor{position:absolute;bottom:0;transform:translateX(-50%);background:#5b3d30;color:#fff;padding:5px 18px;border-radius:8px 8px 0 0;font-size:12px}.obj{position:absolute;transform:translate(-50%,-50%);text-align:center}.obj span{font-size:34px;display:block}.obj small{white-space:nowrap;font-size:10px;background:#fffb;padding:1px 5px;border-radius:4px;color:#222}#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);background:#000c;color:#ffe9a8;padding:6px 14px;border-radius:8px;font:bold 14px sans-serif;z-index:30;display:none}
@@ -101,11 +102,15 @@ function pick(a){return a[Math.floor(Math.random()*a.length)]}
 function uid(){return Math.random().toString(36).slice(2)+Date.now().toString(36)}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function esc(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function stage(a){return a<2?"Baby":a<5?"Toddler":a<13?"Child":a<18?"Teen":a<25?"Young Adult":a<65?"Adult":"Elder"}
+function stage(a){return a<2?"Baby":a<5?"Toddler":a<13?"Child":a<18?"Teen":a<25?"Young Adult":a<65?"Adult":a<80?"Mature Adult":"Elder"}
+const LIFE_GOALS=["build a loving family","see my children succeed","leave something meaningful behind","own a comfortable home","become respected in my work","help the people I love","stay close to my family","learn something new every year","save enough to feel secure","make my parents proud"];
+function charInit(p){p.mem=p.mem||[];p.memories=p.memories||p.mem;p.life=p.life||[];p.goal=p.goal||pick(LIFE_GOALS);p.birthYear=p.birthYear||state?.year-p.age||2026-p.age;p.personality=p.personality||[p.trait,pick(TRAITS.filter(t=>t!==p.trait))];p.chapters=p.chapters||[];p.lastBondYear=p.lastBondYear||0;return p}
+function addMem(p,text,year){if(!p||!text)return;charInit(p);const y=year==null?(state?state.year:2026):year;const line=y+" — "+text;if(!p.mem.includes(line))p.mem.push(line);if(p.mem.length>80)p.mem=p.mem.slice(-80)}
+function addChapter(p,title,text){charInit(p);p.chapters.push({y:state.year,title,text});if(p.chapters.length>30)p.chapters=p.chapters.slice(-30);addMem(p,title+": "+text)}
 function adult(p){return p.age>=18}
 function person(g,age){
   const c=pick(["EN","EN","PL","RU","RU"]),p={id:uid(),gender:g==="F"?"F":"M",cult:c,fn:rndFirst(g,c),sn:rndSur(c,g),age,job:pick(JOBS),trait:pick(TRAITS),money:Math.round(500+Math.random()*5000),x:80+Math.random()*650,y:90+Math.random()*430,mem:[],parents:[],children:[],spouse:null,dating:null,alive:true,rel:{}};p.line=p.id;p.gen=1;
-  applyName(p);return p;
+  applyName(p);charInit(p);return p;
 }
 function fillCreator(){
   $("trait").innerHTML=TRAITS.map(x=>"<option>"+x+"</option>").join("");
@@ -121,7 +126,7 @@ function randomize(){
 }
 function makeState(){
   const first=$("first").value.trim()||"Robert", surname=$("surname").value.trim()||"Smith";
-  const p={id:uid(),first,surname,name:first+" "+surname,gender:$("gender").value,age:clamp(parseInt($("age").value)||22,18,65),job:$("job").value,trait:$("trait").value,money:2000,x:330,y:260,mem:["Started a new life in the town."],parents:[],children:[],spouse:null,alive:true,rel:{},education:$("education").value,stats:{},location:"home"};
+  const p={id:uid(),first,surname,name:first+" "+surname,gender:$("gender").value,age:clamp(parseInt($("age").value)||22,18,65),job:$("job").value,trait:$("trait").value,money:2000,x:330,y:260,mem:["Started a new life in the town."],parents:[],children:[],spouse:null,alive:true,rel:{},education:$("education").value,stats:{},location:"home",goal:pick(LIFE_GOALS),birthYear:2026-clamp(parseInt($("age").value)||22,18,65)};charInit(p);
   ["intelligence","charisma","health","creativity","ambition"].forEach((x,i)=>p.stats[x]=parseInt($("stat"+i).value));
   p.look=readLook();p.cult=$("cult").value;p.fn=first;{const m=maleSur(surname);p.sn=p.gender==="F"?femSur(m):m}fixName(p,true);const people=[p];
   return {year:2026,player:p,people,events:["2026 — "+p.name+" began a new life."],pending:null};
@@ -165,7 +170,7 @@ function homePanel(){
 function familyPanel(){
  const me=state.player,L=kinList(me),names=L.map(k=>k.p.name);
  const row=k=>{const x=k.p;return '<div class="event"><b>'+esc(x.name)+'</b> · '+k.role+'<br><span class="muted">'+(x.alive?x.age+' · '+stage(x.age)+' · '+esc(x.job)+(x.away?' · moved away':'')+' · ❤ '+relation(x.id):'† died at '+x.age)+'</span><br>'+(x.alive?'<button class="small profileBtn" data-id="'+x.id+'">PROFILE</button> <button class="small visitBtn" data-id="'+x.id+'">🏡 VISIT</button>':'')+'</div>'};
- $("content").innerHTML='<div class="card"><h3>Family ('+L.length+')</h3>'+(L.map(row).join("")||'<span class="muted">No relatives yet.</span>')+'</div>'+extCard(me,L)+'<div class="card"><h3>Family news</h3>'+(state.events.filter(e=>names.some(n=>e.includes(n))).slice(-8).reverse().map(e=>'<div class="event">'+esc(e)+'</div>').join("")||'<span class="muted">Nothing yet.</span>')+'</div><div class="card treeBox"><h3>Family Tree</h3>'+tree(me.id)+'</div>';
+ $("content").innerHTML='<div class="card"><h3>Family ('+L.length+')</h3>'+(L.map(row).join("")||'<span class="muted">No relatives yet.</span>')+'</div><div class="card"><h3>Family news</h3>'+(state.events.filter(e=>names.some(n=>e.includes(n))).slice(-8).reverse().map(e=>'<div class="event">'+esc(e)+'</div>').join("")||'<span class="muted">Nothing yet.</span>')+'</div><div class="card treeBox"><h3>Family Tree</h3>'+tree(me.id)+'</div>';
  document.querySelectorAll(".profileBtn").forEach(b=>b.onclick=()=>profile(b.dataset.id));document.querySelectorAll(".visitBtn").forEach(b=>b.onclick=()=>visitHome(b.dataset.id));
 }
 function tree(id){
@@ -208,7 +213,7 @@ function enterBuilding(place){
  }
  if(inside.length){
    body+='<h3>People inside</h3><div class="interiorGrid">'+inside.map(p=>
-     '<div class="shopItem"><b>'+esc(p.first)+'</b><span class="badge">'+esc(p.job)+'</span><br><button class="insideTalk" data-id="'+p.id+'">💬 TALK</button></div>'
+     '<div class="shopItem"><b>'+esc(p.first)+'</b><span class="badge">'+esc(p.job)+'</span><br><button class="insideTalk" data-id="'+p.id+'">💬 TALK</button> <button class="workNpc" data-id="'+p.id+'">🤝 WORK WITH</button></div>'
    ).join("")+'</div>';
  }else if(["school","hospital","shop","cafe","work"].includes(place)){
    body+='<p class="muted">Nobody is available to talk right now.</p>';
@@ -216,6 +221,7 @@ function enterBuilding(place){
  body+='<div class="choices"><button id="exitBuilding">🚪 EXIT</button></div></div>';
  modal(body);
  document.querySelectorAll(".insideTalk").forEach(b=>b.onclick=()=>profile(b.dataset.id));
+ document.querySelectorAll(".workNpc").forEach(b=>b.onclick=()=>workWithNpc(b.dataset.id));
  $("exitBuilding").onclick=closeModal;
  if($("heal"))$("heal").onclick=()=>{if(state.player.money<30){status("You need €30.");return}state.player.money-=30;state.player.stats.health=clamp(state.player.stats.health+8,0,100);renderTop();status("The health check helped.");};
  if($("workInside"))$("workInside").onclick=()=>{closeModal();startShift()};
@@ -245,8 +251,9 @@ function profile(id){
  if(ad&&!mine&&r0>=15)buttons+='<button id="fling">🔥 SECRET HOOKUP</button>';buttons+='<button id="ftree">🌳 FAMILY TREE</button>';
  if(role(me,p))buttons+='<button id="visit">🏡 VISIT HOME</button><button id="spend">🤝 SPEND TIME</button>';
  if(state.inside&&["shop","cafe"].includes(state.inside)&&workPlace(p.job)===state.inside&&adult(p))buttons+='<button id="rob">🥷 ROB THEM</button>';
- modal('<h2>'+esc(p.name)+'</h2><div class="row"><span>Age</span><b>'+p.age+' · '+stage(p.age)+'</b></div><div class="row"><span>Background</span><b>'+(CN[p.cult]||"")+'</b></div><div class="row"><span>Job</span><b>'+esc(p.job)+'</b></div><div class="row"><span>Personality</span><b>'+p.trait+'</b></div><div class="row"><span>Lives</span><b>'+esc(p.addr||"somewhere in town")+(p.away?" (moved away)":"")+'</b></div><div class="row"><span>Status</span><b>'+statusOf(p)+'</b></div><div class="row"><span>Relationship</span><b>'+relation(id)+'</b></div><p>'+p.mem.slice(-4).map(x=>'<span class="pill">'+esc(x)+'</span>').join(" ")+'</p><div class="choices">'+buttons+'</div><br><button id="close">CLOSE</button>');
- $("talk").onclick=()=>talk(id);$("gift").onclick=()=>gift(id);$("argue").onclick=()=>argue(id);$("askmem").onclick=()=>memory(id);if($("romance"))$("romance").onclick=()=>romance(id);if($("marry"))$("marry").onclick=()=>marry(id);if($("baby"))$("baby").onclick=()=>baby(id);if($("rob"))$("rob").onclick=()=>rob(id);$("close").onclick=closeModal;const H=(i,f)=>{if($(i))$(i).onclick=f};H("date",()=>dateAsk(id));H("flirt",()=>flirt(id));H("ftree",()=>famTree(id));H("split",()=>breakUp(id));H("fling",()=>fling(id));H("visit",()=>visitHome(id));H("spend",()=>spend(id));
+ if(p.alive&&p!==me)buttons+='<button id="murder" class="danger">☠️ MURDER</button>';
+ modal('<h2>'+esc(p.name)+'</h2><div class="row"><span>Age</span><b>'+p.age+' · '+stage(p.age)+'</b></div><div class="row"><span>Background</span><b>'+(CN[p.cult]||"")+'</b></div><div class="row"><span>Job</span><b>'+esc(p.job)+'</b></div><div class="row"><span>Personality</span><b>'+p.trait+'</b></div><div class="row"><span>Lives</span><b>'+esc(p.addr||"somewhere in town")+(p.away?" (moved away)":"")+'</b></div><div class="row"><span>Status</span><b>'+statusOf(p)+'</b></div><div class="row"><span>Relationship</span><b>'+relation(id)+'</b></div><div class="row"><span>Dream</span><b>'+esc(p.goal||"live a good life")+'</b></div><p>'+(p.chapters||[]).slice(-3).map(c=>'<span class="pill">'+esc(c.title)+" — "+esc(c.text)+'</span>').join(" ")+'</p><p>'+p.mem.slice(-4).map(x=>'<span class="pill">'+esc(x)+'</span>').join(" ")+'</p><div class="choices">'+buttons+'</div><br><button id="close">CLOSE</button>');
+ $("talk").onclick=()=>talk(id);$("gift").onclick=()=>gift(id);$("argue").onclick=()=>argue(id);$("askmem").onclick=()=>memory(id);if($("romance"))$("romance").onclick=()=>romance(id);if($("marry"))$("marry").onclick=()=>marry(id);if($("baby"))$("baby").onclick=()=>baby(id);if($("rob"))$("rob").onclick=()=>rob(id);if($("murder"))$("murder").onclick=()=>murder(id);$("close").onclick=closeModal;const H=(i,f)=>{if($(i))$(i).onclick=f};H("date",()=>dateAsk(id));H("flirt",()=>flirt(id));H("ftree",()=>famTree(id));H("split",()=>breakUp(id));H("fling",()=>fling(id));H("visit",()=>visitHome(id));H("spend",()=>spend(id));
 }
 function modal(body){$("modalRoot").innerHTML='<div class="modalBg"><div class="modal wide">'+body+'</div></div>';pressed={}}
 function closeModal(){$("modalRoot").innerHTML="";pressed={}}
@@ -261,7 +268,7 @@ function baby(id){
  $("nameBaby").onclick=()=>{state.pending={partner:id,name:$("babyName").value.trim()||n,gender:g};closeModal();status("A baby is expected next year.");}
 }
 function makeChild(parent,other,name,g){
- const c=person(g,0);c.cult=CULTS.includes(parent.cult)?parent.cult:"EN";c.gender=g;{const opp=NM[c.cult][g==="F"?"M":"F"].includes(name)&&!NM[c.cult][g].includes(name);c.fn=opp?rndFirst(g,c.cult):name;const m=maleSur((parent.sn||parent.surname).split("-")[0]);c.sn=g==="F"?femSur(m):m;applyName(c)}c.job="Child";c.money=0;c.parents=[parent.id,other.id];c.addr=parent.addr;c.gen=(parent.gen||1)+1;c.line=parent.line||parent.id;c.x=(parent.x||200)+25;c.y=(parent.y||200)+20;c.mem=["Born into the "+parent.surname+" family."];return c;
+ const c=person(g,0);c.cult=CULTS.includes(parent.cult)?parent.cult:"EN";c.gender=g;{const opp=NM[c.cult][g==="F"?"M":"F"].includes(name)&&!NM[c.cult][g].includes(name);c.fn=opp?rndFirst(g,c.cult):name;const m=maleSur((parent.sn||parent.surname).split("-")[0]);c.sn=g==="F"?femSur(m):m;applyName(c)}c.job="Child";c.money=0;c.parents=[parent.id,other.id];c.addr=parent.addr;c.gen=(parent.gen||1)+1;c.line=parent.line||parent.id;c.x=(parent.x||200)+25;c.y=(parent.y||200)+20;c.mem=["Born into the "+parent.surname+" family."];c.birthYear=state.year;c.goal=pick(LIFE_GOALS);charInit(c);addChapter(c,"Birth","Born into the "+parent.surname+" family.");return c;
 }
 function salary(j){return ({Teacher:1800,Doctor:3200,Nurse:2200,Engineer:2800,Programmer:3000,Farmer:1500,Chef:1800,"Police officer":2400,Mechanic:2100,"Shop worker":1400,Writer:1800,Artist:1700,"Office worker":1900,"Business owner":2500}[j]||1200)/12}
 function advanceYear(){
@@ -270,15 +277,17 @@ function advanceYear(){
  bgYearStart();
  for(const x of state.people.slice()){if(x===p||!x.alive)continue;x.age++;x.money+=salary(x.job)-250;npcYear(x)}
  if(state.pending){const o=find(state.pending.partner);if(o&&o.alive&&p.spouse===o.id){const c=makeChild(p,o,state.pending.name,state.pending.gender);state.people.push(c);p.children.push(c.id);o.children.push(c.id);state.events.push(state.year+" — "+c.name+" was born.");evBirth(c)}state.pending=null}
+ // One small personal moment each year makes close relationships feel lived-in.
+ for(const x of state.people.slice()){if(!x.alive||x===p)continue;const r=p.rel[x.id]||0;if(Math.abs(r)>=65&&Math.random()<.28&&p.lastBondYear!==state.year){const moments=r>0?["Shared a quiet moment together.","Checked in because they genuinely cared.","Talked about old memories.","Made plans for the future together."]: ["Had another difficult conversation.","Kept some distance after old tensions."];const m=pick(moments);addMem(p,m);addMem(x,m);p.lastBondYear=state.year;x.lastBondYear=state.year;if(r>0){p.rel[x.id]=clamp(r+2,-100,100);x.rel[p.id]=clamp((x.rel[p.id]||0)+2,-100,100)}}}
  socialYear();milestones();
- if(p.age>=85&&Math.random()<.4)die(p);
+ if(p.age>=100&&Math.random()<.12)die(p);
  if(state.ended)return;
  state.events.push(state.year+" — A year passed. "+state.people.filter(x=>x.alive).length+" people are alive in the town.");
  worldYear();if(state.events.length>400)state.events=state.events.slice(-400);
  save(true);render();status("A new year began.");
 }
 function die(p){
- p.alive=false;p.died=state.year;VIS.delete(p);p.vis=0;p.exit=0;if(state.pop)state.pop.died++;p.mem.push(state.year+" — Died at age "+p.age+".");chron(p.name+" died at age "+p.age+".",p);
+ p.alive=false;p.died=state.year;VIS.delete(p);p.vis=0;p.exit=0;if(state.pop)state.pop.died++;addChapter(p,"Death","Died at age "+p.age+".");chron(p.name+" died at age "+p.age+".",p);
  if(p.spouse){const sp=find(p.spouse);if(sp){sp.spouse=null;sp.mem.push(state.year+" — "+p.name+" died.")}}
  if(p.dating){const d=find(p.dating);if(d&&d.dating===p.id)d.dating=null;p.dating=null}state.aff=(state.aff||[]).filter(x=>x.a!==p.id&&x.b!==p.id);
  if(p!==state.player){inherit(p);notifyDeath(p);archive(p)}
@@ -319,13 +328,13 @@ function continueAs(id){
 function workDay(){const gain=100+Math.floor(Math.random()*220);state.player.money+=gain;state.events.push(state.year+" — "+state.player.name+" earned €"+gain+" at work.");renderTop();status("You worked and earned €"+gain+".")}
 function changeJob(){const j=pick(JOBS.filter(x=>x!==state.player.job));state.player.job=j;state.player.career={level:1,rep:0,shifts:0};state.events.push(state.year+" — "+state.player.name+" became a "+j+".");renderPanel();status("New career: "+j)}
 function teacher(){modal('<h2>Teacher career</h2><p>Choose your teaching style.</p><div class="choices"><button id="strict">Strict rules</button><button id="support">Supportive</button><button id="creative">Creative lesson</button><button id="test">Give a test</button></div>');["strict","support","creative","test"].forEach(id=>$(id).onclick=()=>{state.player.mem.push(state.year+" — Teacher choice: "+id);closeModal();status("Your students will remember today's lesson.");})}
-function memory(id){const p=find(id);modal('<h2>Memories of '+esc(p.first)+'</h2>'+(p.mem.slice(-8).map(x=>'<div class="event">'+esc(x)+'</div>').join("")||"<p>No memories yet.</p>")+'<button id="close">CLOSE</button>');$("close").onclick=closeModal}
+function memory(id){const p=find(id);modal('<h2>Memories of '+esc(p.first)+'</h2>'+((p.chapters||[]).slice(-8).reverse().map(c=>'<div class="event"><b>'+c.y+" · "+esc(c.title)+"</b><br>"+esc(c.text)+'</div>').join("") || p.mem.slice(-8).map(x=>'<div class="event">'+esc(x)+'</div>').join("") || "<p>No memories yet.</p>")+'<button id="close">CLOSE</button>');$("close").onclick=closeModal}
 function save(silent){if(!state)return;try{localStorage.setItem("GENERATIONS_SAVE",packState());if(!silent)status("Game saved.");}catch(e){try{trimForSave();localStorage.setItem("GENERATIONS_SAVE",packState());if(!silent)status("Game saved (older records compacted).")}catch(e2){status("Save unavailable in this browser.")}}}
 function normalize(){
  if(!state||!state.player||!Array.isArray(state.people))throw new Error("save data is incomplete");
  const pl=state.player,i=state.people.findIndex(x=>x.id===pl.id);if(i>=0)state.people[i]=pl;else state.people.push(pl);IDXs=null;
- state.events=state.events||[];state.year=state.year||2026;if(state.clock==null)state.clock=480;
- state.people.forEach(p=>{p.mem=p.mem||[];p.children=p.children||[];p.parents=p.parents||[];p.rel=p.rel||{};p.sch=0;p.vis=0;p.exit=0;p.dest=null;p.tx=p.ty=null;p.stuck=0;p.age=p.age||0;p.money=Number(p.money)||0;p.line=p.line||p.id;p.gen=p.gen||1;fixName(p,p===pl)});healLinks();VIS.clear();ROSTER.key="";FOCUS=[];CIRC=null;state.pop=state.pop||newPop();
+ state.events=Array.isArray(state.events)?state.events:[];state.evs=Array.isArray(state.evs)?state.evs:[];state.year=state.year||2026;if(state.clock==null)state.clock=480;
+ state.people.forEach(p=>{p.mem=p.mem||[];p.children=p.children||[];p.parents=p.parents||[];p.rel=p.rel||{};charInit(p);p.sch=0;p.vis=0;p.exit=0;p.dest=null;p.tx=p.ty=null;p.stuck=0;p.age=p.age||0;p.money=Number(p.money)||0;p.line=p.line||p.id;p.gen=p.gen||1;fixName(p,p===pl)});healLinks();VIS.clear();ROSTER.key="";FOCUS=[];CIRC=null;state.pop=state.pop||newPop();
  fixPlayer(pl);
  if(state.inside!=="jail"||!(state.jailLeft>0))state.inside=null;
  if(state.inside==="jail"){const B=RB();pl.x=B.x+B.w/2;pl.y=B.y+B.h-45}else{const d=doorPos("home");pl.x=d.x;pl.y=d.y+10}
@@ -336,19 +345,33 @@ function loadSaved(){try{
  $("creator").style.display="none";$("game").style.display="grid";normalize();render();status("Saved dynasty loaded.");
  if(state.ended)endLineage();else if(!state.player.alive)resolveDeath();
  return true}catch(e){console.error(e);state=null;$("game").style.display="none";$("creator").style.display="flex";$("creatorMsg").innerHTML='<div class="error">The saved game could not be loaded ('+esc(e.message)+'). You can start a new life instead.</div>';return false}}
-function newGame(){if(confirm("Start a new life?")){localStorage.removeItem("GENERATIONS_SAVE");location.reload()}}
+function newGame(){if(confirm("Start a new life?")){try{localStorage.removeItem("GENERATIONS_SAVE")}catch(e){}location.reload()}}
 function modalOpen(){return !!$("modalRoot").querySelector(".modalBg")}
 
 /* ===== v2: day clock, NPC schedules & walking ===== */
 const INDOOR=new Set(["inhome","school","hospital","shop","cafe","work","church"]);
 const DAYS=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const PRIEST={id:"priest",first:"Father Thomas",age:54,gender:"M",hair:"Brown",hstyle:"Short",skin:"Light",eyes:"Brown",topc:"Black",botc:"Black",trait:"kind"};
+const MASS_LINES=[
+ "Good morning, everyone. Welcome to Sunday Mass.",
+ "Let us be grateful for our families and for the people beside us.",
+ "May we remember those who came before us, and those who will come after us.",
+ "Let us take a moment of quiet reflection and gratitude.",
+ "May peace and kindness guide our homes this coming week.",
+ "Let us pray for the sick, the lonely, and those who need our help.",
+ "Whatever this week brings, remember to carry kindness with you.",
+ "Amen. Go in peace, and take care of one another."
+];
+function isMass(day,h){return day%7===6&&h>=10&&h<12}
+function massLine(){const day=Math.floor(state.clock/1440),mins=state.clock%1440;return MASS_LINES[Math.min(MASS_LINES.length-1,Math.floor((mins-600)/10))]}
+function massActive(){return isMass(Math.floor(state.clock/1440),nowH())}
 function hsh(s){let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;return h}
 function workPlace(j){return ({Teacher:"school",Doctor:"hospital",Nurse:"hospital",Chef:"cafe","Shop worker":"shop","Business owner":"shop",Farmer:"park","Police officer":"street",Mechanic:"work","Office worker":"work",Engineer:"work",Programmer:"work",Writer:"cafe",Artist:"cafe"})[j]||"street"}
 function sched(p,h,day){
  if(p.away)return "inhome";const d=day%7,wk=d<5,v=(p.h||(p.h=hsh(p.id)))%10;
  if(h>=22||h<7||p.age<5)return "inhome";
+ if(isMass(day,h)&&p.age>=5)return "church";
  if(p.age<18){if(wk&&h>=8&&h<15)return "school";return h>=15&&h<18?"park":"inhome"}
- if(d===6&&h>=10&&h<11&&(v<4||p.age>=65))return "church";
  if(p.age>=65)return h>=10&&h<12?"park":h>=15&&h<17?"cafe":"inhome";
  if(wk&&h>=9&&h<17)return(h===12&&v<4)?"cafe":workPlace(p.job);
  if(h>=17&&h<20)return(p.trait==="outgoing"||v<3)?"cafe":v<6?"park":"inhome";
@@ -372,10 +395,19 @@ function ensureSched(){if(state.clock==null)state.clock=480;state.hr=nowH();cons
  for(const p of state.people){if(p===state.player||!p.alive||p.sch)continue;p.sch=1;p.location=where(p,state.hr,day)}}
 function tick(){
  if(!state||state.ended||$("game").style.display==="none"||modalOpen())return;
- state.clock+=10;const h=nowH(),day=Math.floor(state.clock/1440);if(state.lastYD==null)state.lastYD=day;if(day-state.lastYD>=30){advanceYear();return}
+ const preDay=Math.floor(state.clock/1440),preH=nowH();
+ const slowMass=isMass(preDay,preH);
+ state.clock+=slowMass?2:10;const h=nowH(),day=Math.floor(state.clock/1440);if(state.lastYD==null)state.lastYD=day;if(day-state.lastYD>=30){advanceYear();return}
  if(h!==state.hr){state.hr=h;hourUpdate(h,day);renderWorld()}
  VIS.forEach(p=>{if(p.alive&&!p.exit&&p.tx==null&&!INDOOR.has(p.location)&&p.location!=="cemetery"&&Math.random()<.2){const[W,H]=WH(),s=safeSpot(clamp(p.x+(Math.random()-.5)*120,30,W-30),clamp(p.y+(Math.random()-.5)*100,40,H-30));p.tx=s.x;p.ty=s.y}});
- $("clock").textContent=DAYS[day%7]+" "+String(h).padStart(2,"0")+":"+String(state.clock%60).padStart(2,"0")+" · "+state.year;
+ updateMassBubble();
+ const clock=$("clock");if(clock)clock.textContent=DAYS[day%7]+" "+String(h).padStart(2,"0")+":"+String(state.clock%60).padStart(2,"0")+" · "+state.year;
+}
+function updateMassBubble(){
+ const b=$("massBubble"),day=Math.floor(state.clock/1440),h=nowH();
+ if(!b)return;
+ if(state.inside==="church"&&isMass(day,h)){b.textContent=massLine()+"  •  Mass is moving slowly so you can read the sermon.";}
+ else b.remove();
 }
 function moveEl(p){const e=$("person-"+p.id);if(e){e.style.left=p.x+"px";e.style.top=p.y+"px"}}
 function walkNPCs(){
@@ -417,6 +449,13 @@ function renderInterior(){
  w.innerHTML='<div style="position:absolute;inset:0;background:#171210"></div><div class="room" style="left:'+B.x+'px;top:'+B.y+'px;width:'+B.w+'px;height:'+B.h+'px;background:'+d.f+'"><div class="rtitle">'+d.t+'</div><div class="rdoor" style="left:50%">🚪 EXIT</div>'+objsFor(pl).map(o=>'<div class="obj" style="left:'+o[1]+'%;top:'+o[2]+'%"><span>'+o[0]+'</span><small>'+esc(o[3])+'</small></div>').join("")+'</div>';
  let wi=0;insideNPCs(pl).forEach(p=>{const q=ipos(p,pl,wi,B);if(pl!=="home"&&workPlace(p.job)===pl&&p.age>=18)wi++;p.ix=q.x;p.iy=q.y;w.insertAdjacentHTML("beforeend",personHTML(Object.assign({},p,{x:q.x,y:q.y}),false,"ip-"))});
  w.insertAdjacentHTML("beforeend",personHTML(state.player,true));
+ if(pl==="church"&&massActive()){
+  const pq={...PRIEST,x:B.x+B.w*.5,y:B.y+B.h*.30};
+  w.insertAdjacentHTML("beforeend",personHTML(pq,false,"priest-"));
+  const bubble='<div id="massBubble" class="massBubble">'+esc(massLine())+'</div><div class="massLabel">⛪ Father Thomas</div>';
+  const pe=$("priest-priest");
+  if(pe){pe.style.left=pq.x+"px";pe.style.top=pq.y+"px";pe.insertAdjacentHTML("beforeend",bubble)}
+ }
  if(pl!=="home"&&ROSTER.more>0)w.insertAdjacentHTML("beforeend",'<div style="position:absolute;left:50%;top:6px;transform:translateX(-50%);background:#000a;color:#fff;padding:3px 10px;border-radius:10px;font-size:11px;z-index:6">👥 +'+ROSTER.more+' more people here, going about their day</div>');
 }
 function renderWorld(){ensureSched();fixOutdoor();if(state.inside)renderInterior();else{renderOutdoor();const wr=$("world").getBoundingClientRect();window.BR=[...document.querySelectorAll(".building")].map(b=>{const r=b.getBoundingClientRect();return{l:r.left-wr.left,t:r.top-wr.top,r:r.right-wr.left,b:r.bottom-wr.top}});const p=state.player;BR.forEach(r=>{if(p.x>r.l&&p.x<r.r&&p.y>r.t&&p.y<r.b){p.y=r.b+14;const e=$("person-"+p.id);if(e)e.style.top=p.y+"px"}})}}
@@ -460,6 +499,30 @@ Chef:{pl:"cafe",t:[["{N} orders the special.",[["Cook it perfectly","creativity"
 Farmer:{pl:"work",t:[["Dry weather threatens the crops.",[["Irrigate more","health",42,"A good harvest.","It cost too much."],["Wait for rain","intelligence",40,"The rain came.","The crop suffered."]]],["Market day with {N}.",[["Haggle for more","charisma",42,"A good price.","{N} walked away."],["Sell fast","ambition",34,"Quick sale.","You undersold."]]],["A fence breaks.",[["Repair it yourself","health",38,"Fixed.","Still loose."],["Hire help","intelligence",30,"Fixed properly.","Costly."]]]]}};
 function carFor(j){return CAR[j]||{pl:workPlace(j),t:GEN}}
 function npcFor(j){const kids=j==="Teacher",l=state.people.filter(x=>x.alive&&x!==state.player&&!x.away&&(kids?x.age>=5&&x.age<18:x.age>=18));return l.length?pick(l):null}
+function workWithNpc(id){
+ const p=state.player,n=find(id);if(!n||!n.alive)return;
+ const c=carFor(p.job),place=c.pl;
+ if(state.inside!==place){status("Go to your workplace first.");return}
+ if(p.job==="Teacher"){
+   if(!(n.age>=5&&n.age<18)){status("Choose one of your students to work with.");return}
+   const questions=[
+    ["What do you think the main idea of today's lesson is?",["It is about helping people.","I don't know yet.","Can you explain it again?"]],
+    ["Can you explain your answer to the class?",["Yes, I can try.","I'm not sure.","I need a little help."]],
+    ["Which part of the lesson was hardest for you?",["The first part.","The homework.","I understood most of it."]]
+   ];
+   const q=pick(questions),answers=q[1];
+   modal('<h2>🏫 Class with '+esc(n.first)+'</h2><p><b>You ask:</b> '+esc(q[0])+'</p><div class="choices">'+answers.map((a,i)=>'<button class="answer" data-i="'+i+'">'+esc(a)+'</button>').join('')+'</div>');
+   document.querySelectorAll('.answer').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i,positive=i===0||i===2;const replies=positive?[n.first+' thinks carefully and gives you a thoughtful answer.',n.first+' smiles and starts explaining the idea.']: [n.first+' looks nervous and asks for more help.'];
+    const reply=pick(replies);changeRel(n.id,positive?5:2);n.mem.push(state.year+' — '+p.first+' taught '+n.first+' during class: '+q[0]);p.mem.push(state.year+' — Asked '+n.first+' a question during class.');
+    modal('<h2>👩‍🏫 Student response</h2><p>'+esc(reply)+'</p><p class="muted">The student will remember this lesson.</p><button id="nextClass">CONTINUE</button>');$('nextClass').onclick=()=>{closeModal();status('You finished a real student interaction with '+n.first+'.');};
+   });
+   return;
+ }
+ const actions={Doctor:["examine","Ask about symptoms"],Nurse:["care","Check on their condition"],Chef:["serve","Ask what they would like"],"Shop worker":["help","Help them find an item"],"Business owner":["deal","Discuss their needs"],"Police officer":["question","Ask what they saw"],Mechanic:["inspect","Ask about the problem"],"Office worker":["task","Discuss the work assignment"],Engineer:["plan","Discuss the design"],Programmer:["debug","Work through the problem"],Writer:["interview","Ask what story they want"],Artist:["brief","Ask what they want created"],Farmer:["market","Discuss the sale"]};
+ const a=actions[p.job]||["help","Work together on today's task"];const good=Math.random()<.75;changeRel(n.id,good?3:-1);n.mem.push(state.year+' — Worked with '+p.first+' as a '+p.job+'.');p.mem.push(state.year+' — Worked with '+n.first+' at '+place+'.');
+ modal('<h2>🤝 '+esc(p.job)+' with '+esc(n.first)+'</h2><p><b>You:</b> '+esc(a[1])+'.</p><p>'+esc(good?(n.first+' cooperates and you get the job done together.'): (n.first+' has a different idea, so you have to work it out together.'))+'</p><button id="doneWork">DONE</button>');$('doneWork').onclick=()=>{closeModal();status('You worked directly with '+n.first+'.');};
+}
 function startShift(){
  const p=state.player,c=carFor(p.job),day=Math.floor(state.clock/1440);p.career=p.career||{level:1,rep:0,shifts:0};
  if(c.pl!==state.inside){status("This isn't your workplace. As a "+p.job+" you work at the "+(INT[c.pl]||{t:c.pl}).t+".");return}
@@ -489,6 +552,17 @@ function lifePanel(){
  $("changeJob").onclick=changeJob;
 }
 /* crime */
+function murder(id){
+ const victim=find(id),me=state.player;if(!victim||!victim.alive||victim===me)return;
+ const publicKill=!state.inside;
+ modal('<h2>☠️ Murder</h2><p>You are about to kill '+esc(victim.name)+'. This is permanent.</p><div class="choices"><button id="confirmMurder" class="danger">CONFIRM</button><button id="cancelMurder">CANCEL</button></div>');
+ $("cancelMurder").onclick=closeModal;$("confirmMurder").onclick=()=>{closeModal();me.crime=(me.crime||0)+1;victim.mem.push(state.year+" — Was murdered by "+me.first+".");me.mem.push(state.year+" — Murdered "+victim.first+".");state.events.push(state.year+" — "+me.name+" murdered "+victim.name+(publicKill?" in public.":" in secret."));
+  if(publicKill)state.people.filter(x=>x!==victim&&x.alive).forEach(x=>x.mem.push(state.year+" — Witnessed "+me.first+" murder "+victim.first+"."));
+  victim.alive=false;victim.died=state.year;victim.x=-999;victim.y=-999;if(typeof addEv==='function')addEv("death",victim.name+" was murdered.",[victim.id],me.id,true);
+  if(publicKill)arrestMurder(20,"murdering "+victim.name+" in public");else if(Math.random()<0.5)arrestMurder(20,"murdering "+victim.name+" in secret");else{renderWorld();renderPanel();renderTop();modal('<h2>☠️ You got away</h2><p>The murder was not discovered.</p><button id="close">CLOSE</button>');$("close").onclick=closeModal;}
+ };
+}
+function arrestMurder(years,why){const me=state.player;me.money-=Math.min(Math.round(me.money),500);if(me.career)me.career.rep=Math.max(0,me.career.rep-25);state.jailLeft=years*365;state.inside="jail";state.events.push(state.year+" — "+me.name+" was arrested for "+why+" and sentenced to "+years+" years in prison.");me.mem.push(state.year+" — Sent to prison for "+why+".");const B=RB();me.x=B.x+B.w/2;me.y=B.y+B.h-45;renderWorld();renderPanel();renderTop();modal('<h2>🚔 Arrested for murder</h2><p>You were caught and sentenced to <b>'+years+' years</b> in prison.</p><button id="close">OK</button>');$("close").onclick=closeModal;}
 function rob(id){
  const p=find(id),me=state.player,pl=state.inside;me.crime=(me.crime||0)+1;
  p.mem.push(state.year+" — Was robbed by "+me.first+".");changeRel(id,-45);
@@ -516,13 +590,13 @@ function pOf(p){const x=p.spouse||p.dating,q=x&&find(x);if(q&&q.alive&&(q.spouse
 function healLinks(){state.people.forEach(p=>{if(!p.alive)return;["spouse","dating"].forEach(k=>{const q=p[k]&&find(p[k]);if(p[k]&&(!q||!q.alive||(q.spouse!==p.id&&q.dating!==p.id)))p[k]=null});if(p.spouse&&p.dating)p.dating=null})}
 function myStatus(){const q=pOf(state.player);return q?(state.player.spouse?"Married to ":"In a relationship with ")+esc(q.name):"Single"}
 function statusOf(p){const q=pOf(p),r=relLabel(state.player,p);return(q?(p.spouse?"Married to ":"Dating ")+esc(q.name):"Single")+(r?" · "+r:"")}
-function kinList(me){const out=[],seen=new Set([me.id]),add=(x,r)=>{if(x&&!seen.has(x.id)){seen.add(x.id);out.push({p:x,role:r})}},g=(x,m,f)=>x&&x.gender==="F"?m:f;
+function kinList(me){
+ const out=[],seen=new Set([me.id]),add=(x,r)=>{if(x&&!seen.has(x.id)){seen.add(x.id);out.push({p:x,role:r})}},g=(x,m,f)=>x&&x.gender==="F"?m:f;
  add(me.spouse&&find(me.spouse),"Spouse");add(me.dating&&find(me.dating),"Partner");
- const par=(me.parents||[]).map(find).filter(Boolean);par.forEach(x=>add(x,g(x,"Mother","Father")));
- par.forEach(x=>(x.children||[]).forEach(i=>{const t=find(i);add(t,g(t,"Sister","Brother"))}));
- par.forEach(x=>(x.parents||[]).forEach(i=>{const t=find(i);add(t,g(t,"Grandmother","Grandfather"))}));
- const ch=(me.children||[]).map(find).filter(Boolean);ch.forEach(x=>add(x,g(x,"Daughter","Son")));
- ch.forEach(x=>(x.children||[]).forEach(i=>{const t=find(i);add(t,g(t,"Granddaughter","Grandson"));if(t)(t.children||[]).forEach(j=>add(find(j),"Great-grandchild"))}));
+ let level=(me.parents||[]).map(find).filter(Boolean); level.forEach(x=>add(x,g(x,"Mother","Father")));
+ for(let depth=2;depth<=3;depth++){const next=[];level.forEach(x=>(x.parents||[]).forEach(i=>{const t=find(i);if(t){next.push(t);add(t,depth===2?g(t,"Grandmother","Grandfather"):g(t,"Great-grandmother","Great-grandfather"))}}));level=next}
+ (me.parents||[]).map(find).filter(Boolean).forEach(x=>(x.children||[]).forEach(i=>{const t=find(i);if(t&&t.id!==me.id)add(t,g(t,"Sister","Brother"))}));
+ let ds=(me.children||[]).map(find).filter(Boolean),depth=1; while(ds.length){const next=[];ds.forEach(x=>{const r=depth===1?g(x,"Daughter","Son"):depth===2?g(x,"Granddaughter","Grandson"):depth===3?"Great-grandchild":"Great-".repeat(depth-2)+"grandchild";add(x,r);(x.children||[]).forEach(i=>{const t=find(i);if(t)next.push(t)})});ds=next;depth++}
  return out}
 function role(me,p){const k=kinList(me).find(x=>x.p.id===p.id);return k?k.role:""}
 function bump(x,y,n){const me=state.player;if(y===me)changeRel(x.id,n);else if(x===me)changeRel(y.id,n);else x.rel[y.id]=clamp((x.rel[y.id]||0)+n,-100,100)}
@@ -629,16 +703,9 @@ function kinLabel(a,b){const k=kinDist(a,b);if(!k)return"";const{da,db}=k,f=b.ge
  if(db===1)return da===2?g("Uncle","Aunt"):"Great-uncle/aunt";
  if(da===2&&db===2)return"Cousin";if(da===3&&db===3)return"Second cousin";if(Math.abs(da-db)===1)return"Cousin once removed";return"Distant relative"}
 function relLabel(me,p){return role(me,p)||kinLabel(me,p)}
-function extList(me,skip){const out=[],A=anc(me,4),seen=new Set([me.id]),outIds=new Set();
- for(const[aid]of A){if(out.length>=16)break;const a=find(aid);if(!a)continue;const st=[a];
-  while(st.length&&out.length<16){const x=st.pop();if(seen.has(x.id)&&x!==a)continue;seen.add(x.id);
-   if(x.alive&&x!==me&&!skip.has(x.id)&&!outIds.has(x.id)){const k=kinDist(me,x);if(k&&k.da<=4&&k.db<=4){outIds.add(x.id);out.push({x,l:kinLabel(me,x)})}}
-   (x.children||[]).forEach(i=>{const c=find(i);if(c&&!seen.has(c.id))st.push(c)})}}
- return out}
-function extCard(me,L){const e=extList(me,new Set(L.map(k=>k.p.id)));return'<div class="card"><h3>Extended family ('+e.length+')</h3>'+(e.map(r=>'<div class="event"><b>'+esc(r.x.name)+'</b> · '+r.l+' <span class="muted">· '+r.x.age+'</span> <button class="small profileBtn" data-id="'+r.x.id+'">PROFILE</button></div>').join("")||'<span class="muted">No cousins, aunts or uncles yet — families grow over the generations.</span>')+'</div>'}
 function famTree(id){const p=find(id);if(!p)return;const lv=[];let cur=[p];for(let g=0;g<3;g++){const nx=[];cur.forEach(x=>(x.parents||[]).forEach(i=>{const q=find(i);if(q)nx.push(q)}));lv.push(nx);cur=nx}
- const nm=x=>esc(x.name)+" ("+(x.alive?x.age:"†"+x.age)+")",lab=["Parents","Grandparents","Great-grandparents"],e=extList(p,new Set());
- modal('<h2>🌳 '+esc(p.name)+'</h2><div class="muted">Generation '+(p.gen||1)+'</div>'+lv.map((a,i)=>a.length?'<div class="event"><b>'+lab[i]+':</b> '+a.map(nm).join(", ")+'</div>':"").join("")+'<div class="card treeBox"><h3>Descendants</h3>'+tree(p.id)+'</div><div class="event"><b>Relatives:</b> '+(e.map(r=>esc(r.x.name)+" ("+r.l+")").join(", ")||"none known")+'</div><br><button id="close">CLOSE</button>');$("close").onclick=closeModal}
+ const nm=x=>esc(x.name)+" ("+(x.alive?x.age:"†"+x.age)+")",lab=["Parents","Grandparents","Great-grandparents"];
+ modal('<h2>🌳 '+esc(p.name)+'</h2><div class="muted">Generation '+(p.gen||1)+'</div>'+lv.map((a,i)=>a.length?'<div class="event"><b>'+lab[i]+':</b> '+a.map(nm).join(", ")+'</div>':"").join("")+'<div class="card treeBox"><h3>Descendants</h3>'+tree(p.id)+'</div><br><button id="close">CLOSE</button>');$("close").onclick=closeModal}
 function famCard(){const m={};state.people.forEach(p=>{if(!p.alive)return;const k=p.line||p.id,e=m[k]=m[k]||{n:0,a:99,b:0,nm:""};e.n++;e.a=Math.min(e.a,p.gen||1);e.b=Math.max(e.b,p.gen||1);if(!e.nm||p.id===k)e.nm=maleSur((p.sn||p.surname).split("-")[0])});
  const L=Object.values(m).sort((a,b)=>b.n-a.n);return'<div class="card"><h3>Family lines ('+L.length+')</h3>'+L.slice(0,8).map(e=>'<div class="row"><span>'+esc(e.nm)+'</span><b>'+e.n+' living · gen '+e.a+(e.b>e.a?'–'+e.b:'')+'</b></div>').join("")+'</div>'}
 function mkP(g,age,c){const p=person(g,age);p.cult=c;p.fn=rndFirst(g,c);p.sn=rndSur(c,g);applyName(p);return p}
@@ -653,16 +720,23 @@ function seedTown(){const ev=state.events.slice();state.pop=newPop(true);state.g
  seedElders(Math.round(POP.seed*.03));
  for(let i=0;i<Math.round(POP.seed*.07);i++){const p=mkP(pick(["M","F"]),18+Math.floor(Math.random()*62),pick(["EN","EN","PL","RU","RU"]));p.addr=addr();if(p.age>=65)p.job="Retired";state.people.push(p)}
  state.events=ev;state.gaz=[];state.pop.hist=[{y:state.year,n:live()}];state.player.line=state.player.id;state.player.gen=1}
-function mortality(a){return a<1?.01:a<40?.001:a<55?.004:a<65?.012:a<75?.035:a<85?.09:a<105?.22:1}
+function mortality(a){return a<1?.008:a<40?.0005:a<55?.002:a<65?.006:a<75?.018:a<85?.035:a<95?.07:a<105?.15:a<112?.5:1}
 function inherit(p){const m=Math.max(0,p.money||0);if(m<50)return;const sp=p.spouse&&find(p.spouse),k=(p.children||[]).map(find).filter(x=>x&&x.alive&&adult(x));let rest=m;
  if(sp&&sp.alive){sp.money=(sp.money||0)+Math.round(m/2);rest=m/2}if(k.length)k.forEach(x=>x.money=Math.round((x.money||0)+rest/k.length));else if(sp&&sp.alive)sp.money+=Math.round(rest);p.money=0}
-function archive(p){p.rel={};p.mem=(p.mem||[]).slice(-6);p.sec=[];p.tx=p.ty=null;p.dest=null;delete p.fxd;delete p.clog}
+function archive(p){p.rel={};p.mem=(p.mem||[]).slice(-24);p.chapters=(p.chapters||[]).slice(-20);p.sec=[];p.tx=p.ty=null;p.dest=null;delete p.fxd;delete p.clog}
 /* worldYear lives in the v11 block */
 function npcYear(p){
+ charInit(p);
  if(!p.addr)p.addr=addr();
  if(Math.random()<mortality(p.age)){die(p);return}
  const me=state.player,sp=p.spouse?find(p.spouse):null,log=(t,...o)=>chron(t,p,sp,...o),P=state.pop||(state.pop=newPop());
  if(p.age===18&&p.job==="Child"){const uni=Math.random()<.4,par=(p.parents||[]).map(find).find(Boolean);p.education=uni?"University":"High school";p.job=uni?"Student":pick(JOBS);p.money=600+Math.round(Math.random()*900);p.addr=(par&&par.addr&&Math.random()<.6)?nearAddr(par.addr):addr();p.mem.push(state.year+" — Left home to start an independent life.");log(p.name+" moved out of the family home"+(uni?" to study.":" and became a "+p.job+"."))}
+ if(p.age===18)addChapter(p,"Adulthood","Left childhood behind and began an independent life.");
+ if(p.age===25)addChapter(p,"A new chapter","Reached 25 and began thinking seriously about the life ahead.");
+ if(p.age===40)addChapter(p,"Midlife","Reached 40 and looked back on what mattered most.");
+ if(p.age===60)addChapter(p,"A new perspective","Reached 60 and began valuing time with family more deeply.");
+ if(p.age===65)addChapter(p,"Retirement years","Entered the later chapter of life.");
+ if(p.age===80)addChapter(p,"Elder years","Reached 80 — a lifetime of memories behind them.");
  if(p.job==="Student"&&p.age>=22){p.job=pick(JOBS);log(p.name+" graduated and became a "+p.job+".")}
  if(p.age>=65&&p.job!=="Retired"){p.job="Retired";log(p.name+" retired.")}
  if(p.age>=22&&p.age<62&&p.job!=="Retired"&&Math.random()<.04){const j=pick(JOBS);if(j!==p.job){p.job=j;log(p.name+" changed careers and became a "+j+".")}}
@@ -683,7 +757,7 @@ function npcYear(p){
  {const v=pOf(p);if(v&&adult(p)&&!(state.aff||[]).some(x=>x.a===p.id||x.b===p.id)){const t=p.trait,pr=["independent","ambitious","funny","outgoing"].includes(t)?.04:["family-oriented","kind","serious"].includes(t)?0:.02;
   if(Math.random()<.015+pr+((p.rel[v.id]||0)<0?.04:0)){const q=sampleAdult(x=>x.alive&&x!==p&&x!==v&&x!==me&&!x.away&&x.gender!==p.gender&&Math.abs(x.age-p.age)<=15&&Math.random()<.3&&!kin(p,x),12);if(q)startAffair(p,q)}}}
  if(p.gender==="F"&&p.age>=18&&p.age<=44&&p.spouse&&p.job!=="Student"&&p.children.length<5&&Math.random()<.14*YR.fert){const o=find(p.spouse);
-  if(o&&o.alive&&o!==me&&!o.away&&p.children.filter(k=>{const c=find(k);return c&&c.age<3}).length<2){const g=pick(["M","F"]),c=makeChild(o,p,rndFirst(g,o.cult),g);state.people.push(c);p.children.push(c.id);o.children.push(c.id);P.born++;log(c.name+" was born to "+o.name+" and "+p.name+".",o,c);evBirth(c);gather("christening",c)}}
+  if(o&&o.alive&&o!==me&&!o.away&&p.children.filter(k=>{const c=find(k);return c&&c.age<3}).length<2){const g=pick(["M","F"]),c=makeChild(o,p,rndFirst(g,o.cult),g);state.people.push(c);p.children.push(c.id);o.children.push(c.id);addMem(p,"Welcomed baby "+c.first+" into the family.");addMem(o,"Welcomed baby "+c.first+" into the family.");addChapter(p,"Parenthood","Welcomed "+c.first+" into the family.");addChapter(o,"Parenthood","Welcomed "+c.first+" into the family.");P.born++;log(c.name+" was born to "+o.name+" and "+p.name+".",o,c);evBirth(c);gather("christening",c)}}
  if(p.mem.length>10)p.mem=p.mem.slice(-8);pruneRel(p);
 }
 
@@ -859,7 +933,7 @@ function rosterFor(pl){if(!state||pl==="jail")return[];
 /* ---- the yearly background simulation ---- */
 function circleSet(){const me=state.player,s=new Set([me.id]);kinList(me).forEach(k=>s.add(k.p.id));
  const sp=me.spouse&&find(me.spouse);if(sp)kinList(sp).forEach(k=>s.add(k.p.id));
- extList(me,new Set()).forEach(r=>s.add(r.x.id));for(const id in me.rel)if(me.rel[id]>=30)s.add(id);return s}
+for(const id in me.rel)if(me.rel[id]>=30)s.add(id);return s}
 function chron(t,...ps){if(!CIRC)CIRC=circleSet();const near=ps.some(x=>x&&(x===state.player||CIRC.has(x.id))),line=state.year+" — "+t;
  if(near)state.events.push(line);else{const g=state.gaz=state.gaz||[];g.push(line);if(g.length>160)state.gaz=g.slice(-120)}}
 function bgYearStart(){const me=state.player,adults=[],singles=[],hood={},job={};let n=0;
@@ -946,7 +1020,7 @@ window.GENDEBUG={
 
 fillCreator();initLook();document.body.insertAdjacentHTML("beforeend",'<div id="clock" style="position:fixed;right:10px;bottom:8px;background:#000a;color:#fff;padding:4px 10px;border-radius:6px;font:13px monospace;z-index:5"></div>');document.body.insertAdjacentHTML("beforeend",'<div id="hint"></div>');setInterval(move,30);setInterval(walkNPCs,30);setInterval(tick,1000);setInterval(()=>{const h=$("hint");if(!state||$("game").style.display==="none"||modalOpen()){h.style.display="none";return}const t=target();h.style.display=t?"block":"none";if(t)h.textContent="E — "+t.l},150);window.addEventListener("resize",()=>{if(state&&$("game").style.display!=="none")renderWorld()});
 window.addEventListener("error",e=>{if($("game").style.display!=="none")status("Game error: "+e.message);});
-if(localStorage.getItem("GENERATIONS_SAVE")){$("creatorMsg").innerHTML='<div style="margin-top:12px"><button id="load">↩ LOAD SAVED DYNASTY</button></div>';$("load").onclick=loadSaved;}
+try{if(localStorage.getItem("GENERATIONS_SAVE")){$("creatorMsg").innerHTML='<div style="margin-top:12px"><button id="load">↩ LOAD SAVED DYNASTY</button></div>';$("load").onclick=loadSaved;}}catch(e){}
 })();
 </script>
 </body>
