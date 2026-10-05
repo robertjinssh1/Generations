@@ -26,6 +26,7 @@ h1,h2,h3{font-family:Georgia,serif}h1{margin:0;color:#efd28a;letter-spacing:2px}
 
 @media(max-width:800px){.main{grid-template-columns:1fr}.side{display:none}.grid{grid-template-columns:1fr 1fr}.stats{grid-template-columns:repeat(3,1fr)}}
 .room{position:absolute;inset:0;border:6px solid #4a3426;box-shadow:inset 0 0 60px #0006;z-index:1}.rtitle{position:absolute;top:8px;left:12px;font-weight:bold;color:#3a2b23;background:#fff8;padding:3px 9px;border-radius:6px}.rdoor{position:absolute;bottom:0;transform:translateX(-50%);background:#5b3d30;color:#fff;padding:5px 18px;border-radius:8px 8px 0 0;font-size:12px}.obj{position:absolute;transform:translate(-50%,-50%);text-align:center}.obj span{font-size:34px;display:block}.obj small{white-space:nowrap;font-size:10px;background:#fffb;padding:1px 5px;border-radius:4px;color:#222}#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);background:#000c;color:#ffe9a8;padding:6px 14px;border-radius:8px;font:bold 14px sans-serif;z-index:30;display:none}
+.person .av{width:100%;height:100%;transform-origin:50% 100%;transform:scale(calc(var(--sc,1)*var(--fx,1)),var(--sc,1))}.person.fl{--fx:-1}.person.fl .ey,.person.fr .ey{left:7px}.person.baby .head{width:21px;height:21px}
 .person{width:26px;height:38px}.legs{width:14px;height:7px;margin:0 auto;border-radius:0 0 3px 3px}.hr{position:absolute;display:block}.head{position:relative}.ey{position:absolute;left:4px;top:8px;width:3px;height:3px;border-radius:50%;box-shadow:8px 0 0 currentColor}.you:after{content:"";position:absolute;bottom:-3px;left:1px;width:24px;height:6px;border-radius:50%;background:#ffd24a99;z-index:-2}
 
 /* ===== MODE MENU + MOBILE MODE ===== */
@@ -86,10 +87,10 @@ body.mobile #game{width:100%;max-width:100vw;overflow:hidden;grid-template-colum
       <div class="field"><label>Culture</label><select id="cult"><option value="EN">English</option><option value="PL">Polish</option><option value="RU">Russian</option></select></div><div class="field"><label>Gender</label><select id="gender"><option value="M">Male</option><option value="F">Female</option></select></div>
       <div class="field"><label>Starting age <small style="opacity:.7">(1–17 = born into a family)</small></label><input id="age" type="number" min="1" max="65" value="22"></div>
       <div class="field"><label>Personality</label><select id="trait"></select></div>
-      <div class="field"><label>Education</label><select id="education"><option>Secondary</option><option>University</option><option>Vocational</option></select></div>
+      <div class="field"><label>Education <small style="opacity:.7">(locked under 18)</small></label><select id="education"><option>Secondary</option><option>University</option><option>Vocational</option></select></div>
       <div class="field"><label>Hair</label><select id="hair"><option>Brown</option><option>Black</option><option>Blond</option><option>Red</option><option>Gray</option></select></div>
       <div class="field"><label>Eyes</label><select id="eyes"><option>Brown</option><option>Blue</option><option>Green</option><option>Gray</option></select></div>
-      <div class="field"><label>Career</label><select id="job"></select></div>
+      <div class="field"><label>Career <small style="opacity:.7">(locked under 18)</small></label><select id="job"></select></div>
       <div class="field"><label>Hair style</label><select id="hstyle"></select></div><div class="field"><label>Skin</label><select id="skin"></select></div><div class="field"><label>Top colour</label><select id="topc"></select></div><div class="field"><label>Trousers</label><select id="botc"></select></div>
     </div>
     <div id="preview" style="height:120px;display:flex;justify-content:center;align-items:flex-end;padding-bottom:6px"></div><div class="stats" id="stats"></div>
@@ -151,7 +152,7 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function esc(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function stage(a){return a<2?"Baby":a<5?"Toddler":a<13?"Child":a<18?"Teen":a<25?"Young Adult":a<65?"Adult":a<80?"Mature Adult":"Elder"}
 const LIFE_GOALS=["build a loving family","see my children succeed","leave something meaningful behind","own a comfortable home","become respected in my work","help the people I love","stay close to my family","learn something new every year","save enough to feel secure","make my parents proud"];
-function charInit(p){p.mem=p.mem||[];p.memories=p.memories||p.mem;p.life=p.life||[];p.goal=p.goal||pick(LIFE_GOALS);p.birthYear=p.birthYear||state?.year-p.age||2026-p.age;p.personality=p.personality||[p.trait,pick(TRAITS.filter(t=>t!==p.trait))];p.chapters=p.chapters||[];p.lastBondYear=p.lastBondYear||0;return p}
+function charInit(p){p.mem=p.mem||[];p.memories=p.memories||p.mem;p.life=p.life||[];p.goal=p.goal||pick(LIFE_GOALS);p.birthYear=p.birthYear||state?.year-p.age||2026-p.age;p.personality=p.personality||[p.trait,pick(TRAITS.filter(t=>t!==p.trait))];p.chapters=p.chapters||[];p.lastBondYear=p.lastBondYear||0;if(p.stats){if(p.stats.strength==null)p.stats.strength=40;if(p.stats.speed==null)p.stats.speed=40}return p}
 function addMem(p,text,year){if(!p||!text)return;charInit(p);const y=year==null?(state?state.year:2026):year;const line=y+" — "+text;if(!p.mem.includes(line))p.mem.push(line);if(p.mem.length>80)p.mem=p.mem.slice(-80)}
 function addChapter(p,title,text){charInit(p);p.chapters.push({y:state.year,title,text});if(p.chapters.length>30)p.chapters=p.chapters.slice(-30);addMem(p,title+": "+text)}
 function adult(p){return p.age>=18}
@@ -164,10 +165,24 @@ function fillCreator(){
   $("job").innerHTML=JOBS.map(x=>"<option>"+x+"</option>").join("");
   $("stats").innerHTML=["Intelligence","Charisma","Health","Creativity","Ambition"].map((x,i)=>'<div class="stat"><b>'+x+'</b><input id="stat'+i+'" type="range" min="20" max="100" value="'+(60+i*6)+'"><span id="val'+i+'">'+(60+i*6)+'</span></div>').join("");
   for(let i=0;i<5;i++)$("stat"+i).oninput=()=>{$("val"+i).textContent=$("stat"+i).value};
+  $("age").addEventListener("input",syncAgeLock);$("age").addEventListener("change",syncAgeLock);syncAgeLock();
+}
+const EDU_OPTS="<option>Secondary</option><option>University</option><option>Vocational</option>";
+function syncAgeLock(){
+  const a=parseInt($("age").value),kid=a>=1&&a<18,j=$("job"),e=$("education");
+  if(kid){
+    if(!j.disabled){j.dataset.prev=j.value;e.dataset.prev=e.value}
+    j.innerHTML="<option>Child (automatic)</option>";e.innerHTML="<option>School (automatic)</option>";
+    j.disabled=e.disabled=true;
+  }else if(j.disabled){
+    j.innerHTML=JOBS.map(x=>"<option>"+x+"</option>").join("");e.innerHTML=EDU_OPTS;
+    j.value=j.dataset.prev||JOBS[0];e.value=e.dataset.prev||"Secondary";
+    j.disabled=e.disabled=false;
+  }
 }
 function randomize(){
   {const c=pick(CULTS),g=pick(["M","F"]);$("cult").value=c;$("gender").value=g;$("first").value=rndFirst(g,c);$("surname").value=rndSur(c,g)}
-  $("age").value=18+Math.floor(Math.random()*43);$("trait").value=pick(TRAITS);$("education").value=pick(["Secondary","University","Vocational"]);
+  $("age").value=18+Math.floor(Math.random()*43);syncAgeLock();$("trait").value=pick(TRAITS);$("education").value=pick(["Secondary","University","Vocational"]);
   $("hair").value=pick(["Brown","Black","Blond","Red","Gray"]);$("eyes").value=pick(["Brown","Blue","Green","Gray"]);$("job").value=pick(JOBS);
   for(let i=0;i<5;i++){let v=30+Math.floor(Math.random()*71);$("stat"+i).value=v;$("val"+i).textContent=v}
 }
@@ -191,13 +206,13 @@ function renderTop(){
  const p=state.player;$("topstats").innerHTML="<span>📅 <b>"+state.year+"</b></span><span>👤 <b>"+esc(p.name)+"</b></span><span>💰 <b>€"+Math.round(p.money)+"</b></span><span>👶 <b>"+p.children.length+" children</b></span>";
 }
 function building(x,y,w,h,label,place){return '<div class="building" data-place="'+place+'" style="left:'+x+'%;top:'+y+'%;width:'+w+'px;height:'+h+'px"><div class="roof"></div><div class="sign">'+label+"</div></div>"}
-function personHTML(p,you,pre){return '<div class="person'+(you?' you':'')+'" id="'+(pre||"person-")+p.id+'" style="left:'+p.x+'px;top:'+p.y+'px"><div class="name">'+esc(p.first)+'</div>'+avatar(lookOf(p))+'</div>'}
+function personHTML(p,you,pre){const a=p.age==null?30:p.age,sc=a<2?.5:a<5?.65:a<9?.78:a<13?.88:a<18?.96:1,f=p.face==="l"?" fl":p.face==="r"?" fr":"";return '<div class="person'+(you?' you':'')+(a<2?' baby':'')+f+'" id="'+(pre||"person-")+p.id+'" style="--sc:'+sc+';left:'+p.x+'px;top:'+p.y+'px"><div class="name" style="top:'+Math.round(38*(1-sc)-18)+'px">'+esc(p.first)+'</div><div class="av">'+avatar(lookOf(p))+'</div></div>'}
 function renderOutdoor(){ensureSched();
  const w=$("world");
  w.innerHTML='<div class="roadH"></div><div class="roadV"></div><div class="water"></div>'+
  building(7,8,145,100,"🏠 HOME","home")+building(73,9,145,100,"🏫 SCHOOL","school")+building(7,69,145,100,"🏥 HOSPITAL","hospital")+
  building(74,69,145,100,"🏪 SHOP","shop")+building(43,4,105,72,"☕ CAFÉ","cafe")+building(42,80,115,65,"⚒️ WORK","work")+
- building(25,34,125,68,"⛪ CHURCH","church")+building(72,35,145,68,"⚰️ CEMETERY","cemetery");
+ building(25,34,125,68,"⛪ CHURCH","church")+building(3,38,120,68,"⚰️ CEMETERY","cemetery");
  if(!window.TREES)window.TREES=Array.from({length:35},()=>[3+Math.random()*93,3+Math.random()*92]);TREES.forEach(t=>w.insertAdjacentHTML("beforeend",'<div class="treeObj" style="left:'+t[0]+'%;top:'+t[1]+'%"></div>'));
  syncVisible(true);VIS.forEach(p=>{if(p.alive)w.insertAdjacentHTML("beforeend",personHTML(p,false))});
  w.insertAdjacentHTML("beforeend",personHTML(state.player,true));
@@ -208,7 +223,7 @@ function renderPanel(){
 }
 function homePanel(){
  const p=state.player;
- $("content").innerHTML='<div class="card"><h3>'+esc(p.name)+'</h3><div class="row"><span>Age</span><b>'+p.age+' · '+stage(p.age)+'</b></div><div class="row"><span>Personality</span><b>'+p.trait+'</b></div><div class="row"><span>Career</span><b>'+p.job+'</b></div><div class="row"><span>Education</span><b>'+p.education+'</b></div></div>'+
+ $("content").innerHTML='<div class="card"><h3>'+esc(p.name)+'</h3><div class="row"><span>Age</span><b>'+p.age+' · '+stage(p.age)+'</b></div><div class="row"><span>Personality</span><b>'+p.trait+'</b></div><div class="row"><span>Career</span><b>'+p.job+'</b></div><div class="row"><span>Education</span><b>'+p.education+'</b></div>'+schoolRow(p)+'</div>'+
  '<div class="card"><h3>Attributes</h3>'+Object.entries(p.stats).map(([k,v])=>'<div class="row"><span>'+k+'</span><b>'+v+'</b></div><div class="bar"><i style="width:'+v+'%"></i></div>').join("")+'</div>'+
  '<div class="card"><h3>Family</h3><div class="row"><span>Status</span><b>'+myStatus()+'</b></div><div class="row"><span>Children</span><b>'+p.children.length+'</b></div><button class="gold" id="advance">📅 AGE ONE YEAR</button></div>'+
  '<div class="card"><h3>Chronicle</h3>'+state.events.slice(-7).reverse().map(e=>'<div class="event">'+esc(e)+'</div>').join("")+'</div>';
@@ -225,7 +240,7 @@ function tree(id){
  return '<ul><li><span class="'+(p.alive?"alive":"dead")+'"><b>'+esc(p.first)+'</b> ('+p.age+') '+(p.alive?"":"†")+'</span>'+(kids.length?kids.map(k=>tree(k.id)).join(""):"")+'</li></ul>';
 }
 function worldPanel(){
- $("content").innerHTML='<div class="card"><h3>The Town</h3><p class="muted">Walk around with WASD or arrow keys. Press E near a person or building to enter/interact. While a window is open, movement and time are paused.</p><div class="row"><span>Living people</span><b>'+state.people.filter(p=>p.alive).length+'</b></div><div class="row"><span>Town year</span><b>'+state.year+'</b></div></div>'+popCard()+famCard()+gazetteCard()+'<div class="card"><h3>Places</h3><p>🏠 Home · 🏫 School · 🏥 Hospital · 🏪 Shop · ☕ Café · ⚒️ Work · ⛪ Church · ⚰️ Cemetery</p></div>';
+ $("content").innerHTML='<div class="card"><h3>The Town</h3><p class="muted">Walk around with WASD or arrow keys. Press E near a person or building to enter/interact. While a window is open, movement and time are paused.</p><div class="row"><span>Living people</span><b>'+state.people.filter(p=>p.alive).length+'</b></div><div class="row"><span>Town year</span><b>'+state.year+'</b></div></div>'+popCard()+famCard()+gazetteCard()+'<div class="card"><h3>Places</h3><p>🏠 Home · 🏫 School · 🏥 Hospital · 🏪 Shop · ☕ Café · ⚒️ Work · 🏋️ Gym · 🏛️ Town Hall · ⛪ Church · ⚰️ Cemetery</p></div>';
 }
 function relation(id){return state.player.rel[id]||0}
 function changeRel(id,n){const p=find(id);state.player.rel[id]=clamp(relation(id)+n,-100,100);if(p)p.rel[state.player.id]=state.player.rel[id]}
@@ -271,7 +286,7 @@ function enterBuilding(place){
  document.querySelectorAll(".insideTalk").forEach(b=>b.onclick=()=>profile(b.dataset.id));
  document.querySelectorAll(".workNpc").forEach(b=>b.onclick=()=>workWithNpc(b.dataset.id));
  $("exitBuilding").onclick=closeModal;if($("applyJob"))$("applyJob").onclick=()=>applyJobs(place);
- if($("heal"))$("heal").onclick=()=>{if(state.player.money<30){status("You need €30.");return}state.player.money-=30;state.player.stats.health=clamp(state.player.stats.health+8,0,100);renderTop();status("The health check helped.");};
+ if($("heal"))$("heal").onclick=()=>{{const c30=hcCost(30);if(state.player.money<c30){status("You need €"+c30+".");return}state.player.money-=c30}state.player.stats.health=clamp(state.player.stats.health+8,0,100);renderTop();status("The health check helped.");};
  if($("workInside"))$("workInside").onclick=()=>{closeModal();startShift()};
  if($("pray"))$("pray").onclick=()=>{state.player.mem.push(state.year+" — Spent quiet time at church.");closeModal();status("You spent some peaceful time at church.");};
  document.querySelectorAll(".buyItem").forEach(b=>b.onclick=()=>buyItem(b.dataset.item,+b.dataset.price,b.dataset.label));
@@ -319,7 +334,7 @@ function baby(id){
 function makeChild(parent,other,name,g){
  const c=person(g,0);c.cult=CULTS.includes(parent.cult)?parent.cult:"EN";c.gender=g;{const opp=NM[c.cult][g==="F"?"M":"F"].includes(name)&&!NM[c.cult][g].includes(name);c.fn=opp?rndFirst(g,c.cult):name;const m=maleSur((parent.sn||parent.surname).split("-")[0]);c.sn=g==="F"?femSur(m):m;applyName(c)}c.job="Child";c.money=0;c.parents=[parent.id,other.id];c.addr=parent.addr;c.gen=(parent.gen||1)+1;c.line=parent.line||parent.id;c.x=(parent.x||200)+25;c.y=(parent.y||200)+20;c.mem=["Born into the "+parent.surname+" family."];c.birthYear=state.year;c.goal=pick(LIFE_GOALS);charInit(c);addChapter(c,"Birth","Born into the "+parent.surname+" family.");return c;
 }
-function salary(j){return ({Teacher:1800,Doctor:3200,Nurse:2200,Engineer:2800,Programmer:3000,Farmer:1500,Chef:1800,"Police officer":2400,Mechanic:2100,"Shop worker":1400,Writer:1800,Artist:1700,"Office worker":1900,"Business owner":2500}[j]||1200)/12}
+function salary(j){return ({Teacher:1800,Doctor:3200,Nurse:2200,Engineer:2800,Programmer:3000,Farmer:1500,Chef:1800,"Police officer":2400,Mechanic:2100,"Shop worker":1400,Writer:1800,Artist:1700,"Office worker":1900,"Business owner":2500,Mayor:4200}[j]||1200)/12}
 function advanceYear(){
  if(!state||state.ended||!state.player.alive)return;
  state.year++;state.lastYD=Math.floor(state.clock/1440);expireEvs();healLinks();const p=state.player;p.age++;p.money+=(p.age<18?40+p.age*4:salary(p.job)-350);
@@ -422,7 +437,7 @@ function massStage(){return MASS[massIdx()][0]}
 function isMass(day,h){return day%7===6&&h>=10&&h<12}
 function massActive(){return isMass(Math.floor(state.clock/1440),nowH())}
 function hsh(s){let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;return h}
-function workPlace(j){return ({Teacher:"school",Doctor:"hospital",Nurse:"hospital",Chef:"cafe","Shop worker":"shop","Business owner":"shop",Farmer:"park","Police officer":"street",Mechanic:"work","Office worker":"work",Engineer:"work",Programmer:"work",Writer:"cafe",Artist:"cafe"})[j]||"street"}
+function workPlace(j){return ({Teacher:"school",Doctor:"hospital",Nurse:"hospital",Chef:"cafe","Shop worker":"shop","Business owner":"shop",Farmer:"park","Police officer":"street",Mechanic:"work","Office worker":"work",Engineer:"work",Programmer:"work",Writer:"cafe",Artist:"cafe",Mayor:"townhall"})[j]||"street"}
 function sched(p,h,day){
  if(p.away)return "inhome";const d=day%7,wk=d<5,v=(p.h||(p.h=hsh(p.id)))%10;
  if(h>=22||h<7||p.age<5)return "inhome";
@@ -436,7 +451,7 @@ function sched(p,h,day){
  return "inhome";
 }
 function nowH(){return Math.floor(state.clock/60)%24}
-const BLD={home:[7,8,145,100],school:[73,9,145,100],hospital:[7,69,145,100],shop:[74,69,145,100],cafe:[43,4,105,72],work:[42,80,115,65],church:[25,34,125,68],cemetery:[72,35,145,68]};
+const BLD={home:[7,8,145,100],school:[73,9,145,100],hospital:[7,69,145,100],shop:[74,69,145,100],cafe:[43,4,105,72],work:[42,80,115,65],church:[25,34,125,68],cemetery:[3,38,120,68]};
 let obK="",obL=[];
 function WH(){return[Math.max(300,$("world").clientWidth),Math.max(250,$("world").clientHeight)]}
 function OB(){const[W,H]=WH(),k=W+"x"+H;if(k!==obK){obK=k;obL=Object.values(BLD).map(b=>({l:b[0]*W/100,t:b[1]*H/100,r:b[0]*W/100+b[2],b:b[1]*H/100+b[3]}));obL.push({l:W*.97-190,t:H*.03,r:W*.97,b:H*.03+125})}return obL}
@@ -468,6 +483,7 @@ function updateMassBubble(){
  else b.remove();
 }
 function moveEl(p){const e=$("person-"+p.id);if(e){e.style.left=p.x+"px";e.style.top=p.y+"px"}}
+const _moveEl=moveEl;moveEl=function(p){_moveEl(p);if(p._lx!=null&&Math.abs(p.x-p._lx)>.3){p.face=p.x<p._lx?"l":"r";const e=$("person-"+p.id);if(e){e.classList.remove("fl","fr");e.classList.add("f"+p.face)}}p._lx=p.x};
 function walkNPCs(){
  if(!state||state.ended||$("game").style.display==="none"||modalOpen())return;
  for(const p of VIS){
@@ -496,9 +512,9 @@ cafe:{t:"☕ Town Café",f:"#d8b99a",o:[["☕",50,24,"Café counter","svc"],["�
 hospital:{t:"🏥 Town Hospital",f:"#dfeaf0",o:[["🩺",50,24,"Reception","svc"],["🛏️",18,44,"Ward bed","fx:You rest in a bed for a while.|health|2|0"],["💊",84,48,"Pharmacy","fx:You buy vitamins.|health|1|10"],["🪑",50,66,"Waiting chairs","fx:You wait and read old magazines.|creativity|1|0"],["💼",92,15,"Work station","work"]]},
 work:{t:"⚒️ Workplace",f:"#c9c9c9",o:[["🖥️",24,26,"Work station","work"],["🖥️",72,26,"Work station","work"],["☕",16,66,"Coffee machine","fx:A strong coffee from the machine.|ambition|1|2"],["📌",50,66,"Notice board","fx:You read the notice board.|intelligence|1|0"],["🚰",84,66,"Water cooler","fx:A chat by the water cooler.|charisma|1|0"]]},
 church:{t:"⛪ Church",f:"#e9dcc4",o:[["🕯️",50,20,"Altar","pray"],["🪑",24,48,"Pews","fx:You sit quietly in a pew.|health|1|0"],["🕯️",78,48,"Candles","fx:You light a candle for your family.|creativity|0|1"],["🎹",16,72,"Organ","fx:You listen to the organ.|creativity|1|0"],["💰",84,72,"Donation box","fx:You donate a few coins.|charisma|1|2"]]},
-cemetery:{t:"⚰️ Cemetery",f:"#7f9d6e",o:[]},jail:{t:"🚔 Jail Cell",f:"#8e8e98",o:[["🛏️",20,38,"Bunk (serve sentence)","serve"],["🪟",72,26,"Window","fx:You stare out of the window.|health|0|0"],["🚽",80,62,"Toilet","fx:Not pleasant.|health|0|0"]]}};
+cemetery:{t:"⚰️ Cemetery",f:"#7f9d6e",o:[]},gym:{t:"🏋️ Gym",f:"#b8b2a4",o:[["🏃",22,34,"Treadmill","fx:You run on the treadmill. You feel faster.|speed|3|0"],["🏋️",52,34,"Weights","fx:You lift weights. You feel stronger.|strength|3|0"],["🥊",80,34,"Punching bag","fx:You hit the punching bag.|strength|2|0"],["🧘",36,70,"Stretching mat","fx:You stretch and cool down.|health|1|0"]]},jail:{t:"🚔 Jail Cell",f:"#8e8e98",o:[["🛏️",20,38,"Bunk (serve sentence)","serve"],["🪟",72,26,"Window","fx:You stare out of the window.|health|0|0"],["🚽",80,62,"Toilet","fx:Not pleasant.|health|0|0"]]}};
 function doFx(def,label){const p=state.player,[txt,st,d,c]=def.split("|"),day=Math.floor(state.clock/1440);p.fxd=p.fxd||{};if(+c>p.money){status("You can't afford that (€"+c+").");return}p.money-=+c;let g="";if(+d>0&&p.fxd[label]!==day&&p.stats[st]!=null){p.fxd[label]=day;p.stats[st]=clamp(p.stats[st]+ +d,0,100);g=" (+"+d+" "+st+")"}status(txt+g);renderTop()}
-function objsFor(pl){const d=INT[pl]||INT.work;if(pl!=="cemetery")return d.o;return state.people.filter(x=>!x.alive).slice(-18).map((x,i)=>["🪦",12+(i%6)*15,28+Math.floor(i/6)*22,x.name+(x.died?" †"+x.died:""),"grave:"+x.id])}
+function objsFor(pl){const d=INT[pl]||INT.work;if(pl==="jail")return state&&state.escFail?d.o.filter(o=>o[4]==="serve"):d.o.concat([["🕳️",84,62,"Air vent (try to escape)","escape"]]);if(pl!=="cemetery")return pl==="townhall"?d.o.filter(o=>!o[5]||(state&&state.player&&state.player.job==="Mayor")):d.o;return state.people.filter(x=>!x.alive).slice(-18).map((x,i)=>["🪦",12+(i%6)*15,28+Math.floor(i/6)*22,x.name+(x.died?" †"+x.died:""),"grave:"+x.id])}
 function insideNPCs(pl){return rosterFor(pl)}
 function RB(){const W=$("world").clientWidth,H=$("world").clientHeight,w=Math.min(W-40,620),h=Math.min(H-40,400);return{x:(W-w)/2,y:(H-h)/2,w,h}}
 function ipos(p,pl,i,B){if(pl!=="home"&&workPlace(p.job)===pl&&p.age>=18)return{x:B.x+B.w*(.5+((i%3)-1)*.14),y:B.y+B.h*.12};const h=hsh(p.id);return{x:B.x+B.w*(.15+(h%70)/100),y:B.y+B.h*(.4+((h>>4)%25)/100)}}
@@ -542,11 +558,11 @@ function leave(){
  const pl=state.inside,p=state.player;state.inside=null;renderWorld();const d=doorPos(pl==="jail"?"work":pl);p.x=d.x;p.y=d.y+22;const e=$("person-"+p.id);if(e){e.style.left=p.x+"px";e.style.top=p.y+"px"}
 }
 function runObj(pl,o){const a=o[4];
- if(a==="svc")enterBuilding(pl);else if(a==="work")startShift();else if(a==="apply")applyJobs(pl);else if(a==="rest")sleep();
+ if(a==="archives")archives();else if(a==="bribe")bribeClerk();else if(a==="election")electionBoard();else if(a==="mayoroffice")mayorOffice();else if(a==="petitions")petitions();else if(a==="mayorclear")mayorClear();else if(a==="rename")renameMe();else if(a==="exam")schoolDesk();else if(a==="svc")enterBuilding(pl);else if(a==="work")startShift();else if(a==="apply")applyJobs(pl);else if(a==="rest")sleep();
  else if(a==="eat"){state.player.stats.health=clamp(state.player.stats.health+1,0,100);status("You ate at home.")}
  else if(a==="sofa")status("You relax on the sofa.");
  else if(a==="pray"){state.player.mem.push(state.year+" — Spent quiet time at church.");status("You spent some peaceful time at church.")}
- else if(a==="serve")serve();else if(a.startsWith("fx:"))doFx(a.slice(3),o[3]);
+ else if(a==="serve")serve();else if(a==="escape")escapeMaze();else if(a.startsWith("fx:"))doFx(a.slice(3),o[3]);
  else if(a.startsWith("grave:")){const g=find(a.slice(6));modal('<h2>🪦 '+esc(g.name)+'</h2><p>Died at age '+g.age+(g.died?' in '+g.died:'')+'. Career: '+esc(g.job)+'.</p>'+g.mem.slice(-3).map(x=>'<div class="event">'+esc(x)+'</div>').join("")+'<br><button id="close">CLOSE</button>');$("close").onclick=closeModal}
 }
 function sleep(){const d=Math.floor(state.clock/1440);state.clock=(d+(nowH()>=7?1:0))*1440+420;state.player.stats.health=clamp(state.player.stats.health+4,0,100);status("You slept until morning.");renderTop()}
@@ -566,6 +582,7 @@ function jobsAt(pl){return JOBS.filter(j=>carFor(j).pl===pl)}
 ["school","hospital","shop","cafe","work"].forEach(pl=>{if(INT[pl]&&jobsAt(pl).length)INT[pl].o.push(["📝",90,86,"Job applications","apply"])});
 function applyJobs(pl){const me=state.player;closeModal();
  if(me.age<16){status("You're too young to apply for a job.");return}
+ if(me.schoolOK===false){status("You failed school — retake the exam at the school Exams desk to get a job.");return}
  if(inPrison()){status("You are in prison.");return}
  me.applied=me.applied||{};const L=jobsAt(pl);
  modal('<h2>📝 Job applications — '+esc((INT[pl]||{t:pl}).t)+'</h2><p class="muted">Pick a position and pass the interview. Your stats decide how hard it is. A failed interview can be retried next year.</p><div class="interiorGrid">'+L.map(j=>{const r=REQ[j]||["charisma",30],cur=me.job===j,blocked=me.applied[j]===state.year;
@@ -591,11 +608,86 @@ function bornIntoFamily(){const me=state.player,c=CULTS.includes(me.cult)?me.cul
  changeRel(h.id,55);changeRel(w.id,60);
  me.mem=["Was born into the "+maleSur(h.sn)+" family. Parents: "+h.name+" and "+w.name+"."];
  state.events.push("2026 — "+me.name+" is "+me.age+", growing up with "+h.first+" and "+w.first+" in the family home.")}
+
+/* ===== school quizzes + university system ===== */
+const QS_SCHOOL=[["What is 12 × 8?",["96","86","108","92"],0],["What is the capital of France?",["Paris","Rome","Madrid","Berlin"],0],["Water boils at what temperature (°C) at sea level?",["100","90","120","80"],0],["Which planet is closest to the Sun?",["Mercury","Venus","Mars","Earth"],0],["Which gas do plants absorb?",["Carbon dioxide","Oxygen","Helium","Nitrogen"],0],["What is 15% of 200?",["30","20","25","15"],0],["How many continents are there?",["7","5","6","8"],0],["Which is a noun?",["Table","Quickly","Run","Beautiful"],0],["What is the square root of 81?",["9","8","7","11"],0],["Who wrote Romeo and Juliet?",["Shakespeare","Dickens","Tolstoy","Homer"],0]];
+const UNI=[
+{id:"med",n:"Medicine",ic:"🩺",cost:6000,need:4,jobs:["Doctor","Nurse"],q:[["How many chambers does the human heart have?",["4","2","3","6"],0],["Which organ produces insulin?",["Pancreas","Liver","Kidney","Spleen"],0],["Which blood cells carry oxygen?",["Red","White","Platelets","Plasma"],0],["Which vitamin does sunlight help produce?",["D","C","B12","K"],0],["What do antibiotics treat?",["Bacterial infections","Viruses","Broken bones","Allergies"],0],["The largest organ of the body is the...",["Skin","Liver","Lung","Brain"],0]]},
+{id:"eng",n:"Engineering",ic:"⚙️",cost:4000,need:3,jobs:["Engineer","Mechanic"],q:[["What is the unit of force?",["Newton","Joule","Watt","Pascal"],0],["Ohm's law: V = ?",["I × R","I + R","I / R","R / I"],0],["Which material conducts electricity best?",["Copper","Rubber","Wood","Glass"],0],["Area of a circle with radius r?",["πr²","2πr","πr","r²"],0],["Which simple machine is a ramp?",["Inclined plane","Lever","Pulley","Wheel"],0],["Steel is mostly iron and...",["Carbon","Helium","Lead","Sodium"],0]]},
+{id:"it",n:"Computer Science",ic:"💻",cost:3500,need:3,jobs:["Programmer"],q:[["How many bits in a byte?",["8","4","16","10"],0],["Binary 101 equals what in decimal?",["5","3","6","7"],0],["What does CPU stand for?",["Central Processing Unit","Computer Power Unit","Core Program Utility","Central Printer Unit"],0],["Which is a programming language?",["Python","HTML table","Ethernet","Router"],0],["A loop is used to...",["Repeat code","Delete files","Draw a border","Print paper"],0],["What does RAM do?",["Short-term memory","Cools the PC","Stores photos forever","Connects Wi-Fi"],0]]},
+{id:"edu",n:"Education",ic:"🍎",cost:2500,need:3,jobs:["Teacher"],q:[["Which is a good way to help students learn?",["Clear feedback","Ignoring questions","Only punishment","Skipping lessons"],0],["How many minutes in 2.5 hours?",["150","120","180","130"],0],["A synonym of 'big' is...",["Large","Tiny","Cold","Slow"],0],["Who painted the Mona Lisa?",["Da Vinci","Picasso","Monet","Van Gogh"],0],["Which is a mammal?",["Whale","Shark","Trout","Octopus"],0],["How many sides does a hexagon have?",["6","5","8","7"],0]]},
+{id:"biz",n:"Business",ic:"📈",cost:3000,need:3,jobs:["Business owner","Office worker"],q:[["Revenue minus costs equals...",["Profit","Tax","Debt","Stock"],0],["Selling price €50, cost €30: profit?",["€20","€80","€30","€15"],0],["What is inflation?",["Rising prices","Falling prices","A tax","A bank"],0],["A shareholder owns part of a...",["Company","River","School","Road"],0],["Supply goes up, demand stays: price tends to...",["Fall","Rise","Double","Vanish"],0],["10% of €450 is...",["€45","€54","€4.5","€90"],0]]},
+{id:"art",n:"Arts & Literature",ic:"🎨",cost:2000,need:3,jobs:["Artist","Writer"],q:[["Which are primary colours?",["Red, blue, yellow","Green, pink, grey","Black, white, brown","Orange, purple, green"],0],["Who wrote '1984'?",["George Orwell","Jane Austen","Mark Twain","Homer"],0],["A poem with 14 lines is a...",["Sonnet","Haiku","Limerick","Ode"],0],["Mixing blue and yellow gives...",["Green","Purple","Orange","Brown"],0],["Who composed the Fifth Symphony?",["Beethoven","Mozart","Bach","Chopin"],0],["What is a metaphor?",["A figurative comparison","A rhyme","A footnote","A title"],0]]}];
+function runQuiz(title,bank,n,done){const qs=bank.slice().sort(()=>Math.random()-.5).slice(0,n);let i=0,sc=0;
+ (function next(){if(i>=qs.length)return done(sc,qs.length);const q=qs[i],o=q[1].map((t,k)=>[t,k===q[2]]).sort(()=>Math.random()-.5);
+  modal('<h2>'+title+' — '+(i+1)+'/'+qs.length+'</h2><p>'+esc(q[0])+'</p><div class="choices">'+o.map((x,k)=>'<button class="qa" data-k="'+k+'">'+esc(x[0])+'</button>').join("")+'</div>');
+  document.querySelectorAll(".qa").forEach(b=>b.onclick=()=>{if(o[+b.dataset.k][1])sc++;i++;next()})})()}
+function schoolRow(p){const s=p.sch;if(p.age<18)return s&&s.n?'<div class="row"><span>School</span><b>'+s.n+' quizzes · avg '+Math.round(s.t/s.n)+'%</b></div>':'';return p.schoolOK===false?'<div class="row"><span>School</span><b>❌ Failed</b></div>':p.schoolOK?'<div class="row"><span>School</span><b>✅ Passed</b></div>':''}
+function schoolDesk(){const p=state.player;closeModal();if(p.age<18)return schoolQuiz();if(p.schoolOK===false)return finalExam();status("You already have your school certificate.")}
+function schoolQuiz(){const p=state.player,day=Math.floor(state.clock/1440);p.sch=p.sch||{n:0,t:0};if(p.lastQuiz===day){status("One school quiz per day — come back tomorrow.");return}
+ runQuiz("📚 School quiz",QS_SCHOOL,5,(sc,n)=>{const pct=sc/n*100,ok=pct>=60;p.lastQuiz=day;p.sch.n++;p.sch.t+=pct;if(ok)p.stats.intelligence=clamp((p.stats.intelligence||40)+1,0,100);
+  p.mem.push(state.year+" — School quiz: "+sc+"/"+n+(ok?" (passed)":" (failed)")+".");
+  modal('<h2>'+(ok?"✅ Quiz passed":"❌ Quiz failed")+'</h2><p>You scored <b>'+sc+'/'+n+'</b>.</p><p class="muted">Average so far: '+Math.round(p.sch.t/p.sch.n)+'% over '+p.sch.n+' quizzes. To pass school at 18 you need at least 3 quizzes with a 50% average — or pass the final exam.</p><button id="close">OK</button>');$("close").onclick=closeModal;renderPanel()})}
+function finalExam(){const p=state.player;modal('<h2>🎓 Final school exam</h2><p>'+(p.age<=18?"You have not done enough school work to pass automatically. ":"")+'Pass this exam (3 of 5) to receive your school certificate. Without it you cannot get a job.</p><button id="go" class="gold">START EXAM</button>');
+ $("go").onclick=()=>runQuiz("🎓 Final exam",QS_SCHOOL,5,(sc)=>{if(sc>=3){p.schoolOK=true;p.education="Secondary";state.events.push(state.year+" — "+p.name+" passed school.");if(p.job==="Child"||p.job==="Unemployed"){modal('<h2>✅ School passed!</h2><p>You scored '+sc+'/5.</p><button id="ok" class="gold">CONTINUE</button>');$("ok").onclick=()=>{if(p.age<=19&&!p.career_started)adultChoice();else{p.job="Unemployed";closeModal()}}}}
+  else{p.schoolOK=false;p.job="Unemployed";state.events.push(state.year+" — "+p.name+" failed school.");modal('<h2>❌ School failed</h2><p>You scored '+sc+'/5. Without a school certificate you <b>cannot get a job</b>. Retake the exam at the 🏫 School (Exams desk).</p><button id="close">OK</button>');$("close").onclick=closeModal}renderTop();renderPanel()})}
+function adultChoice(){const p=state.player;p.career_started=true;modal('<h2>🎂 You turned '+p.age+'!</h2><p>You are an adult now. What will you do?</p><div class="choices"><button id="coJob" class="gold">💼 Start working</button><button id="coUni">🎓 Choose a university</button></div><p class="muted">You can change jobs later at the 📝 Job applications desks.</p>');
+ $("coJob").onclick=()=>{p.job=pick(JOBS);p.education="Secondary";p.career={level:1,rep:0,shifts:0};p.money+=300;state.events.push(state.year+" — "+p.name+" started working as a "+p.job+".");closeModal();renderTop();renderPanel();status("You are now a "+p.job+".")};
+ $("coUni").onclick=uniMenu}
+function uniMenu(){const p=state.player;modal('<h2>🎓 Choose a university</h2><p class="muted">Take an entrance quiz, or buy a place if you can afford it. You have €'+Math.round(p.money)+'.</p><div class="interiorGrid">'+UNI.map(f=>'<div class="shopItem"><b>'+f.ic+' '+f.n+'</b><br><span class="muted">Need '+f.need+'/5 · Buy: €'+f.cost+'</span><br><button class="uQ" data-f="'+f.id+'">TAKE QUIZ</button> <button class="uB" data-f="'+f.id+'"'+(p.money<f.cost?' disabled':'')+'>💰 BUY PLACE</button></div>').join("")+'</div><br><button id="uBack">← Back</button>');
+ $("uBack").onclick=adultChoice;document.querySelectorAll(".uQ").forEach(b=>b.onclick=()=>uniQuiz(UNI.find(f=>f.id===b.dataset.f)));document.querySelectorAll(".uB").forEach(b=>b.onclick=()=>enroll(UNI.find(f=>f.id===b.dataset.f),true))}
+function uniQuiz(f){const p=state.player;runQuiz(f.ic+" "+f.n+" entrance quiz",f.q,5,(sc,n)=>{if(sc>=f.need){modal('<h2>✅ Accepted!</h2><p>You scored <b>'+sc+'/'+n+'</b>. '+f.n+' welcomes you.</p><button id="ok" class="gold">ENROLL</button>');$("ok").onclick=()=>enroll(f,false)}
+ else{modal('<h2>❌ Not accepted</h2><p>You scored <b>'+sc+'/'+n+'</b>, but '+f.n+' requires '+f.need+'.</p><div class="choices">'+(p.money>=f.cost?'<button id="buy" class="gold">💰 Buy a place — €'+f.cost+'</button>':'<p class="muted">You cannot afford to buy a place (€'+f.cost+').</p>')+'<button id="other">Choose another university</button></div>');if($("buy"))$("buy").onclick=()=>enroll(f,true);$("other").onclick=uniMenu}})}
+function enroll(f,bought){const p=state.player;if(bought){if(p.money<f.cost)return;p.money-=f.cost}p.job="Student";p.education="University";p.uni=f.id;
+ state.events.push(state.year+" — "+p.name+" began studying "+f.n+(bought?" (bought a place).":"."));p.mem.push(state.year+" — Started "+f.n+" at university.");closeModal();renderTop();renderPanel();status("You are now studying "+f.n+".")}
 function comingOfAge(){const p=state.player;
- if(p.job==="Child"&&p.age>=18){modal('<h2>🎂 You turned '+p.age+'!</h2><p>You are an adult now. What will you do?</p><div class="choices"><button id="coJob" class="gold">💼 Start working</button><button id="coUni">🎓 Go to university</button></div><p class="muted">You can change jobs later at the 📝 Job applications desks.</p>');
-  $("coJob").onclick=()=>{p.job=pick(JOBS);p.education="Secondary";p.career={level:1,rep:0,shifts:0};p.money+=300;state.events.push(state.year+" — "+p.name+" started working as a "+p.job+".");closeModal();renderTop();renderPanel();status("You are now a "+p.job+".")};
-  $("coUni").onclick=()=>{p.job="Student";p.education="University";state.events.push(state.year+" — "+p.name+" began university.");closeModal();renderTop();renderPanel();status("You are now a university student.")}}
- else if(p.job==="Student"&&p.age>=22){p.job=pick(JOBS);p.career={level:1,rep:0,shifts:0};state.events.push(state.year+" — "+p.name+" graduated and became a "+p.job+".");status("You graduated and became a "+p.job+".")}}
+ if(p.job==="Child"&&p.age>=18){const s=p.sch||{n:0,t:0};if(s.n>=3&&s.t/s.n>=50){p.schoolOK=true;p.education="Secondary";state.events.push(state.year+" — "+p.name+" passed school.");adultChoice()}else finalExam()}
+ else if(p.job==="Student"&&p.age>=22){const f=UNI.find(x=>x.id===p.uni);p.job=pick(f?f.jobs:JOBS);p.career={level:1,rep:0,shifts:0};state.events.push(state.year+" — "+p.name+" graduated"+(f?" in "+f.n:"")+" and became a "+p.job+".");status("You graduated and became a "+p.job+".")}}
+
+/* ===== town hall ===== */
+INT.townhall={t:"🏛️ Town Hall",f:"#cfc6b0",o:[["📚",28,34,"Town archives","archives"],["📝",72,34,"Registry office (change name)","rename"],["🖼️",50,70,"Portraits of old mayors","fx:You admire the old portraits.|creativity|0|0"]]};
+function archives(){const ev=(state.events||[]).slice().reverse().slice(0,40),dead=state.people.filter(x=>!x.alive).slice(-25).reverse();
+ modal('<h2>📚 Town archives</h2><div class="card"><h3>Recent records</h3>'+(ev.map(e=>'<div class="event">'+esc(e)+'</div>').join("")||'<p class="muted">Nothing recorded yet.</p>')+'</div><div class="card"><h3>Deaths register</h3>'+(dead.map(x=>'<div class="event"><b>'+esc(x.name)+'</b> · died at '+x.age+(x.died?' in '+x.died:'')+'</div>').join("")||'<p class="muted">Nobody has died yet.</p>')+'</div><button id="close">CLOSE</button>');$("close").onclick=closeModal}
+function renameMe(){const p=state.player;modal('<h2>📝 Registry office</h2><p class="muted">Change your first name and surname officially.</p><div class="field"><label>First name</label><input id="rnF" maxlength="20" value="'+esc(p.first)+'"></div><div class="field"><label>Surname</label><input id="rnL" maxlength="20" value="'+esc(p.surname)+'"></div><div class="choices"><button id="rnOk" class="gold">CONFIRM NAME CHANGE</button><button id="close">CANCEL</button></div>');
+ $("close").onclick=closeModal;$("rnOk").onclick=()=>{const f=$("rnF").value.trim(),l=$("rnL").value.trim();if(!f||!l){status("Please enter both names.");return}const old=p.name;
+  p.first=f;p.surname=l;p.fn=f;{const m=maleSur(l);p.sn=p.gender==="F"?femSur(m):m}p.name=f+" "+l;try{fixName(p,true)}catch(e){}
+  p.mem.push(state.year+" — Changed name from "+old+" to "+p.name+".");state.events.push(state.year+" — "+old+" legally changed their name to "+p.name+".");closeModal();renderTop();renderPanel();renderWorld();status("Your name is now "+p.name+".")}}
+INT.school.o.push(["📖",50,44,"Exams desk","exam"]);
+
+/* ===== town hall: record-clearing service (bribe) + Mayor privileges ===== */
+CAR.Mayor={pl:"townhall",t:[["A citizen demands a new bridge.",[["Approve the budget","ambition",42,"The town is grateful.","Costs spiralled."],["Delay for a study","intelligence",40,"A wise compromise.","Voters are impatient."]]],["Two neighbours feud over a fence.",[["Mediate calmly","charisma",42,"They shook hands.","They still argue."],["Rule firmly","ambition",38,"Case closed.","One side is furious."]]],["The council meets.",[["Give a rousing speech","charisma",46,"The motion passes.","The room stays cold."],["Present the figures","intelligence",44,"A clear win.","They got lost in numbers."]]]]};
+INT.townhall.o.push(["🗂️",16,68,"Records clerk (clear criminal record)","bribe"],["🗳️",50,34,"Election board","election"],["💼",90,15,"Mayor's work station","work",1],["🏛️",84,64,"Mayor's office (town controls)","mayoroffice",1],["📜",50,52,"Petitions (citizens waiting)","petitions",1]);
+function hasRecord(me){return !!((me.rec||[]).length||(me.prisonYears||0)>0)}
+function isFugitive(me){return !!(me.wanted&&me.wanted>=state.year)}
+function bribeCost(me){return Math.round(1500+(me.rec||[]).length*600+(me.prisonYears||0)*300)}
+function wipeRecord(me){me.rec=[];me.prisonYears=0;me.crime=0}
+function recordSummary(me){const rec=me.rec||[];return '<div class="card"><h3>Your criminal record</h3><div class="row"><span>Offences</span><b>'+rec.length+'</b></div><div class="row"><span>Years in prison</span><b>'+(me.prisonYears||0)+'</b></div>'+rec.slice(-6).reverse().map(r=>'<div class="event">'+r.y+' — '+esc(r.t)+(r.v?' ('+esc(r.v)+')':'')+'</div>').join("")+'</div>'}
+function bribeClerk(){
+ const me=state.player;
+ if(!hasRecord(me)){modal('<h2>🗂️ Records clerk</h2><p>The clerk checks the files and shrugs. <i>"Your record is already clean. There is nothing to remove."</i></p><button id="close">OK</button>');$("close").onclick=closeModal;return}
+ if(isFugitive(me)){modal('<h2>🗂️ Records clerk</h2><p>The clerk goes pale when he sees the name. <i>"You are wanted until '+me.wanted+'. I will not touch that file — not for any amount."</i></p><p class="muted">Come back once you are no longer wanted.</p><button id="close">OK</button>');$("close").onclick=closeModal;return}
+ const cost=bribeCost(me),can=me.money>=cost;
+ modal('<h2>🗂️ Records clerk</h2><p class="muted">The clerk glances at the door and lowers his voice. <i>"Some files do go missing, for the right fee. Strictly off the books."</i></p>'+recordSummary(me)+'<div class="card"><div class="row"><span>Fee</span><b>'+fm(cost)+'</b></div><div class="row"><span>Your money</span><b>'+fm(me.money)+'</b></div><p class="muted">The fee grows with every offence and every year you served.</p>'+(can?'':'<p style="color:#e07a6a">You cannot afford this.</p>')+'</div><div class="choices"><button id="bribeGo" class="gold"'+(can?'':' disabled')+'>PAY THE CLERK ('+fm(cost)+')</button><button id="close">LEAVE</button></div>');
+ $("close").onclick=closeModal;$("bribeGo").onclick=bribeConfirm}
+function bribeConfirm(){
+ const me=state.player,cost=bribeCost(me);
+ modal('<h2>💶 Are you sure?</h2><p>You are about to slip <b>'+fm(cost)+'</b> to the clerk to make your <b>entire criminal record</b> ('+(me.rec||[]).length+' offence'+((me.rec||[]).length===1?'':'s')+', '+(me.prisonYears||0)+' prison year'+((me.prisonYears||0)===1?'':'s')+') disappear.</p><p class="muted">You will have '+fm(me.money-cost)+' left. This cannot be undone and the money is not refunded.</p><div class="choices"><button id="bribeYes" class="gold">YES, PAY AND CLEAR IT</button><button id="close">CANCEL</button></div>');
+ $("close").onclick=closeModal;
+ $("bribeYes").onclick=()=>{
+  if(!hasRecord(me)||isFugitive(me)){closeModal();status("The clerk can't help you right now.");return}
+  if(me.money<cost){closeModal();status("You cannot afford that ("+fm(cost)+").");return}
+  me.money-=cost;wipeRecord(me);me.mem.push(state.year+" — Paid a Town Hall clerk "+fm(cost)+" to make my criminal record disappear.");
+  closeModal();renderTop();renderPanel();
+  modal('<h2>🗂️ Done</h2><p>The clerk pockets the envelope. <i>"What file?"</i> Your record is clean — banks and employers will see nothing.</p><button id="close" class="gold">THANKS</button>');$("close").onclick=closeModal;status("Your criminal record was cleared for "+fm(cost)+".")}}
+function mayorClear(){
+ const me=state.player;
+ if(me.job!=="Mayor"){status("Only the Mayor may open these files.");return}
+ if(!hasRecord(me)&&!isFugitive(me)){modal('<h2>🗝️ Mayor\'s private files</h2><p>Your record is already clean.</p><button id="close">OK</button>');$("close").onclick=closeModal;return}
+ modal('<h2>🗝️ Mayor\'s private files</h2><p class="muted">As Mayor you have access to the town\'s registry. You can quietly erase your own file — no fee.</p>'+recordSummary(me)+(isFugitive(me)?'<p class="muted">Your warrant (wanted until '+me.wanted+') will be withdrawn too.</p>':'')+'<p><b>Clear your own criminal record?</b> This cannot be undone.</p><div class="choices"><button id="mcYes" class="gold">YES, CLEAR MY RECORD</button><button id="close">CANCEL</button></div>');
+ $("close").onclick=closeModal;
+ $("mcYes").onclick=()=>{wipeRecord(me);me.wanted=0;me.mem.push(state.year+" — Used the Mayor's office to erase my own criminal record.");closeModal();renderTop();renderPanel();status("As Mayor, you erased your own criminal record.")}}
+
+
 function npcFor(j){const kids=j==="Teacher",l=state.people.filter(x=>x.alive&&x!==state.player&&!x.away&&(kids?x.age>=5&&x.age<18:x.age>=18));return l.length?pick(l):null}
 function workWithNpc(id){
  const p=state.player,n=find(id);if(!n||!n.alive)return;
@@ -692,9 +784,9 @@ function rob(id){const v=find(id);if(!v||!v.alive||!adult(v)){status("Only adult
 function doRob(id){
  const v=find(id),me=state.player,W=witnessesOf(v);
  v.mem.push(state.year+" -- Was robbed by "+me.first+".");changeRel(id,-45);W.forEach(x=>x.mem.push(state.year+" -- Saw "+me.first+" rob "+v.first+"."));
- const ok=Math.random()<.55+((me.stats.intelligence||50)-50)/300-Math.min(.25,W.length*.06);
+ const ok=Math.random()<.55+((me.stats.intelligence||50)-50)/300-Math.min(.25,W.length*.06)-copBonus();
  if(ok){const g=Math.round(clamp((v.money||0)*.25,60,600));v.money=Math.max(0,(v.money||0)-g);me.money+=g;
-  if(Math.random()<Math.min(.5,W.length*.12+.05)){crimeRec("Robbery",v,0);return sentence(crimeYears("rob"),"robbing "+v.name+" (a witness reported it)","Robbery",v)}
+  if(Math.random()<Math.min(.7,Math.max(0,W.length*.12+.05+copBonus()))){crimeRec("Robbery",v,0);return sentence(crimeYears("rob"),"robbing "+v.name+" (a witness reported it)","Robbery",v)}
   crimeRec("Robbery",v,0);state.events.push(state.year+" -- "+me.name+" robbed "+v.name+" and got away with EUR"+g+".");return outcome("🥷 You got away!","You took <b>EUR"+g+"</b>. "+esc(v.first)+" will remember this.")}
  crimeRec("Robbery",v,0);sentence(crimeYears("rob"),"robbing "+v.name,"Robbery",v)}
 function assault(id){const v=find(id);if(!v||!v.alive||!adult(v)){status("Only adults can be targeted.");return}if(inPrison()){status("You are in prison.");return};doAssault(id)}
@@ -703,7 +795,7 @@ function doAssault(id){
  v.mem.push(state.year+" -- Was violently attacked by "+me.first+".");changeRel(id,-60);if(v.stats)v.stats.health=Math.max(1,(v.stats.health||60)-15);
  W.forEach(x=>x.mem.push(state.year+" -- Saw "+me.first+" attack "+v.first+"."));const dzNote=hurt(v,me);if(dzNote)status(dzNote.trim());
  state.events.push(state.year+" -- "+me.name+" assaulted "+v.name+".");
- if(Math.random()<clamp(.3+W.length*.15,.3,.9)){crimeRec("Assault",v,0);return sentence(crimeYears("assault"),"assaulting "+v.name,"Assault",v)}
+ const stR=(me.stats&&me.stats.strength)||40,spD=(me.stats&&me.stats.speed)||40;if(Math.random()<clamp(.3+W.length*.15-(stR-40)*.004+copBonus(),.05,.9)){if(Math.random()<clamp((spD-40)*.006+(stR-40)*.002,0,.5)){crimeRec("Assault",v,0);return outcome("🏃 You outran the police","You hurt "+esc(v.first)+" in front of witnesses, but you were fast enough to escape before the police could grab you. They know it was you."+esc(dzNote))}crimeRec("Assault",v,0);return sentence(crimeYears("assault"),"assaulting "+v.name,"Assault",v)}
  crimeRec("Assault",v,0);outcome("👊 Nobody saw","You hurt "+esc(v.first)+" and slipped away. They know it was you."+esc(dzNote))}
 function murder(id){const v=find(id);if(!v||!v.alive||v===state.player)return;if(!adult(v)){status("Only adults can be targeted.");return}if(inPrison()){status("You are in prison.");return};confirmCrime("murder",id)}
 function doMurder(id){
@@ -716,12 +808,12 @@ function doMurder(id){
  kin.forEach(p=>{p.mem.push(state.year+" -- "+me.first+" murdered "+v.first+".");p.rel[me.id]=-100;me.rel[p.id]=-100});
  try{addEv("death",v.name+" was murdered.",[v.id],me.id,true)}catch(e){}
  crimeRec("Murder",v,0);
- if(pub||Math.random()<.5)sentence(20,"murdering "+v.name+(pub?" in public":""),"Murder",v);
+ if(pub||Math.random()<.5+copBonus())sentence(20,"murdering "+v.name+(pub?" in public":""),"Murder",v);
  else outcome("💀 You got away","The murder was not discovered. "+(kin.length?"But "+kin.length+" of their relatives suspect you.":""))}
 function arrestMurder(years,why){sentence(years,why,"Murder")}
 function arrest(why){sentence(1+Math.floor(Math.random()*3),why,"Crime")}
 function sentence(years,why,type,v){
- const me=state.player;const last=me.rec&&me.rec[me.rec.length-1];if(last&&!last.yrs)last.yrs=years;
+ const me=state.player;state.escFail=false;if(me.wanted&&me.wanted>=state.year){years+=3;why+=" (and for escaping prison)"}const last=me.rec&&me.rec[me.rec.length-1];if(last&&!last.yrs)last.yrs=years;
  me.prisonYears=(me.prisonYears||0)+years;
  me.money-=Math.min(Math.round(me.money),years>=10?500:150);if(me.career)me.career.rep=Math.max(0,me.career.rep-years);
  state.jailYears=years;state.jailLeft=years*365;
@@ -746,6 +838,42 @@ advanceYear=function(){
 };
 function released(me){state.jailYears=0;state.jailLeft=0;state.events.push(state.year+" -- "+me.name+" was released from prison.");me.mem.push(state.year+" -- Released from prison.");save(true);
  render();modal('<h2>🔓 Released</h2><p>It is now <b>'+state.year+'</b>. You are <b>'+me.age+'</b>. The world has moved on without you.</p><button id="out" class="gold">WALK OUT</button>');$("out").onclick=()=>{closeModal();leave();renderPanel()}}
+
+/* ===== prison escape minigame: 60-second maze ===== */
+let MZ=null;
+function genMaze(W,H){const g=Array.from({length:H},()=>Array(W).fill(1)),st=[[1,1]],D=[[2,0],[-2,0],[0,2],[0,-2]];g[1][1]=0;
+ while(st.length){const[x,y]=st[st.length-1],n=D.map(([dx,dy])=>[x+dx,y+dy,dx/2,dy/2]).filter(([nx,ny])=>nx>0&&ny>0&&nx<W-1&&ny<H-1&&g[ny][nx]);
+  if(!n.length){st.pop();continue}const[nx,ny,hx,hy]=n[Math.floor(Math.random()*n.length)];g[y+hy][x+hx]=0;g[ny][nx]=0;st.push([nx,ny])}return g}
+function escapeMaze(){
+ if(!(state.jailLeft>0)){status("You are not in prison.");return}
+ if(state.escFail){status("The guards are watching. There is nothing to do but wait out your sentence.");return}
+ modal('<h2>🕳️ Escape attempt</h2><p>The air vent is loose. Find your way through the tunnels to the <b style="color:#2e9e4f">green exit</b> within <b>30 seconds</b>.</p><p class="muted">Use the arrow keys / WASD (or the on-screen buttons).</p><p><b>If you fail:</b> the guards catch you, <b>1 year is added</b> to your sentence and you can only wait it out. <b>If you escape:</b> you are wanted for 4 years — getting caught again adds 3 years.</p><div class="choices"><button id="mzGo" class="gold">🏃 START</button><button id="close">BACK TO MY CELL</button></div>');
+ $("close").onclick=closeModal;$("mzGo").onclick=startMaze}
+function startMaze(){const W=21,H=15;MZ={g:genMaze(W,H),W,H,x:1,y:1,t0:performance.now(),done:false};
+ modal('<h2>🕳️ Escape!</h2><canvas id="mzc" width="420" height="300" style="max-width:100%;border-radius:8px;background:#222;display:block;margin:0 auto"></canvas><div class="bar"><i id="mzb" style="width:100%"></i></div><p id="mzt" style="font-weight:700;text-align:center;margin:6px 0">30s</p><div style="display:grid;grid-template-columns:repeat(3,56px);gap:6px;justify-content:center"><span></span><button data-d="0,-1">▲</button><span></span><button data-d="-1,0">◀</button><button data-d="0,1">▼</button><button data-d="1,0">▶</button></div>');
+ document.querySelectorAll("[data-d]").forEach(b=>{const[dx,dy]=b.dataset.d.split(",").map(Number);let iv=null;const stop=()=>{clearInterval(iv);iv=null};b.onpointerdown=e=>{e.preventDefault();mzMove(dx,dy);iv=setInterval(()=>mzMove(dx,dy),90)};b.onpointerup=b.onpointerleave=b.onpointercancel=stop});
+ MZ.key=e=>{const m={ArrowUp:[0,-1],w:[0,-1],W:[0,-1],ArrowDown:[0,1],s:[0,1],S:[0,1],ArrowLeft:[-1,0],a:[-1,0],A:[-1,0],ArrowRight:[1,0],d:[1,0],D:[1,0]}[kn(e)];if(m){e.preventDefault();e.stopPropagation();mzMove(m[0],m[1])}};
+ document.addEventListener("keydown",MZ.key,true);
+ MZ.iv=setInterval(()=>{if(!MZ||MZ.done)return;const left=30000-(performance.now()-MZ.t0);if(!$("mzt")){mzEnd();return}
+  $("mzt").textContent=Math.max(0,Math.ceil(left/1000))+"s";$("mzb").style.width=Math.max(0,left/300)+"%";$("mzt").style.color=left<10000?"#c0392b":"";if(left<=0)mzFail()},100);
+ mzDraw()}
+function mzDraw(){const c=$("mzc");if(!c||!MZ)return;const x=c.getContext("2d"),S=20;x.fillStyle="#2a2a33";x.fillRect(0,0,420,300);
+ for(let j=0;j<MZ.H;j++)for(let i=0;i<MZ.W;i++){x.fillStyle=MZ.g[j][i]?"#4a4a58":"#c9c3b0";x.fillRect(i*S,j*S,S,S)}
+ x.fillStyle="#2e9e4f";x.fillRect((MZ.W-2)*S+2,(MZ.H-2)*S+2,S-4,S-4);x.fillStyle="#fff";x.font="12px sans-serif";x.fillText("EXIT",(MZ.W-2)*S-14,(MZ.H-2)*S-2);
+ x.fillStyle="#f2b705";x.beginPath();x.arc(MZ.x*S+S/2,MZ.y*S+S/2,S/2-3,0,7);x.fill()}
+function mzMove(dx,dy){if(!MZ||MZ.done)return;const nx=MZ.x+dx,ny=MZ.y+dy;if(MZ.g[ny]&&MZ.g[ny][nx]===0){MZ.x=nx;MZ.y=ny;mzDraw();if(nx===MZ.W-2&&ny===MZ.H-2)mzWin()}}
+function mzEnd(){if(!MZ)return;MZ.done=true;clearInterval(MZ.iv);document.removeEventListener("keydown",MZ.key,true)}
+function mzFail(){if(!MZ||MZ.done)return;mzEnd();const me=state.player;
+ state.jailYears=(state.jailYears||Math.ceil(state.jailLeft/365))+1;state.jailLeft=state.jailYears*365;state.escFail=true;
+ me.mem.push(state.year+" -- Tried to escape prison and was caught.");state.events.push(state.year+" -- "+me.name+" tried to escape prison and was caught. One year was added.");
+ renderWorld();renderPanel();save(true);
+ modal('<h2>🚨 Caught!</h2><p>The alarm sounded and the guards dragged you back. <b>1 year was added</b> to your sentence (release in '+(state.year+state.jailYears)+').</p><p class="muted">There is nothing left to do but wait on the bunk.</p><button id="close" class="gold">BACK TO MY CELL</button>');$("close").onclick=closeModal}
+function mzWin(){if(!MZ||MZ.done)return;mzEnd();const me=state.player;
+ state.jailLeft=0;state.jailYears=0;state.escFail=false;SERVING=false;me.wanted=state.year+4;me.escapes=(me.escapes||0)+1;
+ [me.spouse].concat(me.children||[],me.parents||[]).forEach(i=>{if(i)changeRel(i,-10)});
+ me.mem.push(state.year+" -- Escaped from prison.");state.events.push(state.year+" -- "+me.name+" escaped from prison and is now a fugitive.");save(true);
+ modal('<h2>🏃 You escaped!</h2><p>You crawled out of the vent and into the night. You are <b>wanted until '+me.wanted+'</b> — if you are arrested again, <b>3 years</b> are added to the sentence. Your family is shaken.</p><button id="out" class="gold">RUN</button>');
+ $("out").onclick=()=>{closeModal();leave();renderPanel();renderTop();status("You are free... for now.")}}
 function serve(){
  if(!(state.jailLeft>0)){status("You are free to go.");return}
  if(SERVING)return;SERVING=true;const me=state.player,total=state.jailYears||Math.ceil(state.jailLeft/365),y0=state.year;
@@ -1024,10 +1152,10 @@ function treat(id,k){const p=find(id),me=state.player,i=p&&illOf(p).find(x=>x.k=
  if(d.ch){i.tx=state.year;i.known=true;status((p===me?"You":p.first)+" started a treatment plan for "+d.n+" (renewed yearly).")}
  else{p.ill=p.ill.filter(x=>x!==i);status((p===me?"You were":p.first+" was")+" treated for "+d.n+" and recovered.");if(p===me)me.stats.health=clamp(me.stats.health+6,0,100)}
  if(p!==me)changeRel(p.id,12);(p.mem=p.mem||[]).push(state.year+" — Treated at the hospital for "+d.n+".");closeModal();renderTop();renderPanel();if(state.inside==="hospital")enterBuilding("hospital")}
-function dzTest(){const me=state.player;if(me.money<40){status("You need €40 for the test.");return}me.money-=40;state.clock+=60;const L=illOf(me).filter(i=>DZ[i.k].t);L.forEach(i=>i.known=true);
+function dzTest(){const me=state.player;{const c40=hcCost(40);if(me.money<c40){status("You need €"+c40+" for the test.");return}me.money-=c40}state.clock+=60;const L=illOf(me).filter(i=>DZ[i.k].t);L.forEach(i=>i.known=true);
  modal('<h2>🧪 Test results</h2><p>'+(L.length?"You tested positive for: <b>"+L.map(dzName).join(", ")+"</b>. Treatment is available at the hospital.":"All clear ✅ — no infections found.")+'</p><button id="close" class="gold">CLOSE</button>');$("close").onclick=()=>{closeModal();if(state.inside==="hospital")enterBuilding("hospital")};renderTop()}
 function hospitalBody(){const me=state.player,L=illOf(me).filter(i=>i.known);
- return'<div class="choices"><button id="heal">🩺 Health check (€30)</button><button data-dz="test">🧪 STD test (€40)</button></div>'+(L.length?'<h3>Your conditions</h3><div class="interiorGrid">'+L.map(i=>{const d=DZ[i.k];return'<div class="shopItem"><b>'+dzName(i)+'</b><br><span class="muted">'+(d.ch?"Chronic — plan €"+d.c+"/yr":"Curable")+'</span><br><button data-dz="treat" data-id="'+me.id+'" data-k="'+i.k+'">'+(d.ch?"START PLAN":"TREAT")+' (€'+d.c+')</button></div>'}).join("")+'</div>':'<p class="muted">You have no known conditions.</p>')}
+ return'<div class="choices"><button id="heal">🩺 Health check (€'+hcCost(30)+')</button><button data-dz="test">🧪 STD test (€'+hcCost(40)+')</button></div>'+(L.length?'<h3>Your conditions</h3><div class="interiorGrid">'+L.map(i=>{const d=DZ[i.k];return'<div class="shopItem"><b>'+dzName(i)+'</b><br><span class="muted">'+(d.ch?"Chronic — plan €"+d.c+"/yr":"Curable")+'</span><br><button data-dz="treat" data-id="'+me.id+'" data-k="'+i.k+'">'+(d.ch?"START PLAN":"TREAT")+' (€'+d.c+')</button></div>'}).join("")+'</div>':'<p class="muted">You have no known conditions.</p>')}
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-dz]");if(!b||!state)return;if(b.dataset.dz==="treat")treat(b.dataset.id,b.dataset.k);else if(b.dataset.dz==="test")dzTest()});
 function cureNPC(p){const L=illOf(p),got=L.filter(i=>DZ[i.k].a||(DZ[i.k].t&&i.known));if(!got.length)return;
  got.forEach(i=>{if(DZ[i.k].ch)i.tx=state.year;else p.ill=p.ill.filter(x=>x!==i)});(p.mem=p.mem||[]).push(state.year+" — Treated at the hospital for "+got.map(i=>DZ[i.k].n).join(", ")+".");if(Math.random()<.3)lg(p.name+" was treated at the hospital for "+DZ[got[0].k].n.toLowerCase()+".")}
@@ -1174,8 +1302,10 @@ function move(){
  const p=state.player,W=$("world").clientWidth,H=$("world").clientHeight,ins=!!state.inside;
  const B=ins?RB():null;let nx=ins?clamp(p.x+dx*4,B.x+24,B.x+B.w-24):clamp(p.x+dx*4,20,Math.max(300,W-20)),ny=ins?clamp(p.y+dy*4,B.y+50,B.y+B.h-14):clamp(p.y+dy*4,25,Math.max(250,H-20));
  if(!ins){const hit=(x,y)=>(window.BR||[]).some(r=>x>r.l&&x<r.r&&y>r.t&&y<r.b);if(hit(nx,p.y))nx=p.x;if(hit(p.x,ny))ny=p.y}
- p.x=nx;p.y=ny;const el=$("person-"+p.id);if(el){el.style.left=p.x+"px";el.style.top=p.y+"px"}
+ if(dx)p.face=dx<0?"l":"r";p.x=nx;p.y=ny;const el=$("person-"+p.id);if(el){if(dx){el.classList.remove("fl","fr");el.classList.add("f"+p.face)}el.style.left=p.x+"px";el.style.top=p.y+"px"}
 }
+const KM={KeyW:"w",KeyA:"a",KeyS:"s",KeyD:"d",KeyE:"e"};
+function kn(e){return KM[e.code]||(e.key&&e.key.length===1?e.key.toLowerCase():e.key)}
 document.addEventListener("keydown",e=>{
  if(modalOpen()){const t=e.target;if(t&&/^(TEXTAREA|INPUT|SELECT)$/.test(t.tagName)){if(e.key==="Enter"&&!e.shiftKey&&$("send")){e.preventDefault();$("send").click()}return}
    if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key))e.preventDefault();
@@ -1183,11 +1313,11 @@ document.addEventListener("keydown",e=>{
  }
  {const tg=e.target;if(tg&&/^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName))return}
  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key))e.preventDefault();
- pressed[e.key]=true;
- if((e.key==="e"||e.key==="E")&&!e.repeat)interact();
+ pressed[kn(e)]=true;
+ if(kn(e)==="e"&&!e.repeat)interact();
  if(e.key===" "&&!e.repeat&&state)advanceYear();
 });
-document.addEventListener("keyup",e=>pressed[e.key]=false);
+document.addEventListener("keyup",e=>{pressed[kn(e)]=false});window.addEventListener("blur",()=>{pressed={}});
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{tabName=b.dataset.tab;renderPanel()});
 $("random").onclick=randomize;$("start").onclick=start;$("save").onclick=()=>save(false);$("new").onclick=newGame;$("names").onclick=()=>{if(!state)return;state.friendly=!state.friendly;state.people.forEach(applyName);render();status(state.friendly?"Showing English-friendly name spellings.":"Showing original cultural spellings.")};
 /* ===== v11: population tiers — visible NPCs vs. background ("rabbit-hole") simulation =====
@@ -1390,7 +1520,7 @@ const AREA=()=>(state&&state.area)||"centre",HS_=()=>state.houses||(state.houses
 const LK={centre:{N:"north",S:"south",E:"east",W:"west"},north:{S:"centre"},south:{N:"centre"},east:{W:"centre"},west:{E:"centre"}};
 const AR={centre:["Town Centre",""],north:["North Side","#6a9460"],east:["East Side","#7a9a58"],south:["South Side","#78a05a"],west:["West Side","#7f9360"]};
 const HDEF=[["maple","north",66,14,"Maple Flat",2400,1],["birch","north",66,64,"Birch Cottage",4800,2],["willow","east",14,14,"Willow Cabin",3200,1],["lodge","east",58,64,"Riverside Lodge",8500,3],["loft","west",14,66,"Bakers' Loft",2800,1],["terrace","west",58,14,"Old Quarter Terrace",5500,2],["studio","south",14,14,"Tiny Studio",1800,1],["bung","south",66,14,"Garden Bungalow",6200,2],["farm","south",66,64,"Meadow Farmhouse",9500,4]];
-const PL={bank:{a:"north",x:10,y:16,w:170,h:105},bar:{a:"north",x:10,y:64,w:170,h:105}},HB={};
+const PL={bank:{a:"north",x:10,y:16,w:170,h:105},bar:{a:"north",x:10,y:64,w:170,h:105},townhall:{a:"east",x:36,y:12,w:150,h:78},gym:{a:"east",x:62,y:12,w:150,h:78}},HB={};
 HDEF.forEach(s=>{const h={id:s[0],a:s[1],x:s[2],y:s[3],name:s[4],price:s[5],beds:s[6],w:130,h:90};h.addr=h.name+", "+AR[h.a][0];HB[h.id]=h;PL["h_"+h.id]=h;INT["h_"+h.id]={t:"🏡 "+h.name,f:"#d9b88c",o:[]}});
 INT.bank={t:"🏦 Northside Bank",f:"#d8dcc8",o:[["🧾",50,24,"Teller counter","svc"],["💳",18,46,"ATM","svc"],["📈",84,46,"Loan desk","svc"],["🗄️",16,72,"Vault","fx:A very heavy door. Not for you.|health|0|0"]]};
 INT.bar={t:"🍺 The Crooked Lantern",f:"#8a6a4a",o:[["🍺",50,24,"Bar counter","svc"],["🎵",86,44,"Jukebox","fx:You play a song. A stranger nods along.|charisma|1|1"],["🛋️",18,66,"Booth","fx:You sit in a quiet booth.|health|0|0"],["🎱",66,68,"Pool table","fx:You play a friendly game of pool.|charisma|1|0"]]};
@@ -1403,13 +1533,19 @@ function ensureHouses(){if(state.hseed)return;state.hseed=1;const me=state.playe
 /* ---- rendering ---- */
 function edges(w){const L=LK[AREA()],st={N:"top:0;left:0;right:0;height:20px",S:"bottom:0;left:0;right:0;height:20px",W:"left:0;top:0;bottom:0;width:20px",E:"right:0;top:0;bottom:0;width:20px"},ar={N:"⬆",S:"⬇",W:"⬅",E:"➡"};
  w.insertAdjacentHTML("beforeend",Object.keys(L).map(d=>'<div style="position:absolute;'+st[d]+';background:#ffffff26;color:#fff;font:bold 10px Arial;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:1;'+(d==="N"||d==="S"?"":"writing-mode:vertical-rl;")+'">'+ar[d]+" "+AR[L[d]][0].toUpperCase()+"</div>").join(""))}
-function dB(s,label,pl,bg){return'<div class="building" data-place="'+pl+'" style="left:'+s.x+'%;top:'+s.y+'%;width:'+s.w+'px;height:'+s.h+'px;background:'+bg+'"><div class="roof"></div><div class="sign">'+label+"</div></div>"}
+document.head.insertAdjacentHTML("beforeend","<style>.fs{position:absolute;top:-36px;right:10px;background:#c62828;color:#fff;border:2px solid #fff;border-radius:4px;padding:2px 7px;font:bold 11px Arial;z-index:3;white-space:nowrap;box-shadow:0 2px 5px #0007;letter-spacing:.5px}.fs:after{content:'';position:absolute;left:50%;top:100%;width:4px;height:14px;margin-left:-2px;background:#5b3d30}.fs.sold{background:#7b1e1e;border-color:#e7ca80;color:#ffe9a8}</style>");
+function dB(s,label,pl,bg,sg){return'<div class="building" data-place="'+pl+'" style="left:'+s.x+'%;top:'+s.y+'%;width:'+s.w+'px;height:'+s.h+'px;background:'+bg+'"><div class="roof"></div><div class="sign">'+label+"</div>"+(sg||"")+"</div>"}
 function renderDistrict(){ensureHouses();const a=AREA(),w=$("world"),me=state.player;w.style.backgroundColor=AR[a][1];
  let s=(a==="north"||a==="south"?'<div class="roadV"></div>':"")+(a!=="south"?'<div class="roadH"></div>':"");
  if(a==="east")s+='<div class="water" style="right:4%;top:auto;bottom:4%;width:240px;height:110px"></div>';
- s+=Object.keys(PL).filter(k=>PL[k].a===a).map(k=>{if(k==="bank")return dB(PL[k],"🏦 BANK",k,"#7f8a73");if(k==="bar")return dB(PL[k],"🍺 BAR",k,"#7b5a3c");
-  const h=HB[k.slice(2)],o=ownerOf(h.id);return dB(h,o===me?"🏠 YOUR HOME":o?"🏡 "+esc(o.surname)+" home":"🏷️ "+esc(h.name)+" · "+fm(h.price),k,o===me?"#a8872f":o?"#a86f52":"#b98f5a")}).join("");
- w.innerHTML=s+'<div style="position:absolute;left:50%;top:6px;transform:translateX(-50%);background:#000a;color:#fff;padding:3px 12px;border-radius:10px;font-size:12px;z-index:6">📍 '+AR[a][0]+(a==="north"?" — Bank & Bar":"")+"</div>";
+ s+=Object.keys(PL).filter(k=>PL[k].a===a).map(k=>{if(k==="casino")return"";if(k==="bank")return dB(PL[k],"🏦 BANK",k,"#7f8a73");if(k==="bar")return dB(PL[k],"🍺 BAR",k,"#7b5a3c");if(k==="townhall")return dB(PL[k],"🏛️ TOWN HALL",k,"#a89c84");if(k==="gym")return dB(PL[k],"🏋️ GYM",k,"#7f8fa0");
+  const h=HB[k.slice(2)],o=ownerOf(h.id);let lb,bg,sg="";
+  if(!o){lb="🏷️ "+esc(h.name)+" · "+fm(h.price);bg="#b98f5a";sg='<div class="fs">FOR SALE</div>'}
+  else if(o===me){lb="🏠 YOUR HOME";bg="#a8872f"}
+  else{const r=role(me,o);lb="🏡 "+esc(o.name)+(r?" · "+esc(r):"");bg="#a86f52"}
+  if(o&&HS_()[h.id].since===state.year)sg='<div class="fs sold">SOLD</div>';
+  return dB(h,lb,k,bg,sg)}).join("");
+ w.innerHTML=s+'<div style="position:absolute;left:50%;top:6px;transform:translateX(-50%);background:#000a;color:#fff;padding:3px 12px;border-radius:10px;font-size:12px;z-index:6">📍 '+AR[a][0]+(a==="north"?" — Bank & Bar":a==="east"?" — Town Hall & Gym":"")+"</div>";
  edges(w);w.insertAdjacentHTML("beforeend",personHTML(me,true))}
 const _ro=renderOutdoor;renderOutdoor=function(){const w=$("world");if(AREA()!=="centre"){renderDistrict();return}w.style.backgroundColor="";_ro();edges(w)};
 function go(d){const to=LK[AREA()][d],p=state.player,[W,H]=WH();if(!to)return;state.area=to;if(d==="N")p.y=H-60;else if(d==="S")p.y=60;else if(d==="W")p.x=W-60;else p.x=60;renderWorld();renderTop();status("You walked into the "+AR[to][0]+".")}
@@ -1418,14 +1554,19 @@ let eh=0;setInterval(()=>{if(!state||state.inside||modalOpen()||$("game").style.
  if(L.N&&p.y<=28&&(k.w||k.ArrowUp))d="N";else if(L.S&&p.y>=H-24&&(k.s||k.ArrowDown))d="S";else if(L.W&&p.x<=24&&(k.a||k.ArrowLeft))d="W";else if(L.E&&p.x>=W-24&&(k.d||k.ArrowRight))d="E";
  if(d){if(++eh>=5){eh=0;go(d)}}else eh=0},60);
 /* ---- interiors, staff, leaving ---- */
-const _of=objsFor;objsFor=function(pl){if(pl.startsWith("h_")){const o=HS_()[pl.slice(2)];return o&&o.owner===state.player.id?INT.home.o:[["🪧",50,24,"Sign / front door","svc"],["📦",30,60,"Room","fx:Floorboards and echoes.|health|0|0"]]}return _of(pl)};
-const _rf=rosterFor;rosterFor=function(pl){if(pl==="bank"||pl==="bar")return[STAFF[pl]];if(pl.startsWith("h_")){const o=HS_()[pl.slice(2)],m=state.player;return o&&o.owner===m.id?_rf("home").filter(p=>!(m.moved&&(m.parents||[]).includes(p.id))):[]}return _rf(pl)};
+function furn(o){const L=[["🛏️",14,30,o.first+"'s bed","fx:You'd better not nap in someone else's bed.|health|0|0"],["🧊",34,18,"Fridge","fx:You peek in the fridge. "+o.first+" has good taste in cheese.|health|0|0"],["🍳",52,18,"Kitchen","fx:The kitchen smells of dinner.|health|0|0"],["📺",84,30,"TV","fx:You watch TV together.|creativity|1|0"],["📚",14,62,"Bookshelf","fx:You browse their books.|intelligence|1|0"],["🛋️",36,64,"Sofa","fx:You sink into a very comfy sofa.|health|0|0"],["🪴",58,64,"Plant","fx:A thriving plant. Someone loves it.|creativity|0|0"],["🖼️",85,64,"Photos on the wall","fx:Framed photos of family and friends.|charisma|0|0"]];
+ const J={Chef:["🍲",70,46,"Big stockpot","fx:Something delicious is simmering.|health|1|0"],Programmer:["💻",70,46,"Home setup","fx:Three monitors and cold coffee.|intelligence|1|0"],Artist:["🎨",70,46,"Easel","fx:Half-finished paintings everywhere.|creativity|1|0"],Writer:["📖",70,46,"Typewriter","fx:Stacks of paper and crumpled drafts.|creativity|1|0"],Teacher:["🍎",70,46,"Marking pile","fx:A tall pile of homework to grade.|intelligence|0|0"],Doctor:["🩺",70,46,"Medical books","fx:Heavy textbooks, many bookmarks.|intelligence|1|0"],Mechanic:["🔧",70,46,"Workbench","fx:Tools are sorted by size.|ambition|1|0"],Farmer:["🥕",70,46,"Basket of veg","fx:Fresh vegetables from the field.|health|1|0"],Engineer:["📐",70,46,"Drafting table","fx:Precise little drawings.|intelligence|1|0"]};
+ const T={creative:["🎸",30,42,"Guitar","fx:You strum a few chords.|creativity|1|0"],funny:["🎭",30,42,"Joke shelf","fx:Silly hats and a whoopee cushion.|charisma|1|0"],"family-oriented":["🧸",30,42,"Toy box","fx:A box of well-loved toys.|charisma|0|0"],ambitious:["🏆",30,42,"Trophy shelf","fx:Awards, neatly dusted.|ambition|1|0"],practical:["🧰",30,42,"Toolbox","fx:Everything has a place.|ambition|0|0"],serious:["♟️",30,42,"Chess set","fx:A game in progress.|intelligence|1|0"],kind:["🐈",30,42,"Cat","fx:The cat adopts your lap.|health|1|0"],shy:["🎧",30,42,"Headphones","fx:A playlist for quiet days.|creativity|0|0"],outgoing:["🍷",30,42,"Wine rack","fx:A rack of bottles for guests.|charisma|1|0"],generous:["🎁",30,42,"Gift pile","fx:Presents for everybody.|charisma|0|0"],independent:["🗺️",30,42,"Wall map","fx:Pins mark places they have been.|intelligence|1|0"],stubborn:["🪑",30,42,"Favourite chair","fx:Nobody else is allowed to sit here.|health|0|0"]};
+ if(J[o.job])L.push(J[o.job]);if(T[o.trait])L.push(T[o.trait]);return L}
+const _of=objsFor;objsFor=function(pl){if(pl.startsWith("h_")){const id=pl.slice(2),ho=HS_()[id],ow=ownerOf(id);if(ow===state.player)return INT.home.o;if(ow)return furn(ow).concat([["🚪",50,86,"Front door","fx:Back to the street through the exit below.|health|0|0"]].slice(0,0));return[["🪧",50,24,"For sale info","svc"],["📦",30,60,"Empty room","fx:Floorboards and echoes. Plenty of room for your own furniture.|health|0|0"]]}return _of(pl)};
+const _rf=rosterFor;rosterFor=function(pl){if(pl==="bank"||pl==="bar")return[STAFF[pl]];if(pl.startsWith("h_")){const id=pl.slice(2),ow=ownerOf(id),m=state.player;if(!ow)return[];if(ow===m)return _rf("home").filter(p=>!(m.moved&&(m.parents||[]).includes(p.id)));ROSTER.more=0;
+  const fam=[ow,ow.spouse&&find(ow.spouse)].concat((ow.children||[]).map(find).filter(k=>k&&k.age<18));return fam.filter((p,i,a)=>p&&p!==m&&p.alive&&!p.away&&p.location==="inhome"&&a.indexOf(p)===i).slice(0,8)}return _rf(pl)};
 const _ip=ipos;ipos=function(p,pl,i,B){return p.staff?{x:B.x+B.w*p.sx,y:B.y+B.h*p.sy}:_ip(p,pl,i,B)};
 const _pf=profile;profile=function(id){const s=STAFF_ID[id];if(!s)return _pf(id);
  modal("<h2>"+esc(s.first)+"</h2><p class=\"muted\">"+s.job+"</p><p>"+(id==="banker"?"\"Welcome to Northside. Savings, loans, or settling a debt?\"":pick(["\"Quiet night. Keep it that way.\"","\"Two rules: no tabs, no fights. Mostly.\"","\"Folks who say they'll have one usually have five.\""]))+'</p><div class="choices"><button id="stf" class="gold">'+(id==="banker"?"🏦 Banking":"🍺 Order a drink")+'</button><button id="close">Close</button></div>');
  $("close").onclick=closeModal;$("stf").onclick=()=>id==="banker"?bankMenu():barMenu()};
 const _eb=enterBuilding;enterBuilding=function(pl){if(pl==="bank")return bankMenu();if(pl==="bar")return barMenu();if(pl.startsWith("h_"))return houseMenu(pl.slice(2));_eb(pl)};
-const _ei=enterInterior;enterInterior=function(pl){if(pl==="bar"){if(state.player.age<18){status("Jonas: \"No kids in here. Come back at 18.\"");return}BAR={u:0,d:{},sp:0,t0:state.clock}}
+const _ei=enterInterior;enterInterior=function(pl){if(pl.startsWith("h_")){const id=pl.slice(2),ow=ownerOf(id),h=HB[id],d=INT[pl];d.t=ow===state.player?"🏠 Your Home — "+h.name:ow?"🏡 "+ow.first+"'s home — "+h.name:"🏷️ "+h.name+" (for sale)";d.f=ow?["#d9b88c","#d6c3a4","#cfb59a","#dcc9a0","#c9b99a"][hsh(ow.id)%5]:"#e8e2d4"}if(pl==="bar"){if(state.player.age<18){status("Jonas: \"No kids in here. Come back at 18.\"");return}BAR={u:0,d:{},sp:0,t0:state.clock}}
  _ei(pl);if(AREA()!=="centre"&&PL[pl])state.out=doorOf(pl)};
 const _lv=leave;leave=function(){if(state.inside==="bar"&&BAR.u>0&&lvl()>=.25){night();return}
  if(AREA()!=="centre"&&state.inside&&state.inside!=="jail"){const p=state.player,o=state.out||doorOf(state.inside);p.x=o.x;p.y=o.y;state.inside=null;renderWorld();return}_lv()};
@@ -1438,33 +1579,33 @@ function houseMenu(id){const h=HB[id],me=state.player,o=ownerOf(id);let b="<h2>�
  else{const par=(me.parents||[]).map(find).filter(x=>x&&x.alive),help=par.some(x=>relation(x.id)>=20)?Math.min(Math.round(h.price*.6),Math.floor(par.reduce((s,x)=>s+Math.max(0,x.money||0),0)*.5)):0,down=Math.ceil(h.price*.2);
   b+="<p>For sale: <b>"+fm(h.price)+"</b>. You have "+fm(me.money)+".</p><div class=\"choices\"><button id=\"hFull\" class=\"gold\">Buy outright</button>"+(adult(me)?"<button id=\"hMort\">Mortgage ("+fm(down)+" down, rest is bank debt)</button>":"")+(me.age<18||par.length&&help>0?"<button id=\"hPar\">👪 Ask parents for help (~"+fm(help)+")</button>":"");
   setTimeout(()=>{const f=(m)=>buyHouse(id,m);if($("hFull"))$("hFull").onclick=()=>f("full");if($("hMort"))$("hMort").onclick=()=>f("mort");if($("hPar"))$("hPar").onclick=()=>f("par")},0)}
- modal(b+'<button id="close">Close</button></div>');$("close").onclick=closeModal;
+ modal(b+(!o?'<button id="hView">👀 View inside</button>':'')+'<button id="close">Close</button></div>');$("close").onclick=closeModal;
  if($("hSell"))$("hSell").onclick=()=>{const g=Math.floor(h.price*.8),pay=Math.min(me.debt||0,g);me.debt=(me.debt||0)-pay;me.money+=g-pay;delete HS_()[id];me.house=null;me.addr=(find((me.parents||[])[0])||{}).addr||me.addr;lg(me.name+" sold "+h.name+".");closeModal();render();status("Sold for "+fm(g)+".")};
- if($("hKnock"))$("hKnock").onclick=()=>visitHome(o.id);
+ if($("hKnock"))$("hKnock").onclick=()=>knock(id);if($("hView"))$("hView").onclick=()=>{closeModal();enterInterior("h_"+id)};
  if(!o&&!me.house&&me.age>=MOVE_OUT_AGE){const f=m=>buyHouse(id,m);if($("hFull"))$("hFull").onclick=()=>f("full");if($("hMort"))$("hMort").onclick=()=>f("mort");if($("hPar"))$("hPar").onclick=()=>f("par")}}
 function buyHouse(id,mode){const h=HB[id],me=state.player,par=(me.parents||[]).map(find).filter(x=>x&&x.alive);let pay=h.price,help=0,debt=0;
  if(mode==="mort"){const down=Math.ceil(h.price*.2);if(h.price-down>creditLimit()){status("The bank won't lend that much. Raise your credit first.");return}pay=down;debt=h.price-down}
  if(mode==="par"){const pm=par.reduce((s,x)=>s+Math.max(0,x.money||0),0);help=par.some(x=>relation(x.id)>=20)?Math.min(Math.round(h.price*.6),Math.floor(pm*.5)):0;if(!help){closeModal();status("Your parents can't or won't help right now.");return}pay=h.price-help}
  if(me.money<pay){status("You need "+fm(pay)+" of your own"+(help?" (parents add "+fm(help)+")":"")+".");return}
  me.money-=pay;me.debt=(me.debt||0)+debt;if(help){let r=help;par.forEach(x=>{const t=Math.min(r,Math.floor(help/par.length));x.money-=t;r-=t;changeRel(x.id,6)})}
- HS_()[id]={owner:me.id};me.house=id;me.moved=true;me.addr=h.addr;me.mem.push(state.year+" — Moved into "+h.name+".");lg(me.name+" moved out to "+h.name+" ("+AR[h.a][0]+").");closeModal();render();status("You moved into "+h.name+"!")}
-const _ay=advanceYear;advanceYear=function(){const y0=state&&state.year;_ay();if(!state||state.ended||state.year===y0)return;try{finYear();kidsMoveOut();save(true);render()}catch(e){console.error(e)}};
+ HS_()[id]={owner:me.id,since:state.year};me.house=id;me.moved=true;me.addr=h.addr;me.mem.push(state.year+" — Moved into "+h.name+".");lg(me.name+" moved out to "+h.name+" ("+AR[h.a][0]+").");closeModal();render();status("You moved into "+h.name+"!")}
+const _ay=advanceYear;advanceYear=function(){const y0=state&&state.year;_ay();if(!state||state.ended||state.year===y0)return;try{finYear();kidsMoveOut();npcBuy();save(true);render()}catch(e){console.error(e)}};
 function kidsMoveOut(){const me=state.player;ensureHouses();const kid=(me.children||[]).map(find).find(k=>k&&k.alive&&!k.away&&k.age>=18&&k.age<=24&&!k.house&&Math.random()<.7);if(!kid)return;
- const free=HDEF.map(s=>HB[s[0]]).filter(h=>!ownerOf(h.id));if(!free.length)return;const h=pick(free);HS_()[h.id]={owner:kid.id};kid.house=h.id;kid.addr=h.addr;kid.moved=true;
+ const free=HDEF.map(s=>HB[s[0]]).filter(h=>!ownerOf(h.id));if(!free.length)return;const h=pick(free);HS_()[h.id]={owner:kid.id,since:state.year};kid.house=h.id;kid.addr=h.addr;kid.moved=true;
  lg(kid.name+" moved out to "+h.name+" ("+AR[h.a][0]+").");kid.mem.push(state.year+" — Moved into "+h.name+".");
  setTimeout(function w(){if(modalOpen())return setTimeout(w,1500);modal("<h2>📦 "+esc(kid.first)+" is moving out</h2><p>"+esc(kid.first)+" has taken "+esc(h.name)+" in the "+AR[h.a][0]+". Visit any time.</p><div class=\"choices\"><button id=\"kHelp\" class=\"gold\">Help with the deposit (€500)</button><button id=\"close\">Wish them luck</button></div>");
   $("close").onclick=closeModal;$("kHelp").onclick=()=>{if(me.money<500){status("You can't afford it.");return}me.money-=500;kid.money+=500;changeRel(kid.id,15);closeModal();render()}},500)}
 /* ---- bank ---- */
 function creditLimit(){const m=state.player;if(m.age<MOVE_OUT_AGE)return 0;const b=m.age<18?600:800+((m.career||{}).level||1)*1200;return Math.max(0,Math.round(b*((m.rec||[]).length?.5:1)-(m.debt||0)))}
 function bankMenu(){const m=state.player;m.bank=m.bank||0;m.debt=m.debt||0;const lim=creditLimit();
- modal('<h2>🏦 Northside Bank</h2><div class="row"><span>Cash</span><b>'+fm(m.money)+'</b></div><div class="row"><span>Savings (+1.5%/yr)</span><b>'+fm(m.bank)+'</b></div><div class="row"><span>Debt (8%/yr, 10% due yearly)</span><b style="color:'+(m.debt?"#ff9a8a":"inherit")+'">'+fm(m.debt)+'</b></div><div class="row"><span>You can borrow</span><b>'+fm(lim)+"</b></div>"+(m.missed?'<p class="warn">⚠ Missed payments: '+m.missed+" (3 = repossession)</p>":"")+
+ modal('<h2>🏦 Northside Bank</h2><div class="row"><span>Cash</span><b>'+fm(m.money)+'</b></div><div class="row"><span>Savings (+'+bankRate()+'%/yr)</span><b>'+fm(m.bank)+'</b></div><div class="row"><span>Debt ('+(bankRate()+LOAN_SPREAD)+'%/yr, 10% due yearly)</span><b style="color:'+(m.debt?"#ff9a8a":"inherit")+'">'+fm(m.debt)+'</b></div><div class="row"><span>You can borrow</span><b>'+fm(lim)+"</b></div>"+(m.missed?'<p class="warn">⚠ Missed payments: '+m.missed+" (3 = repossession)</p>":"")+
  '<h3>Loan</h3><div class="choices">'+[500,1000,lim].map((n,i)=>'<button class="bk" data-a="loan" data-n="'+n+'">Borrow '+(i===2?"max ":"")+fm(n)+"</button>").join("")+'</div><h3>Repay</h3><div class="choices">'+[100,500,m.debt].map((n,i)=>'<button class="bk" data-a="pay" data-n="'+n+'">Pay '+(i===2?"all ":"")+fm(n)+"</button>").join("")+'</div><h3>Savings</h3><div class="choices">'+[["dep",100],["dep",500],["wd",100],["wd",m.bank]].map(a=>'<button class="bk" data-a="'+a[0]+'" data-n="'+a[1]+'">'+(a[0]==="dep"?"Deposit ":"Withdraw ")+fm(a[1])+"</button>").join("")+'</div><br><button id="close">Close</button>');
  $("close").onclick=closeModal;document.querySelectorAll(".bk").forEach(b=>b.onclick=()=>{let n=+b.dataset.n,a=b.dataset.a,s="";
   if(a==="loan"){n=Math.min(n,lim);if(n<=0)s="The bank declines."+((m.rec||[]).length?" (Your criminal record halves your credit.)":"");else{m.money+=n;m.debt+=n;s="Loan approved: "+fm(n)}}
   else if(a==="pay"){n=Math.min(n,m.debt,m.money);if(n<=0)s="Nothing to pay.";else{m.money-=n;m.debt-=n;if(!m.debt)m.missed=0;s="Paid "+fm(n)}}
   else if(a==="dep"){n=Math.min(n,m.money);m.money-=n;m.bank+=n;s="Deposited "+fm(n)}else{n=Math.min(n,m.bank);m.bank-=n;m.money+=n;s="Withdrew "+fm(n)}
   renderTop();bankMenu();status(s)})}
-function finYear(){const m=state.player;if(m.bank)m.bank=Math.round(m.bank*1.015);if(m.debt>0){m.debt=Math.round(m.debt*1.08);const due=Math.ceil(m.debt*.1);
+function finYear(){const m=state.player;if(m.bank)m.bank=Math.round(m.bank*(1+bankRate()/100));if(m.debt>0){m.debt=Math.round(m.debt*(1+(bankRate()+LOAN_SPREAD)/100));const due=Math.ceil(m.debt*.1);
   if(m.money>=due){m.money-=due;m.debt-=due;lg(m.name+" paid "+fm(due)+" toward the bank debt.")}else{m.missed=(m.missed||0)+1;m.debt=Math.round(m.debt*1.05);lg(m.name+" missed a loan payment.");
    if(m.missed>=3&&m.house){const h=HB[m.house];delete HS_()[m.house];m.house=null;m.debt=Math.max(0,m.debt-Math.floor(h.price*.5));m.missed=0;lg("The bank repossessed "+h.name+" from "+m.name+".");m.addr=(find((m.parents||[])[0])||{}).addr||m.addr}}}
   else m.missed=0}
@@ -1513,6 +1654,659 @@ function night(){closeModal();const m=state.player,L=lvl(),t0=BAR.t0,T=o=>{const
 const _rt=renderTop;renderTop=function(){_rt();const m=state.player,t=$("topstats");if(t)t.insertAdjacentHTML("beforeend","<span>📍 <b>"+AR[AREA()][0]+"</b></span>"+(m.bank?"<span>🏦 <b>"+fm(m.bank)+"</b></span>":"")+(m.debt?"<span>💳 <b style=\"color:#ff9a8a\">−"+fm(m.debt)+"</b></span>":""))};
 const _hp=homePanel;homePanel=function(){_hp();const m=state.player,h=m.house&&HB[m.house];$("content").insertAdjacentHTML("beforeend",'<div class="card"><h3>🏠 Housing & money</h3><div class="row"><span>Lives</span><b>'+esc(h?h.name+" ("+AR[h.a][0]+")":"Family home")+'</b></div><div class="row"><span>Savings</span><b>'+fm(m.bank||0)+'</b></div><div class="row"><span>Debt</span><b>'+fm(m.debt||0)+'</b></div><p class="muted">Walk off the edge of town (hold the direction) to reach the North, East, South and West sides. Bank & bar are in the North Side.</p></div>')};
 const _nm=normalize;normalize=function(){_nm();state.area="centre";const m=state.player;if(m.house&&HB[m.house]){state.area=HB[m.house].a;const p=doorOf("h_"+m.house);m.x=p.x;m.y=p.y}};
+
+function knock(id){const h=HB[id],o=ownerOf(id),me=state.player;closeModal();if(!o)return;
+ const fam=[o,o.spouse&&find(o.spouse)].filter(x=>x&&x.alive&&!x.away&&x.location==="inhome");
+ if(!fam.length){modal("<h2>🚪 No answer</h2><p>You knock on the door of "+esc(h.name)+". Nobody is home right now. People are usually in during evenings, nights and weekends.</p><div class=\"choices\"><button id=\"wait\" class=\"gold\">⏳ Wait 3 hours</button><button id=\"close\">Leave</button></div>");$("close").onclick=closeModal;$("wait").onclick=()=>{state.clock+=180;closeModal();status("Three hours later... try knocking again.")};return}
+ if(relation(o.id)<-30&&!role(me,o)){modal("<h2>🚪 Door stays shut</h2><p>"+esc(o.first)+" looks through the window, sees you, and closes the curtains.</p><button id=\"close\">Leave</button>");$("close").onclick=closeModal;return}
+ status(esc(fam[0].first)+" lets you in.");enterInterior("h_"+id)}
+function npcBuy(){const me=state.player;ensureHouses();
+ HDEF.forEach(s=>{const h=HB[s[0]];if(ownerOf(h.id)||Math.random()>.3)return;
+  const c=state.people.filter(x=>x.alive&&adult(x)&&x.age<65&&!x.away&&x!==me&&x.id!==me.spouse&&x.id!==me.dating&&!x.house&&!(x.spouse&&(find(x.spouse)||{}).house)&&!(x.parents||[]).includes(me.id)&&(x.money||0)>=h.price*.35);
+  if(!c.length)return;const n=pick(c);n.money-=Math.round(h.price*.35);HS_()[h.id]={owner:n.id,since:state.year};n.house=h.id;n.addr=h.addr;
+  const sp=n.spouse&&find(n.spouse);if(sp)sp.addr=h.addr;(n.children||[]).map(find).forEach(k=>{if(k&&k.alive&&k.age<18)k.addr=h.addr});
+  lg(n.name+" bought "+h.name+" in the "+AR[h.a][0]+".")})}
+
+/* ===== v7: CASINO, LOAN SHARK, HOUSE VISIT FIX ===== */
+PL.casino={a:"west",x:10,y:30,w:170,h:105};
+INT.casino={t:"🎰 The Golden Ace Casino",f:"#cdb27a",o:[["🎡",18,26,"Roulette","cz:roulette"],["🃏",50,26,"Blackjack","cz:blackjack"],["🏇",82,26,"Sports book","cz:sports"],["🎰",18,56,"Slot machine","cz:slots"],["🕴️",84,60,"Man in the corner","cz:shark"],["🧾",50,56,"Cashier (bank cash)","cz:cash"]]};
+document.head.insertAdjacentHTML("beforeend","<style>.cz-wheel{width:190px;height:190px;border-radius:50%;margin:8px auto;position:relative;border:8px solid #5b3d30;box-shadow:0 0 0 3px #e7ca80,inset 0 0 18px #000a}.cz-wheel .ball{position:absolute;left:50%;top:50%;width:12px;height:12px;margin:-6px;border-radius:50%;background:#fff;box-shadow:0 0 6px #fff}.cz-num{display:inline-block;min-width:34px;padding:6px 8px;margin:2px;border-radius:6px;color:#fff;font:bold 15px Arial;text-align:center}.cz-r{background:#b3261e}.cz-b{background:#222}.cz-g{background:#1b7a3a}.cz-card{display:inline-block;width:52px;height:74px;margin:3px;background:#fff;color:#111;border-radius:6px;border:1px solid #999;font:bold 18px Arial;text-align:center;line-height:1.1;padding-top:8px;box-shadow:0 2px 4px #0006;animation:czd .35s ease-out}.cz-card.red{color:#c62828}.cz-card.back{background:repeating-linear-gradient(45deg,#7b1e1e,#7b1e1e 5px,#5a1414 5px,#5a1414 10px);color:transparent}@keyframes czd{from{transform:translateY(-40px) rotate(-12deg);opacity:0}to{transform:none;opacity:1}}.cz-reel{display:inline-block;width:64px;height:64px;margin:3px;background:#fff;border:3px solid #e7ca80;border-radius:8px;font-size:40px;line-height:64px;text-align:center;color:#000}.cz-bar{height:10px;background:#0004;border-radius:5px;overflow:hidden;margin:4px 0}.cz-bar i{display:block;height:100%;background:#e7ca80}.cz-horse{font-size:22px;position:absolute;top:0;transition:left .1s linear}</style>");
+const REDS=[1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36],WHEEL=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+const ncol=n=>n===0?"g":REDS.includes(n)?"r":"b";
+let CZ={bet:50,sel:null,busy:false,bj:null,sport:null};
+const money=()=>state.player.money;
+function betRow(){return[10,50,100,250,500].map(n=>'<button class="bt" data-n="'+n+'"'+(CZ.bet===n?' style="outline:2px solid #e7ca80"':'')+'>'+fm(n)+"</button>").join("")}
+function bindBet(re){document.querySelectorAll(".bt").forEach(b=>b.onclick=()=>{CZ.bet=+b.dataset.n;re()})}
+function broke(){const m=state.player;return m.money<5&&!(m.shark&&m.shark.owed>0)}
+function afterLoss(){renderTop();if(broke()&&state.inside==="casino"){CZ.busy=false;setTimeout(()=>{closeModal();sharkOffer()},900)}}
+/* ---- dispatcher ---- */
+const _ro2=runObj;runObj=function(pl,o){const a=o[4];if(a&&a.startsWith("cz:")){const k=a.slice(3);if(state.player.age<18){status("Security: \"Come back at 18.\"");return}({roulette,blackjack,sports,slots,shark:sharkTalk,cash:cashier})[k]();return}_ro2(pl,o)};
+const _eb2=enterBuilding;enterBuilding=function(pl){if(pl==="casino"){enterInterior("casino");return}_eb2(pl)};
+const _ei2=enterInterior;let ADMIT="";enterInterior=function(pl){if(pl==="casino"&&state.player.age<18){status("Security: \"No minors. Come back at 18.\"");return}
+ if(pl.startsWith("h_")){const id=pl.slice(2),ow=ownerOf(id);if(ow&&ow!==state.player&&ADMIT!==pl){houseMenu(id);return}ADMIT=""}
+ _ei2(pl)};
+const _kn=knock;knock=function(id){ADMIT="h_"+id;_kn(id);setTimeout(()=>{ADMIT=""},50)};
+const _rd=renderDistrict;renderDistrict=function(){_rd();if(AREA()==="west"){const w=$("world");w.insertAdjacentHTML("afterbegin",dB(PL.casino,"🎰 CASINO","casino","#6b2f4a",'<div class="fs" style="background:#e7ca80;color:#3b1f2b;border-color:#3b1f2b">OPEN 24/7</div>'));}};
+/* ---- cashier ---- */
+function cashier(){const m=state.player;modal('<h2>🧾 Cashier</h2><p class="muted">Chips are just cash here. Gambling losses can ruin you — set a limit.</p><div class="row"><span>Cash</span><b>'+fm(m.money)+'</b></div><div class="row"><span>Bank savings</span><b>'+fm(m.bank||0)+'</b></div><div class="choices"><button id="w1">Withdraw €200 from savings</button><button id="w2">Withdraw €1000 from savings</button><button id="close">Close</button></div>');$("close").onclick=closeModal;
+ [["w1",200],["w2",1000]].forEach(([i,n])=>$(i).onclick=()=>{n=Math.min(n,m.bank||0);if(n<=0){status("No savings to withdraw.");return}m.bank-=n;m.money+=n;renderTop();cashier();status("Withdrew "+fm(n))})}
+/* ---- ROULETTE ---- */
+function roulette(){const m=state.player;const t=CZ.sel;
+ let nums="";for(let n=0;n<=36;n++)nums+='<span class="cz-num cz-'+ncol(n)+'" data-s="n'+n+'"'+(t==="n"+n?' style="outline:3px solid #e7ca80"':'')+'>'+n+"</span>";
+ const opts=[["red","🔴 Red ×2"],["black","⚫ Black ×2"],["odd","Odd ×2"],["even","Even ×2"],["low","1-18 ×2"],["high","19-36 ×2"],["d1","1st dozen ×3"],["d2","2nd dozen ×3"],["d3","3rd dozen ×3"]];
+ modal('<h2>🎡 Roulette</h2><div class="row"><span>Cash</span><b>'+fm(m.money)+'</b></div><div id="wheel" class="cz-wheel" style="background:conic-gradient('+WHEEL.map((n,i)=>(ncol(n)==="r"?"#b3261e":ncol(n)==="b"?"#222":"#1b7a3a")+" "+(i*360/37)+"deg "+((i+1)*360/37)+"deg").join(",")+')"><div class="ball" id="ball"></div><div style="position:absolute;inset:55px;border-radius:50%;background:#2d1a12;display:flex;align-items:center;justify-content:center;font:bold 30px Arial;color:#e7ca80" id="rn">?</div></div><p class="muted">Bet: pick a chip size, then one spot. Straight number pays ×36.</p><div class="choices">'+betRow()+'</div><div class="choices" style="margin-top:6px">'+opts.map(o=>'<button class="rb" data-s="'+o[0]+'"'+(t===o[0]?' style="outline:2px solid #e7ca80"':'')+'>'+o[1]+"</button>").join("")+'</div><div style="margin-top:6px">'+nums+'</div><div class="choices"><button id="spin" class="gold">🎡 SPIN — bet '+fm(CZ.bet)+(t?" on "+t:"")+'</button><button id="close">Leave table</button></div><div id="rres"></div>');
+ bindBet(roulette);$("close").onclick=closeModal;
+ document.querySelectorAll(".rb,.cz-num").forEach(b=>b.onclick=()=>{CZ.sel=b.dataset.s;roulette()});
+ $("spin").onclick=()=>{if(CZ.busy)return;if(!t){status("Pick a spot on the table first.");return}if(m.money<CZ.bet){status("You can't cover that bet.");return}
+  CZ.busy=true;m.money-=CZ.bet;renderTop();const res=Math.floor(Math.random()*37),idx=WHEEL.indexOf(res),w=$("wheel"),ball=$("ball"),rn=$("rn");
+  const target=360*4+(idx+.5)*360/37;let t0=null,dur=3600;
+  const step=ts=>{if(!$("wheel")){done();return}if(!t0)t0=ts;const k=Math.min(1,(ts-t0)/dur),e=1-Math.pow(1-k,3),ang=e*(target)-90;
+   const rad=(1-e*.25)*78;ball.style.transform="translate("+Math.cos(ang*Math.PI/180)*rad+"px,"+Math.sin(ang*Math.PI/180)*rad+"px)";w.style.transform="rotate("+(-e*360*1.5)+"deg)";rn.textContent=k<1?WHEEL[Math.floor(Math.random()*37)]:res;
+   if(k<1)requestAnimationFrame(step);else done()};
+  const win=(s,r)=>s==="n"+r||(s==="red"&&r&&REDS.includes(r))||(s==="black"&&r&&!REDS.includes(r))||(s==="odd"&&r&&r%2)||(s==="even"&&r&&r%2===0)||(s==="low"&&r>=1&&r<=18)||(s==="high"&&r>=19)||(s==="d1"&&r>=1&&r<=12)||(s==="d2"&&r>=13&&r<=24)||(s==="d3"&&r>=25);
+  const mult=s=>s[0]==="n"?36:/^d\d/.test(s)?3:2;
+  const bet0=CZ.bet,done=()=>{if(CZ.done===step)return;CZ.done=step;CZ.busy=false;const ok=win(t,res),g=ok?bet0*mult(t):0;m.money+=g;state.clock+=3;renderTop();
+   if($("rres"))$("rres").innerHTML='<div class="event" style="font-size:16px"><span class="cz-num cz-'+ncol(res)+'">'+res+"</span> "+(ok?"<b style=\"color:#7be07b\">You win "+fm(g)+"!</b>":"<b style=\"color:#ff9a8a\">You lose "+fm(CZ.bet)+".</b>")+"</div>";
+   if(!ok)afterLoss()};
+  CZ.done=null;requestAnimationFrame(step)}}
+/* ---- BLACKJACK ---- */
+function deck(){const d=[];["♠","♥","♦","♣"].forEach(s=>["A","2","3","4","5","6","7","8","9","10","J","Q","K"].forEach(r=>d.push({r,s})));for(let i=d.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]]}return d}
+const cv=c=>c.r==="A"?11:"JQK".includes(c.r)?10:+c.r;
+function hv(h){let t=h.reduce((s,c)=>s+cv(c),0),a=h.filter(c=>c.r==="A").length;while(t>21&&a--)t-=10;return t}
+const cardH=(c,back)=>'<span class="cz-card'+(back?" back":(c.s==="♥"||c.s==="♦"?" red":""))+'">'+(back?"":c.r+"<br>"+c.s)+"</span>";
+function blackjack(){const m=state.player,g=CZ.bj;
+ if(!g){modal('<h2>🃏 Blackjack</h2><p class="muted">Beat the dealer without going over 21. Blackjack pays 3:2. Dealer stands on 17.</p><div class="row"><span>Cash</span><b>'+fm(m.money)+'</b></div><div class="choices">'+betRow()+'</div><div class="choices"><button id="deal" class="gold">Deal — bet '+fm(CZ.bet)+'</button><button id="close">Leave table</button></div>');bindBet(blackjack);$("close").onclick=closeModal;
+  $("deal").onclick=()=>{if(m.money<CZ.bet){status("You can't cover that bet.");return}m.money-=CZ.bet;renderTop();const d=deck();CZ.bj={d,p:[d.pop(),d.pop()],h:[d.pop(),d.pop()],bet:CZ.bet,done:false,msg:""};
+   if(hv(CZ.bj.p)===21)bjEnd();else blackjack()};return}
+ const over=g.done;
+ modal('<h2>🃏 Blackjack</h2><p class="muted">Dealer'+(over?" — "+hv(g.h):"")+'</p><div>'+g.h.map((c,i)=>cardH(c,!over&&i===1)).join("")+'</div><p class="muted">You — '+hv(g.p)+'</p><div>'+g.p.map(c=>cardH(c)).join("")+'</div><p class="muted">Bet '+fm(g.bet)+"</p>"+(over?'<div class="event" style="font-size:16px">'+g.msg+'</div><div class="choices"><button id="again" class="gold">Next hand</button><button id="close">Leave table</button></div>':'<div class="choices"><button id="hit" class="gold">Hit</button><button id="stand">Stand</button>'+(g.p.length===2&&m.money>=g.bet?'<button id="dbl">Double down</button>':"")+"</div>"));
+ if(over){$("again").onclick=()=>{CZ.bj=null;blackjack()};$("close").onclick=()=>{CZ.bj=null;closeModal()};return}
+ $("hit").onclick=()=>{g.p.push(g.d.pop());if(hv(g.p)>21)bjEnd();else blackjack()};$("stand").onclick=bjEnd;
+ if($("dbl"))$("dbl").onclick=()=>{m.money-=g.bet;g.bet*=2;renderTop();g.p.push(g.d.pop());bjEnd()}}
+function bjEnd(){const m=state.player,g=CZ.bj;g.done=true;const p=hv(g.p);let r;
+ if(p>21)r=-1;else{while(hv(g.h)<17)g.h.push(g.d.pop());const d=hv(g.h),nat=g.p.length===2&&p===21;r=nat&&!(g.h.length===2&&d===21)?1.5:d>21||p>d?1:p===d?0:-1}
+ const back=r===-1?0:r===0?g.bet:g.bet+Math.round(g.bet*r);m.money+=back;state.clock+=3;
+ g.msg=r===1.5?"<b style=\"color:#7be07b\">BLACKJACK! You win "+fm(Math.round(g.bet*1.5))+"</b>":r===1?"<b style=\"color:#7be07b\">You win "+fm(g.bet)+"!</b>":r===0?"Push — bet returned.":(p>21?"Bust! ":"Dealer wins. ")+"<b style=\"color:#ff9a8a\">You lose "+fm(g.bet)+".</b>";
+ renderTop();blackjack();if(r<0)afterLoss()}
+/* ---- SPORTS BOOK ---- */
+const TEAMS=[["Riga Rockets","🚀"],["Baltic Bears","🐻"],["Amber Hawks","🦅"],["Daugava Wolves","🐺"],["Harbor Sharks","🦈"],["Pine City Foxes","🦊"],["Lakeside Lions","🦁"],["Iron Bulls","🐂"]];
+function newMatch(){const a=Math.floor(Math.random()*8);let b;do b=Math.floor(Math.random()*8);while(b===a);const pa=.25+Math.random()*.5;return{a,b,pa,oa:Math.max(1.2,+(0.93/pa).toFixed(2)),ob:Math.max(1.2,+(0.93/(1-pa)).toFixed(2))}}
+function sports(){const m=state.player;if(!CZ.sport||CZ.sport.day!==Math.floor(state.clock/1440)){const day=Math.floor(state.clock/1440);CZ.sport={day,list:[newMatch(),newMatch(),newMatch()]}}const S=CZ.sport;
+ modal('<h2>🏇 Sports Book</h2><p class="muted">Today\'s matches. Odds reflect each team\'s chances (the house keeps a 7% edge).</p><div class="row"><span>Cash</span><b>'+fm(m.money)+'</b></div><div class="choices">'+betRow()+"</div>"+S.list.map((x,i)=>'<div class="event"><b>'+TEAMS[x.a][1]+" "+TEAMS[x.a][0]+"</b> vs <b>"+TEAMS[x.b][1]+" "+TEAMS[x.b][0]+'</b><div class="choices"><button class="sb" data-i="'+i+'" data-s="a">'+TEAMS[x.a][1]+" ×"+x.oa+'</button><button class="sb" data-i="'+i+'" data-s="b">'+TEAMS[x.b][1]+" ×"+x.ob+"</button></div></div>").join("")+'<div class="choices"><button id="horse" class="gold">🐎 Horse race (×4 on the winner)</button><button id="close">Close</button></div>');
+ bindBet(sports);$("close").onclick=closeModal;$("horse").onclick=horses;
+ document.querySelectorAll(".sb").forEach(b=>b.onclick=()=>{if(m.money<CZ.bet){status("You can't cover that bet.");return}const x=S.list[+b.dataset.i],side=b.dataset.s;m.money-=CZ.bet;renderTop();playMatch(x,side,CZ.bet)})}
+function playMatch(x,side,bet){const m=state.player;let A=0,B=0,min=0;
+ modal('<h2>🏟️ Live: '+TEAMS[x.a][1]+" "+TEAMS[x.a][0]+" vs "+TEAMS[x.b][1]+" "+TEAMS[x.b][0]+'</h2><p class="muted">You bet '+fm(bet)+" on "+TEAMS[side==="a"?x.a:x.b][0]+'</p><h1 id="sc" style="text-align:center">0 : 0</h1><div class="cz-bar"><i id="pg" style="width:0"></i></div><div id="feed" class="muted" style="min-height:90px"></div>');
+ const feed=$("feed"),iv=setInterval(()=>{if(!$("sc")){clearInterval(iv);const ok=Math.random()<(side==="a"?x.pa:1-x.pa),g=ok?Math.round(bet*(side==="a"?x.oa:x.ob)):0;m.money+=g;renderTop();status(ok?"Your bet paid "+fm(g)+"!":"You lost your sports bet.");if(!ok)afterLoss();return}min+=10;$("pg").style.width=min/90*100+"%";
+  if(Math.random()<.45){const sa=Math.random()<x.pa*.9+.05;sa?A++:B++;feed.insertAdjacentHTML("afterbegin","<div>"+min+"' ⚽ GOAL for "+TEAMS[sa?x.a:x.b][0]+"!</div>");$("sc").textContent=A+" : "+B}
+  if(min>=90){clearInterval(iv);let sa=A>B?"a":B>A?"b":(Math.random()<x.pa?"a":"b");if(A===B)feed.insertAdjacentHTML("afterbegin","<div>Penalty shootout… "+TEAMS[sa==="a"?x.a:x.b][0]+" wins!</div>");
+   const ok=sa===side,g=ok?Math.round(bet*(side==="a"?x.oa:x.ob)):0;m.money+=g;state.clock+=90;renderTop();
+   setTimeout(()=>{if(!$("sc"))return;feed.insertAdjacentHTML("afterbegin","<div class=\"event\" style=\"font-size:16px\">"+(ok?"<b style=\"color:#7be07b\">Your team won! Payout "+fm(g)+"</b>":"<b style=\"color:#ff9a8a\">Your team lost. −"+fm(bet)+"</b>")+"</div><div class=\"choices\"><button id=\"back\" class=\"gold\">Back to the book</button></div>");$("back").onclick=sports;if(!ok)afterLoss()},600)}},550)}
+function horses(){const m=state.player,H=["🐎 Thunder","🐎 Biscuit","🐎 Moonshot","🐎 Lucky"];
+ modal('<h2>🐎 Horse race</h2><p class="muted">Pick a horse. Winner pays ×4. Bet '+fm(CZ.bet)+'</p><div class="choices">'+H.map((h,i)=>'<button class="hs" data-i="'+i+'">'+h+"</button>").join("")+'</div><div class="choices"><button id="close">Back</button></div>');$("close").onclick=sports;
+ document.querySelectorAll(".hs").forEach(b=>b.onclick=()=>{if(m.money<CZ.bet){status("You can't cover that bet.");return}const pick1=+b.dataset.i,bet=CZ.bet;m.money-=bet;renderTop();
+  modal('<h2>🐎 They\'re off!</h2><div style="position:relative">'+H.map((h,i)=>'<div style="position:relative;height:34px;border-bottom:1px dashed #fff4"><span class="cz-horse" id="hz'+i+'" style="left:0">'+h.split(" ")[0]+'</span><small style="position:absolute;right:0;top:8px">'+h.split(" ")[1]+(i===pick1?" ⭐":"")+"</small></div>").join("")+'</div><div id="hres"></div>');
+  const pos=[0,0,0,0];const iv=setInterval(()=>{if(!$("hz0")){clearInterval(iv);const ok=Math.random()<.25;if(ok)m.money+=bet*4;renderTop();status(ok?"Your horse won "+fm(bet*4)+"!":"Your horse lost.");if(!ok)afterLoss();return}let win=-1;pos.forEach((p,i)=>{pos[i]+=Math.random()*5;$("hz"+i).style.left=Math.min(pos[i],88)+"%";if(pos[i]>=88&&win<0)win=i});
+   if(win>=0){clearInterval(iv);const ok=win===pick1,g=ok?bet*4:0;m.money+=g;state.clock+=20;renderTop();$("hres").innerHTML='<div class="event" style="font-size:16px">'+H[win]+" wins! "+(ok?"<b style=\"color:#7be07b\">You win "+fm(g)+"</b>":"<b style=\"color:#ff9a8a\">You lose "+fm(bet)+"</b>")+'</div><div class="choices"><button id="again" class="gold">Another race</button><button id="close">Back</button></div>';$("again").onclick=horses;$("close").onclick=sports;if(!ok)afterLoss()}},120)})}
+/* ---- SLOTS ---- */
+const SYM=["🍒","🍋","🔔","⭐","7️⃣","💎"];
+function slots(){const m=state.player;modal('<h2>🎰 Slot machine</h2><div class="row"><span>Cash</span><b>'+fm(m.money)+'</b></div><div style="text-align:center;margin:10px 0"><span class="cz-reel" id="r0">🍒</span><span class="cz-reel" id="r1">🍋</span><span class="cz-reel" id="r2">🔔</span></div><p class="muted">Three alike pays ×10 (💎 ×40, 7️⃣ ×25). Two cherries pay ×2.</p><div class="choices">'+betRow()+'</div><div class="choices"><button id="pull" class="gold">🎰 Pull — '+fm(CZ.bet)+'</button><button id="close">Leave</button></div><div id="sres"></div>');bindBet(slots);$("close").onclick=closeModal;
+ $("pull").onclick=()=>{if(CZ.busy)return;if(m.money<CZ.bet){status("You can't cover that bet.");return}CZ.busy=true;m.money-=CZ.bet;renderTop();const R=[0,1,2].map(()=>SYM[Math.random()<.5?Math.floor(Math.random()*3):Math.floor(Math.random()*6)]),bet=CZ.bet;let n=0;const pay=()=>{let g=0;if(R[0]===R[1]&&R[1]===R[2])g=bet*(R[0]==="💎"?40:R[0]==="7️⃣"?25:10);else if(R.filter(x=>x==="🍒").length>=2)g=bet*2;return g};
+  const iv=setInterval(()=>{if(!$("r0")){clearInterval(iv);CZ.busy=false;const g=pay();m.money+=g;renderTop();if(!g)afterLoss();return}n++;[0,1,2].forEach(i=>{$("r"+i).textContent=n<8+i*6?SYM[Math.floor(Math.random()*6)]:R[i]});
+   if(n>=8+2*6){clearInterval(iv);CZ.busy=false;const g=pay();
+    m.money+=g;state.clock+=2;renderTop();$("sres").innerHTML='<div class="event" style="font-size:16px">'+(g?"<b style=\"color:#7be07b\">You win "+fm(g)+"!</b>":"<b style=\"color:#ff9a8a\">No luck.</b>")+"</div>";if(!g)afterLoss()}},80)}}
+/* ---- LOAN SHARK ---- */
+const dayNow=()=>Math.floor(state.clock/1440);
+function sharkTalk(){const m=state.player,s=m.shark;
+ if(s&&s.owed>0){modal('<h2>🕴️ Vince</h2><p>"You owe me <b>'+fm(s.owed)+'</b>. Due in <b>'+Math.max(0,s.due-dayNow())+" day(s)</b>.\""+(s.strikes?'<br><span class="warn">⚠ You\'ve already been warned '+s.strikes+" time(s).</span>":"")+'</p><div class="choices"><button id="pay" class="gold">Pay what I can ('+fm(Math.min(m.money,s.owed))+')</button><button id="close">Close</button></div>');$("close").onclick=closeModal;$("pay").onclick=()=>{const n=Math.min(m.money,s.owed);if(n<=0){status("You have nothing on you.");return}m.money-=n;s.owed-=n;if(s.owed<=0){m.shark=null;lg(m.name+" paid off the loan shark.");status("Vince: \"Pleasure doing business.\"")}renderTop();closeModal();sharkTalk()}}
+ else if(m.money<50)sharkOffer();else{modal('<h2>🕴️ Vince</h2><p>"I only deal with people who are desperate. Come back when you\'re broke."</p><button id="close">Close</button>');$("close").onclick=closeModal}}
+function sharkOffer(){const m=state.player;if(!state||m.shark&&m.shark.owed>0)return;
+ const O=[[200,1.4,5],[500,1.5,6],[1000,1.6,7]];
+ modal('<h2>🕴️ A stranger slides next to you</h2><p>"Cleaned out? Name\'s Vince. I lend money to people in trouble."</p><p class="muted">He opens a roll of cash. Interest is brutal, and the deadline is not a suggestion.</p>'+O.map((o,i)=>'<div class="event"><b>Borrow '+fm(o[0])+'</b> — you owe <b>'+fm(o[0]*o[1])+'</b> in <b>'+o[2]+" days</b><div class=\"choices\"><button class=\"sk\" data-i=\""+i+'">Take it</button></div></div>').join("")+'<div class="choices"><button id="no" class="gold">No thanks, I\'ll walk away</button></div><p class="muted">If you can\'t pay by the deadline, his men will come find you.</p>');
+ $("no").onclick=()=>{closeModal();status("Vince shrugs: \"The offer stands.\"")};
+ document.querySelectorAll(".sk").forEach(b=>b.onclick=()=>{const o=O[+b.dataset.i];m.money+=o[0];m.shark={owed:Math.round(o[0]*o[1]),orig:o[0],due:dayNow()+o[2],strikes:0};m.mem.push(state.year+" — Borrowed "+fm(o[0])+" from a loan shark named Vince.");lg(m.name+" borrowed money from a loan shark.");closeModal();renderTop();status("You owe Vince "+fm(m.shark.owed)+" in "+o[2]+" days.")})}
+function sharkCheck(){if(!state||state.ended||modalOpen()||$("game").style.display==="none")return;const m=state.player,s=m.shark;if(!s||s.owed<=0||m.age<1)return;
+ const left=s.due-dayNow();if(left===1&&!s.warned){s.warned=1;status("📞 Vince's message: \"One day left. Don't make me come find you.\"")}
+ if(left>0)return;
+ /* deadline reached */
+ if(m.money>=s.owed){m.money-=s.owed;m.shark=null;lg(m.name+" paid off the loan shark.");closeModal();renderTop();status("Vince's men collected "+fm(s.owed)+" from you. Debt cleared.");return}
+ const took=Math.max(0,Math.round(m.money));s.owed-=took;m.money-=took;const k=s.strikes,dp=[0,.35,.65,.9][Math.min(k,3)];
+ if(Math.random()<dp){killed(took);return}
+ beating(took,k)}
+function beating(took,k){const m=state.player,s=m.shark;s.strikes=k+1;s.warned=0;s.owed=Math.round(s.owed*1.25);s.due=dayNow()+(k===0?5:3);
+ const inj=[...new Set([pick(["arm","leg","rib","nose","hand"]),Math.random()<.7?pick(["rib","leg","conc","arm"]):null].filter(Boolean))];inj.forEach(i=>addIll(m,i,true));
+ const hit=10+k*8;m.stats.health=clamp(m.stats.health-hit,1,100);m.mem.push(state.year+" — Beaten by loan shark Vince's men for an unpaid debt.");lg(m.name+" was beaten by loan sharks and ended up in hospital.");
+ state.inside=null;state.area="centre";const d=doorPos("hospital");m.x=d.x;m.y=d.y+14;state.clock+=240;renderWorld();render();
+ const names=inj.map(i=>DZ[i].n.toLowerCase());
+ modal('<h2>🩸 Vince\'s men found you</h2><div class="event"><b>'+(k===0?"First warning.":"Second visit.")+'</b> Two large men cornered you in an alley.</div>'+(took?'<div class="event">They took all your cash ('+fm(took)+').</div>':"")+'<div class="event">You were left with: <b>'+names.join(" and ")+"</b>. A passer-by called an ambulance.</div><div class=\"event\">Health −"+hit+". Your debt grew to <b>"+fm(s.owed)+"</b>, now due in <b>"+(k===0?5:3)+" days</b>.</div><p class=\"warn\">⚠ "+(k===0?"Next time it won't be just a warning.":"There will not be a third warning.")+'</p><div class="choices"><button id="doc" class="gold">🏥 See the doctor</button><button id="close">Close</button></div>');
+ $("close").onclick=closeModal;$("doc").onclick=()=>{closeModal();enterInterior("hospital");enterBuilding("hospital")}}
+function killed(took){const m=state.player;m.shark=null;state.inside=null;closeModal();
+ m.mem.push(state.year+" — Murdered by loan shark Vince's men over an unpaid debt.");lg(m.name+" was killed by loan sharks over an unpaid debt.");
+ modal('<h2>💀 You never saw it coming</h2><p>You couldn\'t pay Vince. His men did not give a warning this time.</p><p class="muted">The debt died with you.</p><button id="go" class="gold">Continue</button>');
+ $("go").onclick=()=>{closeModal();die(m)}}
+setInterval(sharkCheck,1500);
+/* sharks also appear if you walk into the casino broke */
+const _ei3=enterInterior;enterInterior=function(pl){_ei3(pl);if(pl==="casino"&&state.inside==="casino"&&broke())setTimeout(()=>{if(!modalOpen())sharkOffer()},500)};
+/* ---- top bar + panel ---- */
+const _rt2=renderTop;renderTop=function(){_rt2();const s=state.player.shark,t=$("topstats");if(t&&s&&s.owed>0)t.insertAdjacentHTML("beforeend","<span>🕴️ <b style=\"color:#ff9a8a\">Vince: −"+fm(s.owed)+" · "+Math.max(0,s.due-dayNow())+"d</b></span>")};
+const _hp2=homePanel;homePanel=function(){_hp2();const s=state.player.shark;if(s&&s.owed>0)$("content").insertAdjacentHTML("beforeend",'<div class="card"><h3>🕴️ Loan shark debt</h3><div class="row"><span>Owed</span><b style="color:#ff9a8a">'+fm(s.owed)+'</b></div><div class="row"><span>Due in</span><b>'+Math.max(0,s.due-dayNow())+' day(s)</b></div><p class="muted">Pay Vince back at the casino (man in the corner). Warnings so far: '+s.strikes+".</p></div>")};
+const _nm2=normalize;normalize=function(){_nm2();const m=state.player;if(m.shark&&m.shark.due==null)m.shark=null};
+/* ===== MAYOR ELECTIONS: every 10 in-game years ===== */
+const ELEC_EVERY=10,ELEC_START=2026;
+const ELEC_QS=[
+{q:"A flood has damaged homes by the river. What will you do?",o:[["Open an emergency relief fund","charisma",36,7,-3,"Residents feel looked after.","It sounded like empty words."],["Build a proper flood barrier","intelligence",42,9,-4,"A serious, credible plan.","Voters doubted the cost."],["Promise a huge rebuilding programme","ambition",50,13,-7,"The hall erupted in applause.","Nobody believed the promise."]]},
+{q:"Voters ask what you will do about local taxes.",o:[["Fix the budget, keep taxes","intelligence",36,7,-3,"A sensible, steady answer.","It sounded dull."],["Cut taxes for everyone","ambition",43,10,-5,"The crowd cheered.","The numbers didn't add up."],["Raise taxes to fund better services","charisma",52,13,-7,"A brave and persuasive case.","Booing broke out."]]},
+{q:"Residents are worried about crime in town.",o:[["Hire more police officers","ambition",38,8,-3,"People feel safer already.","Critics called it a waste."],["Fund youth clubs and sports","creativity",42,9,-4,"Parents loved the idea.","It sounded too soft."],["Offer offenders a second chance","charisma",50,13,-7,"A compassionate, bold stand.","Many found it naive."]]},
+{q:"The town school is overcrowded.",o:[["Build a new wing","ambition",40,9,-4,"Teachers and parents applauded.","Voters asked who would pay."],["Hire more teachers","charisma",36,7,-3,"A popular, practical promise.","It sounded vague."],["Launch a modern learning programme","intelligence",48,12,-6,"Impressive and forward-looking.","It went over their heads."]]},
+{q:"Waiting lists at the hospital keep growing.",o:[["Open an evening clinic","health",38,8,-3,"Patients are relieved.","It sounded exhausting."],["Recruit more doctors and nurses","charisma",42,9,-4,"A promise people believe in.","They wanted details."],["Reorganise the whole system","intelligence",50,13,-7,"A clever, convincing reform plan.","It sounded risky."]]},
+{q:"A company wants to build a factory in the town park.",o:[["Say yes, for the jobs","ambition",40,9,-4,"Workers cheered.","Neighbours were furious."],["Say no, protect the park","charisma",38,8,-3,"Families applauded.","Some called you short-sighted."],["Find another site and a compromise","intelligence",48,12,-6,"Everyone left satisfied.","It sounded like dodging."]]},
+{q:"Rents and house prices keep rising.",o:[["Support new affordable homes","ambition",40,9,-4,"Young families cheered.","Homeowners grumbled."],["Cap rents","charisma",46,11,-6,"Tenants loved it.","Landlords revolted."],["Redevelop empty buildings","creativity",40,9,-4,"A fresh, smart idea.","It seemed unrealistic."]]},
+{q:"Should the town fund a summer festival?",o:[["Yes, a big town festival","charisma",34,6,-3,"The crowd loved it.","People called it a waste."],["Yes, but a modest one","intelligence",36,7,-3,"A balanced answer.","It lacked excitement."],["Make it a showpiece event","creativity",48,12,-6,"People are already excited.","It seemed over the top."]]},
+{q:"Young people keep leaving town.",o:[["Create apprenticeships","intelligence",40,9,-4,"Practical and convincing.","It didn't excite anyone."],["Build a new youth centre","creativity",38,8,-3,"Young voters liked it.","It sounded unfunded."],["Offer cheap first-home grants","ambition",48,12,-6,"A bold, popular offer.","Voters doubted the money."]]},
+{q:"The main road is full of potholes.",o:[["Repair it this year","ambition",36,7,-3,"Drivers cheered.","It sounded rushed."],["Plan a full road renewal","intelligence",42,9,-4,"A well-thought plan.","It sounded slow."],["Start a town-wide cycling scheme","health",46,11,-5,"A fresh and healthy vision.","Drivers weren't impressed."]]},
+{q:"A heckler interrupts your speech.",o:[["Joke back at them","charisma",40,9,-5,"The crowd roared with laughter.","The joke fell flat."],["Ignore them and carry on","health",34,6,-3,"You looked calm and in control.","You looked rattled."],["Invite them to speak","ambition",46,11,-6,"A confident, generous move.","It turned into chaos."]]},
+{q:"A journalist asks whether you can be trusted.",o:[["Promise full transparency","intelligence",40,9,-4,"It sounded honest.","Nobody was convinced."],["Tell a personal story","charisma",38,8,-3,"It touched the room.","It felt rehearsed."],["Turn it back on your rival","ambition",48,12,-7,"A sharp, effective reply.","It looked like mudslinging."]]}];
+const ELEC_WINDOW=3;
+function elec(){if(!state.elec||state.elec.next==null){const y=state.year;state.elec=Object.assign({hist:[]},state.elec||{},{next:ELEC_START+ELEC_EVERY*(Math.floor((y-ELEC_START)/ELEC_EVERY)+1)})}state.elec.hist=state.elec.hist||[];return state.elec}
+function mayorOf(){const m=state.mayor,p=m&&find(m.id);return p&&p.alive?p:null}
+function pickRival(me){const l=state.people.filter(x=>x.alive&&x!==me&&!x.away&&x.age>=30&&x.age<80);return l.length?pick(l):null}
+function crownMayor(p){state.mayor=p?{id:p.id,name:p.name,since:state.year}:null}
+function electionRefresh(){renderTop();renderPanel();renderWorld();save(true)}
+function canRunNow(me){return me.alive&&!inPrison()&&me.age>=30}
+function endTerm(me){if(me.job==="Mayor"){{const F=FV();F.q=[];F.later=[]}me.job=me.prevJob||"Unemployed";me.career=me.prevCareer||{level:1,rep:0,shifts:0};delete me.prevJob;delete me.prevCareer;me.mem.push(state.year+" — My term as Mayor ended.");lg(me.name+"'s term as Mayor ended.")}}
+function openElection(){const E=elec(),r=pickRival(state.player);E.open={y:state.year,until:state.year+ELEC_WINDOW,rival:r?r.id:null};lg("An election for Mayor has been called. Candidates can register at the Town Hall election board until "+E.open.until+".")}
+function npcWins(rival){const E=elec(),me=state.player;E.open=null;endTerm(me);crownMayor(rival);E.hist.push({y:state.year,w:rival?rival.name:"(nobody)"});lg((rival?rival.name:"Nobody")+" was elected Mayor.");electionRefresh()}
+function electionCheck(){
+ if(!state||state.ended)return;const E=elec();
+ if(E.open&&state.year>=E.open.until){const o=E.open;let r=o.rival!=null?find(o.rival):null;if(!(r&&r.alive&&!r.away))r=pickRival(state.player);npcWins(r);return}
+ if(!E.open&&state.year>=E.next){while(E.next<=state.year)E.next+=ELEC_EVERY;openElection()}}
+function runForMayor(){
+ const E=elec(),me=state.player,o=E.open;
+ if(!o||!canRunNow(me)){closeModal();status("You can't run right now.");return}
+ let rival=o.rival!=null?find(o.rival):null;if(!(rival&&rival.alive&&!rival.away))rival=pickRival(me);
+ debate(rival,me.job==="Mayor")}
+function debate(rival,incumbent){
+ const me=state.player,qs=ELEC_QS.slice().sort(()=>Math.random()-.5).slice(0,3),res=[];
+ const step=(i,fb)=>{
+  if(i>=3)return finishElection(rival,incumbent,res);
+  const q=qs[i];
+  modal('<h2>🎤 Mayoral debate — question '+(i+1)+'/3</h2>'+(fb?'<div class="event">'+fb+'</div>':'')+'<p><b>'+esc(q.q)+'</b></p><p class="muted">Bolder answers win more votes but are harder to pull off. The skill shown on each button decides whether it works.</p><div class="choices">'+q.o.map((o,k)=>'<button class="elOpt" data-k="'+k+'">'+esc(o[0])+' <small style="opacity:.7">('+o[1]+')</small></button>').join("")+'</div>');
+  document.querySelectorAll(".elOpt").forEach(b=>b.onclick=()=>{const o=q.o[+b.dataset.k],ok=((me.stats||{})[o[1]]||40)+Math.random()*70>=o[2]+40;res.push({label:o[0],ok,d:ok?o[3]:o[4],text:ok?o[5]:o[6]});step(i+1,(ok?'✅ ':'❌ ')+esc(o[0])+' — '+esc(ok?o[5]:o[6]))})};
+ step(0,"")}
+function finishElection(rival,incumbent,res){
+ const me=state.player,E=elec(),off=(me.rec||[]).length,pen=Math.min(15,off*5);
+ let share=40+res.reduce((s,r)=>s+r.d,0)+((((me.stats||{}).charisma)||50)-50)/5+(incumbent?5+Math.round((FV().appr-50)/5):0)-pen+Math.floor(Math.random()*9)-4;
+ share=Math.round(clamp(share,8,92));const win=share>=50;E.open=null;
+ E.hist.push({y:state.year,w:win?me.name:(rival?rival.name:"(nobody)"),pct:share});
+ if(win){if(me.job!=="Mayor"){FVreset();me.prevJob=me.job;me.prevCareer=me.career;me.job="Mayor";me.career={level:1,rep:0,shifts:0}}crownMayor(me);me.mem.push(state.year+" — Won the election and became Mayor ("+share+"%).");lg(me.name+" was elected Mayor with "+share+"% of the vote.")}
+ else{endTerm(me);crownMayor(rival);me.mem.push(state.year+" — Lost the mayoral election ("+share+"%).");lg((rival?rival.name:"Nobody")+" was elected Mayor; "+me.name+" lost with "+share+"%.")}
+ modal('<h2>'+(win?'🎉 You won the election!':'🗳️ You lost the election')+'</h2><div class="card">'+res.map(r=>'<div class="event">'+(r.ok?'✅ ':'❌ ')+esc(r.label)+' — '+esc(r.text)+'</div>').join("")+'</div><div class="card"><div class="row"><span>You</span><b>'+share+'%</b></div><div class="row"><span>'+esc(rival?rival.name:"Others")+'</span><b>'+(100-share)+'%</b></div>'+(pen?'<p class="muted">Your criminal record cost you votes.</p>':'')+(incumbent?'<p class="muted">Incumbent bonus and your public approval ('+FV().appr+'/100) counted.</p>':'')+'</div><p>'+(win?'You are now <b>Mayor</b> until the next election in <b>'+E.next+'</b>. Use the Mayor\'s office in the Town Hall to run the town.':esc(rival?rival.name:"Nobody")+' is the new Mayor. Better luck in '+E.next+'.')+'</p><button id="close" class="gold">OK</button>');
+ $("close").onclick=()=>{closeModal();electionRefresh()};electionRefresh()}
+function electionBoard(){
+ const E=elec(),m=mayorOf(),me=state.player,o=E.open,nxt=E.next-state.year;
+ let notice='';
+ if(o){const left=o.until-state.year,r=o.rival!=null?find(o.rival):null,can=canRunNow(me);
+  notice='<div class="card" style="border-color:#e7ca80"><h3>📣 Election open!</h3><p>An election for Mayor is under way. Candidates can register until <b>'+o.until+'</b> ('+left+' year'+(left===1?'':'s')+' left).'+(r&&r.alive?' Your rival: <b>'+esc(r.name)+'</b>.':'')+'</p>'+(me.job==="Mayor"?'<p class="muted">Your current term ends when the election is decided.</p>':'')+(can?'<p class="muted">You will answer 3 questions from the voters; your answers and skills decide the vote.'+((me.rec||[]).length?' <b style="color:#e07a6a">Your criminal record will cost you votes.</b>':'')+'</p><button id="elRun" class="gold">🗳️ RUN FOR MAYOR</button>':'<p class="muted">You can\'t run: '+(!me.alive?'you are not alive.':inPrison()?'you are in prison.':'you must be 30 or older.')+'</p>')+'</div>'}
+ else notice='<div class="card"><h3>📣 Notices</h3><p class="muted">No election is open right now. The next one is called in '+E.next+' ('+nxt+' year'+(nxt===1?'':'s')+').</p></div>';
+ modal('<h2>🗳️ Election board</h2>'+notice+'<div class="card"><h3>Current Mayor</h3>'+(m?'<div class="row"><span>'+esc(m.name)+(m===me?' (you)':'')+'</span><b>since '+state.mayor.since+'</b></div>':'<p class="muted">The Mayor\'s seat is vacant.</p>')+'</div><div class="card"><h3>Rules</h3><p class="muted">An election is called every '+ELEC_EVERY+' years and stays open for '+ELEC_WINDOW+' years. To run you must be 30 or older and out of prison. If nobody from your family stands, a townsperson wins. A criminal record costs you votes.</p></div>'+(E.hist.length?'<div class="card"><h3>Past elections</h3>'+E.hist.slice(-6).reverse().map(h=>'<div class="event">'+h.y+' — '+esc(h.w)+(h.pct!=null?' (you: '+h.pct+'%)':'')+'</div>').join("")+'</div>':'')+'<button id="close">CLOSE</button>');
+ $("close").onclick=closeModal;if($("elRun"))$("elRun").onclick=runForMayor}
+
+/* ===== MAYOR'S OFFICE: tax, bank rate, town decisions ===== */
+const TAX_DEF=15,LOAN_SPREAD=6.5,POL_NAMES=["Low","Normal","High"],POL_COST=[.02,.04,.065],NOJOB=["Child","Student","Retired","Unemployed"];
+function TW(){const t=state.town||(state.town={});if(t.tax==null)t.tax=TAX_DEF;if(t.bank==null)t.bank=1.5;t.pol=t.pol||{};["police","health","edu"].forEach(k=>{if(t.pol[k]==null)t.pol[k]=1});if(t.pop==null)t.pop=1;if(t.cash==null)t.cash=2000;return t}
+function twLvl(k){const t=TW();return t.cash<0?0:t.pol[k]}
+function copBonus(){return state&&state.player?[-.1,0,.1][twLvl("police")]:0}
+function hcMult(){return state&&state.player?[1.4,1,.6][twLvl("health")]:1}
+function hcCost(n){return Math.round(n*hcMult())}
+function eduMult(){return state&&state.player?[1.3,1,.7][twLvl("edu")]:1}
+function bankRate(){return state&&state.player?TW().bank:1.5}
+function worker(x){return x.alive&&!x.away&&(x.age||0)>=18&&x.job&&!NOJOB.includes(x.job)}
+function twBase(){let b=0;state.people.forEach(x=>{if(worker(x))b+=salary(x.job)*12});return Math.round(b)}
+Object.keys(DZ).forEach(k=>{const o=DZ[k],c0=o.c;if(typeof c0!=="number")return;Object.defineProperty(o,"c",{get(){return Math.round(c0*hcMult())},configurable:true,enumerable:true})});
+UNI.forEach(f=>{const c0=f.cost;if(typeof c0!=="number")return;Object.defineProperty(f,"cost",{get(){return Math.round(c0*eduMult())},configurable:true,enumerable:true})});
+function townYear(){
+ const t=TW(),base=twBase(),rev=Math.round(base*t.tax/100);let sp=0;["police","health","edu"].forEach(k=>sp+=base*POL_COST[t.pol[k]]);sp=Math.round(sp);
+ const was=t.cash;t.cash+=rev-sp;t.last={y:state.year,rev,sp};
+ if(t.cash<0&&was>=0)lg("The town treasury ran out of money. Public services are cut back until it recovers.");
+ const d=(TAX_DEF-t.tax)/100;
+ if(d)state.people.forEach(x=>{if(!worker(x)||(x===state.player&&inPrison()))return;x.money=(x.money||0)+Math.round(salary(x.job)*12*d)});
+ if(twLvl("edu")===2)state.people.forEach(x=>{if(x.alive&&!x.away&&x.age>=6&&x.age<18&&x.stats&&Math.random()<.6)x.stats.intelligence=Math.min(100,(x.stats.intelligence||40)+1)});
+ const P=state.pop;if(P&&t.pop!==1){const n=([.88,1,1.12][t.pop]-1)*POP.base*.03;P.target=Math.round(clamp(P.target+n,POP.min,POP.max))}}
+function polText(k){return k==="police"?["Criminals are caught less often (−10%).","Normal policing.","Criminals are caught more often (+10%)."]:k==="health"?["Hospital prices ×1.4.","Normal hospital prices.","Hospital prices ×0.6."]:["University places cost ×1.3.","Normal tuition.","Tuition ×0.7 and children gain intelligence faster."]}
+function mayorOffice(){
+ const me=state.player;if(me.job!=="Mayor"){status("Only the Mayor may enter the Mayor's office.");return}
+ const t=TW(),L=t.last;
+ modal('<h2>🏛️ Mayor\'s office</h2><div class="card"><h3>Town treasury</h3><div class="row"><span>Treasury</span><b style="color:'+(t.cash<0?'#ff9a8a':'inherit')+'">'+fm(t.cash)+'</b></div>'+(L?'<div class="row"><span>Last year ('+L.y+')</span><b>+'+fm(L.rev)+' tax · −'+fm(L.sp)+' services</b></div>':'<p class="muted">The first budget closes at the end of this year.</p>')+(t.cash<0?'<p class="warn">⚠ The treasury is empty: police, health and education run at Low until it recovers.</p>':'')+'</div><div class="card"><h3>Rates</h3><div class="row"><span>Income tax</span><b>'+t.tax+'%</b></div><div class="row"><span>Bank base rate</span><b>savings '+t.bank+'% · loans '+(t.bank+LOAN_SPREAD)+'%</b></div><div class="choices"><button id="moTax">SET TAX RATE</button><button id="moBank">SET BANK RATE</button></div></div><div class="card"><h3>📜 Petitions</h3><div class="row"><span>Citizens waiting</span><b>'+FV().q.length+'</b></div><div class="row"><span>Public approval</span><b>'+FV().appr+'/100</b></div><div class="choices"><button id="moPet" class="gold">SEE PETITIONERS</button></div></div><div class="card"><h3>Town</h3><div class="choices"><button id="moPol">TOWN DECISIONS</button></div></div><div class="card"><h3>Personal</h3><div class="choices"><button id="moClear">CLEAR MY CRIMINAL RECORD</button></div></div><button id="close">CLOSE</button>');
+ $("close").onclick=closeModal;$("moTax").onclick=setTax;$("moBank").onclick=setBankRate;$("moPol").onclick=townDecisions;$("moPet").onclick=petitions;$("moClear").onclick=mayorClear}
+function setTax(){
+ const t=TW(),me=state.player;
+ modal('<h2>💶 Income tax</h2><p class="muted">Base wages assume '+TAX_DEF+'%. A lower rate raises everyone\'s pay at the end of each year; a higher rate cuts it. Tax is collected from every working adult into the town treasury.</p><div class="card"><div class="row"><span>Tax rate</span><b id="txv"></b></div><input id="txr" type="range" min="5" max="30" step="1" value="'+t.tax+'" style="width:100%"><p id="txp" class="muted"></p></div><div class="choices"><button id="txOk" class="gold">SET RATE</button><button id="txBack">BACK</button></div>');
+ const prev=()=>{const v=+$("txr").value,b=twBase(),pay=Math.round(salary(me.job)*12*(TAX_DEF-v)/100);$("txv").textContent=v+"%";$("txp").textContent="Estimated revenue "+fm(b*v/100)+"/yr. Your own pay "+(pay>=0?"+":"−")+fm(Math.abs(pay))+"/yr compared with the standard rate."};
+ $("txr").oninput=prev;prev();$("txBack").onclick=mayorOffice;
+ $("txOk").onclick=()=>{const v=+$("txr").value;t.tax=v;lg(me.name+", the Mayor, set income tax to "+v+"%.");mayorOffice();status("Income tax is now "+v+"%.")}}
+function setBankRate(){
+ const t=TW(),me=state.player;
+ modal('<h2>🏦 Bank base rate</h2><p class="muted">You set the Northside Bank\'s base rate. It is paid on savings, and loans cost the base rate plus '+LOAN_SPREAD+' points. It applies to everyone at the end of each year.</p><div class="card"><div class="row"><span>Savings</span><b id="brs"></b></div><div class="row"><span>Loans</span><b id="brl"></b></div><input id="brr" type="range" min="0" max="6" step="0.5" value="'+t.bank+'" style="width:100%"></div><div class="choices"><button id="brOk" class="gold">SET RATE</button><button id="brBack">BACK</button></div>');
+ const prev=()=>{const v=+$("brr").value;$("brs").textContent="+"+v+"%/yr";$("brl").textContent=(v+LOAN_SPREAD)+"%/yr"};
+ $("brr").oninput=prev;prev();$("brBack").onclick=mayorOffice;
+ $("brOk").onclick=()=>{const v=+$("brr").value;t.bank=v;lg(me.name+", the Mayor, set the bank base rate to "+v+"%.");mayorOffice();status("Bank base rate is now "+v+"% (loans "+(v+LOAN_SPREAD)+"%).")}}
+function townDecisions(){
+ const t=TW(),me=state.player,base=twBase(),F=Math.max(300,Math.round(base*.05)),cool=t.fest!=null&&state.year-t.fest<3;
+ const row=(k,ic,name)=>'<div class="card"><h3>'+ic+' '+name+'</h3><p class="muted">'+polText(k)[t.pol[k]]+' Costs about '+fm(base*POL_COST[t.pol[k]])+'/yr.</p><div class="choices">'+POL_NAMES.map((n,i)=>'<button class="pl'+(t.pol[k]===i?' gold':'')+'" data-k="'+k+'" data-i="'+i+'">'+n+'</button>').join("")+'</div></div>';
+ modal('<h2>🏛️ Town decisions</h2><p class="muted">Treasury: <b>'+fm(t.cash)+'</b>. Tax pays for services each year; if the treasury runs out, all services drop to Low.'+(t.cash<0?' <b style="color:#ff9a8a">The treasury is empty right now.</b>':'')+'</p>'+row("police","🚔","Police funding")+row("health","🏥","Healthcare funding")+row("edu","🏫","Education funding")+'<div class="card"><h3>🌍 Immigration policy</h3><p class="muted">'+["Fewer newcomers: the town can sustain a smaller population over time.","Normal immigration.","More newcomers: the town can sustain a larger population over time."][t.pop]+'</p><div class="choices">'+["Restricted","Open","Welcoming"].map((n,i)=>'<button class="pl'+(t.pop===i?' gold':'')+'" data-k="pop" data-i="'+i+'">'+n+'</button>').join("")+'</div></div><div class="card"><h3>🎉 Town festival</h3><p class="muted">Everyone in town warms to you a little and you gain charisma. Costs '+fm(F)+' from the treasury; once every 3 years.</p><button id="tfGo" class="gold"'+((cool||t.cash<F)?' disabled':'')+'>HOLD A FESTIVAL ('+fm(F)+')</button>'+(cool?'<p class="muted">Held recently — wait until '+(t.fest+3)+'.</p>':t.cash<F?'<p class="muted">The treasury cannot afford it.</p>':'')+'</div><div class="choices"><button id="tdBack">BACK</button></div>');
+ $("tdBack").onclick=mayorOffice;
+ document.querySelectorAll(".pl").forEach(b=>b.onclick=()=>{const k=b.dataset.k,i=+b.dataset.i;if(k==="pop")t.pop=i;else t.pol[k]=i;const nm=k==="pop"?"immigration policy":k==="police"?"police funding":k==="health"?"healthcare funding":"education funding";lg(me.name+", the Mayor, set "+nm+" to "+(k==="pop"?["Restricted","Open","Welcoming"][i]:POL_NAMES[i])+".");townDecisions();status("Decision made: "+nm+" → "+(k==="pop"?["Restricted","Open","Welcoming"][i]:POL_NAMES[i]))});
+ if($("tfGo"))$("tfGo").onclick=()=>{if(cool||t.cash<F)return;t.cash-=F;t.fest=state.year;state.people.forEach(x=>{if(x.alive&&!x.away&&x!==me)changeRel(x.id,4)});me.stats.charisma=Math.min(100,(me.stats.charisma||50)+1);me.mem.push(state.year+" — Held a town festival as Mayor.");lg(me.name+", the Mayor, held a town festival.");townDecisions();status("The festival was a success!")}}
+
+/* ===== PETITIONS: citizens ask the Mayor for favors ===== */
+const FV_FLAV=["a café that wants to stay open past the curfew","a market stall without paying the licence fee","a house extension taller than the building rules allow","a loud wedding party after the quiet-hours bell","a shop sign bigger than the rules permit"];
+const FV_SERV=[["police","police"],["health","hospital"],["edu","school"]];
+const FAV=[
+{k:"pardon",title:"Wipe a criminal record",needO:1,text:(f,c,o)=>c.first+" begs you to wipe the criminal record of "+(o?o.name:"a relative")+". \"It was years ago, and nobody will give them work.\"",
+ opts:[{l:"Grant the pardon",ops:[["rel",25],["app",-3],["later","reoffend",.35],["later","thanks",.3]],r:"The record is wiped. Word spreads that the Mayor is merciful — and some grumble about favoritism."},
+       {l:"Wipe it, for a 'donation'",ops:[["pay",500],["rel",10],["app",-5],["later","scandal",.4]],r:"An envelope changes hands. The record vanishes."},
+       {l:"Refuse",ops:[["rel",-15],["app",2]],r:"\"The law applies to everyone.\" The town respects your firmness."}]},
+{k:"rule",title:"Exception to a town rule",vary:FV_FLAV.length,text:(f,c)=>c.first+" asks you to make an exception to the town rules for "+FV_FLAV[f.v]+".",
+ opts:[{l:"Allow the exception",ops:[["rel",20],["app",-2],["later","thanks",.25]],r:"The exception is granted. Others whisper that the rules are bendable."},
+       {l:"Allow it for a fee",ops:[["cash",.3],["rel",8],["app",-1]],r:"The fee goes into the town treasury."},
+       {l:"Refuse",ops:[["rel",-12],["app",1]],r:"Rules are rules."}]},
+{k:"grant",title:"Help after a disaster",amt:1,text:(f,c)=>c.first+" lost their workshop in a fire and asks the town for "+fm(f.amt)+" to rebuild.",
+ opts:[{l:"Pay in full",ops:[["cash",-.2],["give",0],["rel",30],["app",3],["later","thanks",.4]],r:"The town pays. People like a Mayor who looks after them."},
+       {l:"Pay half",ops:[["cash",-.1],["give",-1],["rel",12],["app",1]],r:"A partial help — better than nothing."},
+       {l:"Refuse",ops:[["rel",-20],["app",-3]],r:"\"The treasury isn't a charity.\" Many find that cold."}]},
+{k:"taxcut",title:"Lower the taxes",cond:t=>t.tax>5,text:(f,c)=>c.first+" says taxes are crushing working families and asks you to cut the income tax.",
+ opts:[{l:"Cut tax by 2 points",ops:[["tax",-2],["app",4],["rel",10]],r:"Wages rise a little. The treasury will feel it."},
+       {l:"Refuse",ops:[["app",-2],["rel",-8]],r:"The budget can't take it."}]},
+{k:"taxup",title:"Raise the taxes",cond:t=>t.tax<30,text:(f,c)=>c.first+" asks you to raise the income tax to fund proper public services.",
+ opts:[{l:"Raise tax by 2 points",ops:[["tax",2],["app",-3],["rel",15]],r:"The treasury grows, wallets shrink."},
+       {l:"Refuse",ops:[["app",1],["rel",-8]],r:"People are relieved."}]},
+{k:"fund",title:"Increase service funding",cond:t=>FV_SERV.some(x=>t.pol[x[0]]<2),text:(f,c)=>c.first+" asks you to raise "+FV_SERV[f.v][1]+" funding.",
+ opts:[{l:"Increase funding",ops:[["pol",0],["app",3],["rel",12]],r:"The budget is adjusted."},
+       {l:"Refuse",ops:[["app",-2],["rel",-8]],r:"Not this year."}]},
+{k:"bankup",title:"Higher savings interest",cond:t=>t.bank<6,text:(f,c)=>c.first+" complains that savings pay almost nothing and asks you to raise the bank's base rate.",
+ opts:[{l:"Raise the base rate by 0.5",ops:[["bank",.5],["app",2],["rel",10]],r:"Savers are happy. Borrowers are not."},
+       {l:"Refuse",ops:[["app",-1],["rel",-5]],r:"The bank rate stays."}]},
+{k:"bankdown",title:"Cheaper loans",cond:t=>t.bank>0,text:(f,c)=>c.first+" struggles with loan payments and asks you to lower the bank's base rate.",
+ opts:[{l:"Lower the base rate by 0.5",ops:[["bank",-.5],["app",2],["rel",10]],r:"Loans get cheaper. Savings pay less."},
+       {l:"Refuse",ops:[["app",-1],["rel",-5]],r:"The bank rate stays."}]},
+{k:"migrate",title:"Let relatives settle",text:(f,c)=>c.first+" asks you to let their relatives move to town. \"They are good people with nowhere to go.\"",
+ opts:[{l:"Welcome them",ops:[["imm",0],["rel",20],["app",-1]],r:"A new family arrives."},
+       {l:"Refuse",ops:[["rel",-10]],r:"The town has no room."}]},
+{k:"fair",title:"Fund a street fair",text:(f,c)=>c.first+" asks you to fund a street fair for the whole neighbourhood.",
+ opts:[{l:"Fund it",ops:[["cash",-.2],["relAll",3],["rel",15],["app",4]],r:"Music and laughter fill the square."},
+       {l:"Refuse",ops:[["app",-1],["rel",-5]],r:"A quiet week."}]},
+{k:"feud",title:"Settle a dispute",needO:1,text:(f,c,o)=>c.first+" and "+(o?o.first:"a neighbour")+" are feuding over a boundary fence. Both want you to rule in their favor.",
+ opts:[{l:"Rule for the first",ops:[["rel",25],["relO",-25]],r:"One neighbour is thrilled, the other furious."},
+       {l:"Rule for the other",ops:[["rel",-25],["relO",25]],r:"The other neighbour is thrilled, the first furious."},
+       {l:"Make them compromise",ops:[["rel",4],["relO",4],["app",2]],r:"Both grumble, both accept."}]},
+{k:"bribe",title:"An envelope",amt:1,text:(f,c)=>c.first+" slips you an envelope with "+fm(f.amt)+". \"About my business permit...\"",
+ opts:[{l:"Take it and approve the permit",ops:[["pay",0],["rel",25],["app",-3],["later","scandal",.4]],r:"You pocket the envelope. The permit is stamped."},
+       {l:"Approve it, return the envelope",ops:[["rel",20],["app",3]],r:"\"Your permit is fine. Keep your money.\""},
+       {l:"Refuse and warn them",ops:[["rel",-20],["app",4]],r:"They leave red-faced."}]}
+];
+function FV(){const F=state.favors||(state.favors={});if(!F.q)F.q=[];if(!F.later)F.later=[];if(!F.hist)F.hist=[];if(F.appr==null)F.appr=50;if(F.n==null)F.n=0;if(F.nextDay==null)F.nextDay=null;return F}
+function FVreset(){const F=FV();F.q=[];F.later=[];F.nextDay=null;F.appr=50}
+function dayN(){return Math.floor(state.clock/1440)}
+function trScale(){return Math.max(500,Math.round(twBase()*.004/50)*50)}
+function favTpl(f){return FAV.find(x=>x.k===f.k)}
+function portrait(c){return c.gender==="F"?(c.age>=60?"👵":"👩"):(c.age>=60?"👴":"👨")}
+function addFavor(){
+ const F=FV(),me=state.player,t=TW();
+ const pool=state.people.filter(x=>x.alive&&!x.away&&x.age>=18&&x!==me&&!F.q.some(q=>q.cit===x.id));if(!pool.length)return;
+ const T=pick(FAV.filter(x=>!x.cond||x.cond(t))),c=pick(pool);
+ let o=null;if(T.needO){const rel=[c.spouse].concat(c.children||[]).concat(c.parents||[]).map(find).filter(x=>x&&x.alive&&!x.away);const others=pool.filter(x=>x!==c);o=T.k==="pardon"&&rel.length?pick(rel):(others.length?pick(others):null)}
+ const f={id:"f"+(F.n++),k:T.k,cit:c.id,oth:o?o.id:null,day:dayN(),v:0,amt:0};
+ if(T.k==="rule")f.v=Math.floor(Math.random()*FV_FLAV.length);
+ if(T.k==="fund"){const ok=FV_SERV.map((x,i)=>t.pol[x[0]]<2?i:-1).filter(i=>i>=0);f.v=pick(ok)}
+ if(T.k==="grant")f.amt=pick([300,400,500,600,800]);
+ if(T.k==="bribe")f.amt=pick([300,400,500,700]);
+ F.q.push(f);status("📜 "+c.first+" is waiting to see the Mayor (Town Hall → Petitions).");renderTop()}
+function favorPoll(){
+ if(!state||state.ended||$("game").style.display==="none")return;
+ const me=state.player;if(!me||!me.alive)return;const F=FV();
+ if(me.job!=="Mayor"){if(F.q.length||F.later.length){F.q=[];F.later=[]}F.nextDay=null;return}
+ const day=dayN();
+ if(F.nextDay==null){F.nextDay=day+1+Math.floor(Math.random()*3);return}
+ // petitioners who waited too long give up
+ const before=F.q.length;F.q=F.q.filter(f=>{const c=find(f.cit);if(!c||!c.alive||c.away)return false;if(day-f.day>10){changeRel(c.id,-6);F.appr=clamp(F.appr-1,0,100);return false}return true});if(F.q.length!==before)renderTop();
+ // delayed consequences
+ F.later=F.later.filter(l=>{if(day<l.day)return true;const c=find(l.cit),o=l.oth!=null?find(l.oth):null;
+  if(l.k==="reoffend"){const p=o||c;lg((p?p.name:"Someone")+", whose record the Mayor wiped, was arrested again.");F.appr=clamp(F.appr-5,0,100);status("📰 "+(p?p.first:"A pardoned citizen")+" was arrested again. People blame you.")}
+  else if(l.k==="scandal"){lg("Newspapers exposed "+me.name+" for taking bribes as Mayor.");F.appr=clamp(F.appr-12,0,100);me.mem.push(state.year+" — A bribery scandal hit the Mayor's office.");state.people.slice(0,60).forEach(x=>{if(x.alive&&!x.away&&x!==me&&Math.random()<.2)changeRel(x.id,-5)});status("📰 Scandal! The newspapers exposed your bribes.")}
+  else if(l.k==="thanks"){me.money+=250;F.appr=clamp(F.appr+1,0,100);lg((c?c.name:"A citizen")+" thanked the Mayor with a gift.");status("🎁 "+(c?c.first:"A citizen")+" sent you a thank-you gift (€250).");renderTop()}
+  return false});
+ if(day>=F.nextDay){F.nextDay=day+3+Math.floor(Math.random()*4);if(F.q.length<5)addFavor()}}
+function favorYear(){
+ const me=state.player;if(!me||me.job!=="Mayor")return;const F=FV(),t=TW(),tr=trScale();
+ F.appr=Math.round(F.appr+(50-F.appr)*.1);
+ if(F.appr<25){t.cash-=tr;lg("Angry protesters filled the square outside the Town Hall.")}
+ else if(F.appr>75){t.cash+=Math.round(tr/2);lg("Residents donated to the town treasury, happy with the Mayor.")}}
+function applyOps(ops,f){
+ const F=FV(),t=TW(),me=state.player,c=find(f.cit),o=f.oth!=null?find(f.oth):null,tr=trScale(),out=[],S=n=>(n>=0?"+":"−")+Math.abs(n);
+ ops.forEach(op=>{const k=op[0];let v=op[1];
+  if(k==="cash"){const a=Math.round(v*tr/50)*50;t.cash+=a;out.push("Treasury "+(a>=0?"+":"−")+fm(Math.abs(a)))}
+  else if(k==="pay"){const a=v||f.amt;me.money+=a;out.push("You receive "+fm(a))}
+  else if(k==="give"){const a=v===0?f.amt:Math.round(f.amt/2);if(c){c.money=(c.money||0)+a;out.push(c.first+" receives "+fm(a))}}
+  else if(k==="app"){F.appr=clamp(F.appr+v,0,100);out.push("Public approval "+S(v))}
+  else if(k==="rel"&&c){changeRel(c.id,v);out.push(c.first+"'s opinion of you "+S(v))}
+  else if(k==="relO"&&o){changeRel(o.id,v);out.push(o.first+"'s opinion of you "+S(v))}
+  else if(k==="relAll"){state.people.filter(x=>x.alive&&!x.away&&x!==me&&x!==c).sort(()=>Math.random()-.5).slice(0,10).forEach(x=>changeRel(x.id,v));out.push("Townspeople's opinion of you "+S(v))}
+  else if(k==="tax"){const n=clamp(t.tax+v,5,30);if(n!==t.tax){t.tax=n;out.push("Income tax is now "+n+"%")}}
+  else if(k==="bank"){const n=clamp(t.bank+v,0,6);if(n!==t.bank){t.bank=n;out.push("Bank base rate is now "+n+"%")}}
+  else if(k==="pol"){const kk=FV_SERV[f.v][0];if(t.pol[kk]<2){t.pol[kk]++;out.push(FV_SERV[f.v][1][0].toUpperCase()+FV_SERV[f.v][1].slice(1)+" funding raised to "+POL_NAMES[t.pol[kk]])}}
+  else if(k==="imm"){const b=state.people.length;try{immigrate("family")}catch(e){}const n=state.people.length-b;if(n>0)out.push(n+" newcomer"+(n===1?"":"s")+" settled in town")}
+  else if(k==="later"){if(Math.random()<op[2])F.later.push({day:dayN()+5+Math.floor(Math.random()*8),k:v,cit:f.cit,oth:f.oth})}});
+ return out}
+function petitions(){
+ const me=state.player;if(me.job!=="Mayor"){status("Only the Mayor receives petitioners.");return}
+ const F=FV(),day=dayN();F.q=F.q.filter(f=>{const c=find(f.cit);return c&&c.alive&&!c.away});
+ modal('<h2>📜 Petitions</h2><div class="row"><span>Public approval</span><b>'+F.appr+'/100</b></div>'+(F.q.length?'<p class="muted">Citizens waiting to see the Mayor. They give up after 10 days.</p>'+F.q.map((f,i)=>{const c=find(f.cit),T=favTpl(f);return'<div class="card"><div class="row"><span>'+portrait(c)+' <b>'+esc(c.name)+'</b> · '+esc(c.job||"")+'</span><b>'+Math.max(0,10-(day-f.day))+' d left</b></div><p class="muted">'+esc(T.title)+'</p><button class="fvSee gold" data-i="'+i+'">HEAR THEM</button></div>'}).join(""):'<p class="muted">Nobody is waiting. A new petitioner arrives every few days.</p>')+(F.hist.length?'<div class="card"><h3>Recent decisions</h3>'+F.hist.slice(-5).reverse().map(h=>'<div class="event">'+h.y+' — '+esc(h.who)+': '+esc(h.t)+' → <b>'+esc(h.c)+'</b></div>').join("")+'</div>':'')+'<button id="close">CLOSE</button>');
+ $("close").onclick=closeModal;document.querySelectorAll(".fvSee").forEach(b=>b.onclick=()=>hear(F.q[+b.dataset.i]))}
+function hear(f){
+ if(!f)return;const c=find(f.cit),o=f.oth!=null?find(f.oth):null,T=favTpl(f);if(!c)return petitions();
+ modal('<h2>'+portrait(c)+' '+esc(c.name)+'</h2><p class="muted">'+esc(c.job||"")+' · age '+c.age+' · '+esc(T.title)+'</p><p>'+esc(T.text(f,c,o))+'</p><div class="choices">'+T.opts.map((p,i)=>'<button class="fvOpt'+(i===0?' gold':'')+'" data-i="'+i+'">'+esc(p.l)+'</button>').join("")+'<button id="fvLater">COME BACK LATER</button></div>');
+ $("fvLater").onclick=petitions;document.querySelectorAll(".fvOpt").forEach(b=>b.onclick=()=>decide(f,+b.dataset.i))}
+function decide(f,i){
+ const F=FV(),me=state.player,c=find(f.cit),T=favTpl(f),p=T.opts[i];
+ F.q=F.q.filter(x=>x!==f);const out=applyOps(p.ops,f);
+ F.hist.push({y:state.year,who:c?c.name:"A citizen",t:T.title,c:p.l});F.hist=F.hist.slice(-12);
+ me.mem.push(state.year+" — As Mayor: "+T.title+" ("+(c?c.name:"a citizen")+") — "+p.l+".");
+ renderTop();renderPanel();
+ modal('<h2>📜 Decision</h2><p><b>'+esc(p.l)+'</b></p><p>'+esc(p.r)+'</p><div class="card"><h3>Consequences</h3>'+(out.length?out.map(x=>'<div class="event">'+esc(x)+'</div>').join(""):'<p class="muted">No immediate change.</p>')+'</div><p class="muted">Some choices have consequences that show up later.</p><div class="choices">'+(F.q.length?'<button id="fvNext" class="gold">NEXT PETITIONER ('+F.q.length+')</button>':'')+'<button id="close">DONE</button></div>');
+ $("close").onclick=closeModal;if($("fvNext"))$("fvNext").onclick=petitions}
+const _rtF=renderTop;renderTop=function(){_rtF();try{if(state&&state.player&&state.player.job==="Mayor"){const n=FV().q.length,tp=$("topstats");if(n&&tp)tp.insertAdjacentHTML("beforeend","<span>📜 <b>"+n+"</b> waiting</span>")}}catch(e){}};
+setInterval(()=>{try{favorPoll()}catch(e){console.error(e)}},2500);
+const _ayEl=advanceYear;advanceYear=function(){const y0=state&&state.year;_ayEl();if(!state||state.ended||state.year===y0)return;try{electionCheck()}catch(e){console.error(e)}try{townYear()}catch(e){console.error(e)}try{favorYear()}catch(e){console.error(e)}};
+
+/* ===== CITIZEN STRIKES & PROTESTS =====
+   • Player is NOT Mayor  → one strike every week, on a random weekday (Mon–Fri), in the Town Centre.
+   • Player IS Mayor      → unpopular / harmful decisions (tax hikes, service cuts, empty treasury, scandals,
+                            low approval) build up public anger; the angrier the town, the likelier a strike
+                            outside the Town Hall (East Side). The Mayor then chooses how to respond.
+   • Strikers walk off their jobs (they vanish from workplaces/school) and form a chaotic, noisy crowd
+     with protest signs, bubble-chat, chants, hopping, marching, arguments and flying emoji.            */
+const STK={area:null,sid:null,list:[],leaving:false,raf:0,last:0,C:null,B:null,E:{rx:90,ry:55},obs:[],W:0,H:0,
+ tChant:0,tMarch:0,tBant:0,tWp:0,tPart:0,heat:.6,th:null,sur:"MAYOR",set:null,setId:null,nb:0};
+
+const STK_GSIGN=["STRIKE!","WE WANT TO BE HEARD","NO WORK TODAY","SOLIDARITY!","ENOUGH IS ENOUGH","LISTEN TO US, {S}!","UNITED WE STAND","THE PEOPLE ARE ANGRY","STRIKE NOW, NAP LATER","WE'RE NOT MOVING","HONK IF YOU CARE","I SKIPPED WORK FOR THIS","THIS SIGN IS HEAVY","FAIR DEAL NOW!","WHERE IS {S}?!","POWER TO THE PEOPLE","MY MUM MADE THIS SIGN","ASK ME WHY I'M ANGRY"];
+const STK_GCHANT=["WHAT DO WE WANT? CHANGE!","NO JUSTICE, NO PEACE!","HEY HEY, HO HO!","STRIKE! STRIKE! STRIKE!","UNITED, WE'LL NEVER BE DEFEATED!","LISTEN TO US!","WE WON'T BACK DOWN!","SHAME! SHAME!"];
+const STK_GSAY=["Solidarity!","Louder!!","Hear our voices!","No work, no peace!","My feet hurt…","Hold it higher!","Who brought snacks?","I forgot my lunch","This is my first protest!","Honk if you agree!","They can't ignore us!","Stay strong!","Where's the megaphone?","I'm losing my voice","Wooo!","Left! No, your OTHER left!","Is anyone filming?","I'm freezing…","Smile, we're on the news!","Nobody is working today!","Pass the thermos!","We're not going home!","Can you read my sign?","I made this at 5am","Stop pushing!","Let me through!","Who started this?!","Down with it!","Keep chanting!","😤","✊"];
+const STK_BANTER=[["Louder!","I AM shouting!"],["Is it lunch yet?","No. We're on strike."],["Nice sign!","I made it at 6am."],["Who has the megaphone?","Nobody. It's a funnel."],["My feet hurt","Solidarity, friend."],["Did you bring snacks?","Only solidarity."],["Is this the right protest?","Does it matter? SHOUT!"],["You're holding it upside down","…Oh."],["Your sign has a typo","It's ART!"],["Should we sit down?","NEVER!"],["I think I left the stove on","Stay strong. Stay here."],["Can I borrow a pen?","We're on strike. Use the sign."]];
+const STK_FIGHT=[["Watch it, that's my spot!","Your sign is in my face!"],["Stop pushing!","YOU'RE pushing!"],["That's MY chant!","Make your own!"],["Ow, my toe!","Sorry! Solidarity!"],["Off my foot!","Then stop waving that thing!"],["I was here first!","This isn't a queue!"]];
+const STK_PART=["💢","📣","✊","❗","🔥","📢","💥"];
+const STK_COL=["#f6e7a1","#ffffff","#ffb8b0","#b8e0ff","#c9f2c0","#ffd27a","#e8c2ff","#f2f2c0"];
+const STK_LEAVE=["That's enough for today!","See you next week!","Back to work…","Time for a nap","We were heard!","I need a coffee","My throat hurts"];
+const STK_WK=[
+{why:"low wages",signs:["FAIR PAY NOW!","MORE € LESS WORK","WE WANT A RAISE!","PAY US WHAT WE'RE WORTH","BREAD COSTS €4 NOW!","MY SALARY IS A JOKE"],chants:["WHAT DO WE WANT? RAISES!","PAY US MORE!","FAIR WAGES NOW!"],says:["I can't afford lunch","Prices up, pay down!","Rent eats my salary"]},
+{why:"long working hours",signs:["SHORTER WORKDAYS!","4 DAYS IS ENOUGH","WORK TO LIVE","I WANT MY EVENINGS BACK","COFFEE BREAKS ARE A RIGHT"],chants:["SHORTER HOURS NOW!","WE NEED SLEEP!"],says:["I haven't seen my kids awake","I'm so tired","Eight hours is plenty"]},
+{why:"rising rents",signs:["RENTS TOO HIGH","HOMES NOT LUXURY","CAP THE RENT!","MY LANDLORD HAS A BOAT","WE CAN'T AFFORD TO LIVE HERE"],chants:["CAP THE RENT!","HOMES FOR PEOPLE!"],says:["My rent went up AGAIN","I live in a cupboard","Landlords, hear us!"]},
+{why:"the potholes",signs:["FIX THE POTHOLES!","MY CAR HAS FEELINGS TOO","ROADS NOT RUINS","I LOST A SHOE IN A POTHOLE","BUMP BUMP BUMP"],chants:["FIX THE ROAD!","NO MORE POTHOLES!"],says:["I swallowed a bug on that road","My wheel fell off!","Have you SEEN Main Street?"]},
+{why:"rising prices",signs:["MILK IS €3!","PRICES UP, WAGES NOT","WHO ATE THE BUDGET?","EGGS ARE GOLD NOW","INFLATION = BAD"],chants:["LOWER THE PRICES!","WHAT DO WE WANT? CHEAP BREAD!"],says:["Did you see the price of cheese?!","I can't afford soup","Everything costs more!"]},
+{why:"pensions",signs:["RESPECT YOUR ELDERS","PENSIONS NOW!","GRANNY IS ANGRY TOO","WE BUILT THIS TOWN","I'M OLD, NOT QUIET"],chants:["PENSIONS NOW!","RESPECT US!"],says:["I've paid taxes since before you were born","My knees hurt but I'm staying","Back in my day we STRUCK properly"]},
+{why:"the state of the park",signs:["MORE BENCHES!","FREE COFFEE AT THE CAFÉ","THE PARK NEEDS DUCKS","BENCHES ARE A HUMAN RIGHT","LESS PIGEONS PLEASE"],chants:["MORE BENCHES!","DUCKS! DUCKS! DUCKS!"],says:["There's literally nowhere to sit","A pigeon stole my sandwich","Where are the ducks?"]},
+{why:"school lunches",signs:["BETTER SCHOOL LUNCH","NO MORE SOGGY CHIPS","HOMEWORK IS OPPRESSION","BIGGER PLAYGROUND","LET KIDS SLEEP IN"],chants:["NO MORE SOGGY CHIPS!","LUNCH! LUNCH! LUNCH!"],says:["The chips were gone cold again","Skipping class for this!","Do we get a day off for this?"]}];
+const STK_ISS={
+tax:{why:"high taxes",blurb:"Wages have been squeezed by your tax rises.",signs:["TAXES TOO HIGH!","{S}, STOP TAXING US!","MY PAYCHECK VANISHED","THIS IS ROBBERY","WE CAN'T AFFORD THIS","LOWER TAXES NOW!"],chants:["TAXES TOO HIGH!","CUT THE TAX!","WHERE DID MY WAGES GO?"],says:["Half my salary is gone!","Can't pay rent with taxes","Cut the tax!","Taxes are eating me alive"]},
+police:{why:"police cuts",blurb:"People feel unsafe since police funding was cut.",signs:["WHERE ARE THE POLICE?","SAFE STREETS NOW!","FUND THE POLICE!","I WAS ROBBED, {S}!","CRIME UP, FUNDS DOWN"],chants:["SAFE STREETS NOW!","FUND THE POLICE!"],says:["I don't feel safe at night","Someone stole my bike!","Where are the patrols?"]},
+health:{why:"hospital cuts",blurb:"Hospital costs have soared since healthcare funding was cut.",signs:["FIX THE HOSPITAL!","HEALTH NOT HEIST","I CAN'T AFFORD A DOCTOR","SICK OF THIS MAYOR","CARE FOR US, {S}!"],chants:["SAVE OUR HOSPITAL!","HEALTH FOR ALL!"],says:["The hospital bill was crazy","My grandma needs a doctor","Waiting lists are endless"]},
+edu:{why:"school funding cuts",blurb:"Schools and tuition are suffering under the cuts.",signs:["BOOKS NOT BUDGET CUTS","FUND OUR SCHOOLS!","LET KIDS LEARN!","TUITION IS TOO HIGH","MY KID NEEDS A TEACHER"],chants:["FUND OUR SCHOOLS!","EDUCATION NOW!"],says:["The school is falling apart","My kids deserve better","Who cut the school budget?!"]},
+broke:{why:"the empty treasury",blurb:"The town treasury is empty and public services have collapsed to Low.",signs:["WHERE DID THE MONEY GO?","EMPTY TREASURY, EMPTY PROMISES","BALANCE THE BUDGET!","{S} CAN'T COUNT","SHOW US THE BOOKS!"],chants:["WHERE'S THE MONEY?","FIX THE BUDGET!"],says:["The treasury is empty!","Who's managing the money?!","I want an audit!"]},
+scandal:{why:"corruption",blurb:"Scandals and favours have shaken trust in your office.",signs:["CORRUPTION OUT!","MAYOR FOR SALE?","NO MORE ENVELOPES!","{S} MUST RESIGN!","WE SAW THE ENVELOPE","CLEAN UP TOWN HALL"],chants:["NO MORE BRIBES!","CLEAN UP TOWN HALL!"],says:["I heard about the envelopes…","Nobody is above the law!","Is the Mayor even listening?"]},
+mood:{why:"being ignored",blurb:"People feel the Mayor isn't listening to them.",signs:["LISTEN TO US, {S}!","WE ARE THE TOWN","VOTE THEM OUT!","REMEMBER AT ELECTION TIME","DO YOUR JOB, {S}!"],chants:["LISTEN TO US!","WE ARE THE TOWN!"],says:["Mayor, are you listening?!","They never answer my petitions","Remember this at election time!"]}};
+
+document.head.insertAdjacentHTML("beforeend",`<style>
+#stLayer,#stBubs{position:absolute;left:0;top:0;right:0;bottom:0;pointer-events:none}
+#stLayer{z-index:4}#stBubs{z-index:25}
+.pr .name{display:none}
+.pr .stSign{position:absolute;left:50%;bottom:calc(100% + 5px);margin-left:var(--sx,0px);width:70px;min-height:30px;padding:3px;display:flex;align-items:center;justify-content:center;text-align:center;background:var(--bg,#f6e7a1);color:#241a14;border:2px solid #4a3426;border-radius:3px;font:bold 9.5px/1.05 Arial,sans-serif;text-transform:uppercase;word-break:break-word;box-shadow:0 2px 5px #0006;transform-origin:50% 100%;transform:translateX(-50%) rotate(var(--rot,0deg));animation:stWave var(--wd,1.3s) ease-in-out var(--dl,0s) infinite alternate;z-index:2}
+.pr .stSign.sm{font-size:8px}
+.pr .stSign:after{content:"";position:absolute;left:calc(50% - 1.5px);top:100%;width:3px;height:11px;background:#7a5230}
+.pr .stMega{position:absolute;left:-15px;top:-2px;font-size:16px;z-index:3;animation:stMega .35s ease-in-out infinite alternate}
+@keyframes stWave{from{transform:translateX(-50%) rotate(calc(var(--rot,0deg) - 6deg))}to{transform:translateX(-50%) rotate(calc(var(--rot,0deg) + 6deg))}}
+@keyframes stWaveBig{from{transform:translateX(-50%) translateY(-5px) rotate(calc(var(--rot,0deg) - 17deg))}to{transform:translateX(-50%) translateY(2px) rotate(calc(var(--rot,0deg) + 17deg))}}
+@keyframes stMega{from{transform:rotate(-34deg) scale(1)}to{transform:rotate(-8deg) scale(1.2)}}
+@keyframes stHop{0%,100%{transform:translateY(0) scale(calc(var(--sc,1)*var(--fx,1)),var(--sc,1))}45%{transform:translateY(-12px) scale(calc(var(--sc,1)*var(--fx,1)),var(--sc,1))}}
+@keyframes stShake{0%,100%{transform:translateX(0) rotate(0) scale(calc(var(--sc,1)*var(--fx,1)),var(--sc,1))}25%{transform:translateX(-3px) rotate(-7deg) scale(calc(var(--sc,1)*var(--fx,1)),var(--sc,1))}75%{transform:translateX(3px) rotate(7deg) scale(calc(var(--sc,1)*var(--fx,1)),var(--sc,1))}}
+.pr.hop .av{animation:stHop .42s ease-out 1}
+.pr.chant .av{animation:stHop .46s ease-in-out infinite}
+.pr.chant .stSign{animation:stWaveBig .26s ease-in-out infinite alternate}
+.pr.shake .av{animation:stShake .14s linear infinite}
+.stBub{position:absolute;transform:translate(-50%,-100%);width:max-content;max-width:150px;background:#fffdf2;color:#2b3028;border:2px solid #675d47;border-radius:11px;padding:4px 7px;font:bold 11px/1.2 Georgia,serif;text-align:center;box-shadow:0 3px 8px #0005;animation:stPop .18s ease-out;transition:opacity .25s}
+.stBub:after{content:"";position:absolute;left:50%;top:100%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#675d47;border-bottom:0}
+.stBub.chant{background:#ffe9a8;border-color:#a3281f;color:#5a0f0a;font-size:12px;text-transform:uppercase;letter-spacing:.3px}
+.stBub.chant:after{border-top-color:#a3281f}
+.stBub.out{opacity:0}
+@keyframes stPop{from{transform:translate(-50%,-100%) scale(.5);opacity:0}to{transform:translate(-50%,-100%) scale(1);opacity:1}}
+.stPart{position:absolute;font-size:15px;transform:translate(-50%,-50%);animation:stPart 1.25s ease-out forwards}
+@keyframes stPart{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}15%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--dx,0px)),-70px) scale(1.2) rotate(var(--rt,0deg))}}
+.stBanner{position:absolute;left:50%;top:34px;transform:translateX(-50%);background:#b3261e;color:#fff;border:2px solid #fff;border-radius:8px;padding:4px 12px;font:bold 12px Arial,sans-serif;z-index:7;box-shadow:0 3px 10px #0007;white-space:nowrap;animation:stPulse 1.4s ease-in-out infinite;pointer-events:none}
+@keyframes stPulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.05)}}
+@media (prefers-reduced-motion:reduce){.pr .av,.pr .stSign,.pr .stMega,.stBanner{animation:none!important}}
+</style>`);
+
+/* ---------- state & helpers ---------- */
+function stkS(){const S=state.strike||(state.strike={});if(!S.iss)S.iss={};if(!S.hist)S.hist=[];if(S.n==null)S.n=0;if(S.last==null)S.last=-99;return S}
+function stkSet(){const a=state&&state.strike&&state.strike.active;if(!a)return null;if(STK.setId!==a.id){STK.setId=a.id;STK.set=new Set(a.ids)}return STK.set}
+const _schedStk=sched;sched=function(p,h,day){const s=stkSet();if(s&&s.has(p.id)&&p.alive&&!p.away)return "inhome";return _schedStk(p,h,day)};
+function stkAge(x){return x.age==null?30:x.age}
+function stkPick(n){const me=state.player,M=mayorOf();const pool=state.people.filter(x=>x!==me&&x!==M&&x.alive&&!x.away&&stkAge(x)>=16&&stkAge(x)<80);
+ for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}
+ return pool.slice(0,n).map(x=>x.id)}
+function stkTheme(a){return a.theme[0]==="w"&&/^w\d+$/.test(a.theme)?STK_WK[+a.theme.slice(1)]:STK_ISS[a.theme]}
+function stkTxt(s){return String(s).replace(/\{S\}/g,STK.sur)}
+
+/* ---------- anger: how much the town hates the Mayor's decisions ---------- */
+function stkAnger(){
+ const S=stkS(),t=TW(),F=FV(),w={},add=(k,v)=>{w[k]=(w[k]||0)+v};
+ for(const k in S.iss)add(k,S.iss[k]);
+ add("tax",Math.max(0,t.tax-18)*3);
+ ["police","health","edu"].forEach(k=>{if(t.pol[k]===0)add(k,12)});
+ if(t.cash<0)add("broke",16);
+ add("mood",Math.max(0,40-F.appr)*1.4);
+ let top="mood",tv=-1,sum=0;for(const k in w){sum+=w[k];if(w[k]>tv){tv=w[k];top=k}}
+ return{total:sum,top}}
+/* watch the Mayor's decisions by comparing the town settings between polls */
+function stkJudge(){
+ const me=state.player,S=stkS();
+ if(me.job!=="Mayor"){S.snap=null;return}
+ const t=TW(),F=FV(),n={tax:t.tax,pol:{police:t.pol.police,health:t.pol.health,edu:t.pol.edu},appr:F.appr},o=S.snap;S.snap=n;if(!o)return;
+ const add=(k,v)=>{S.iss[k]=Math.min(150,(S.iss[k]||0)+v)};
+ if(n.tax>o.tax)add("tax",(n.tax-o.tax)*7);
+ ["police","health","edu"].forEach(k=>{if(n.pol[k]<o.pol[k])add(k,(o.pol[k]-n.pol[k])*20)});
+ if(n.appr<=o.appr-2){const d=o.appr-n.appr;add(d>=5?"scandal":"mood",d*3)}}
+function stkDaily(day){
+ const S=stkS(),me=state.player;
+ for(const k in S.iss){S.iss[k]*=.9;if(S.iss[k]<1)delete S.iss[k]}
+ if(me.job!=="Mayor"){S.pend=null;return}
+ if(S.active||S.pend||day-S.last<3)return;
+ const A=stkAnger();if(A.total<22)return;
+ if(Math.random()<Math.min(.6,(A.total-22)/150)){S.pend={day,hr:8+Math.floor(Math.random()*4),issue:A.top};status("📰 Rumour: citizens are organising a strike over "+STK_ISS[A.top].why+".")}}
+
+/* ---------- starting & ending a strike ---------- */
+function stkStart(kind,issue){
+ const S=stkS(),me=state.player;if(S.active)return false;
+ const mayor=kind==="mayor";let n,theme,heat,dur;
+ if(mayor){const A=stkAnger();theme=issue||A.top;if(!STK_ISS[theme])theme="mood";n=Math.round(clamp(12+A.total/7,12,26));heat=clamp(.85+A.total/400,.85,1.2);dur=10+Math.floor(Math.random()*5)}
+ else{let i=Math.floor(Math.random()*STK_WK.length);if(i===S.lastWk)i=(i+1)%STK_WK.length;S.lastWk=i;theme="w"+i;heat=.6;n=8+Math.floor(Math.random()*9);dur=9+Math.floor(Math.random()*3)}
+ const ids=stkPick(n);if(ids.length<4)return false;
+ const th=stkTheme({theme}),a=S.active={id:"st"+(++S.n),kind,area:mayor?"east":"centre",theme,why:th.why,start:state.clock,end:state.clock+dur*60,ids,heat,resolved:false};
+ ids.forEach(id=>{const p=find(id);if(!p)return;if(p.vis&&!p.exit)despawn(p);p.location="inhome"});
+ S.pend=null;STK.leaving=false;STK.set=null;STK.setId=null;
+ const where=mayor?"outside the Town Hall (East Side)":"in the Town Centre";
+ lg(ids.length+" townspeople walked out on strike "+where+" over "+a.why+".");
+ status("✊ Strike! "+ids.length+" citizens are protesting "+where+" over "+a.why+".");
+ renderTop();if(!state.inside)renderWorld();
+ if(mayor)stkModal(a);
+ return true}
+function stkEnd(){
+ const S=stkS(),a=S.active;if(!a)return;S.active=null;S.last=dayN();STK.set=null;STK.setId=null;
+ const t=TW(),me=state.player;let extra="";
+ if(a.kind==="mayor"){
+  if(!a.resolved){const lost=Math.max(50,Math.round(trScale()*.3/50)*50);t.cash-=lost;const F=FV();F.appr=clamp(F.appr-2,0,100);extra=" The walk-out cost the town "+fm(lost)+" in lost work.";for(const k in S.iss)S.iss[k]*=.6}
+  me.mem.push(state.year+" — A strike over "+a.why+" shook the town.")}
+ S.hist.push({y:state.year,k:a.kind,w:a.why,r:a.resolved?"settled":"ran out"});if(S.hist.length>12)S.hist.shift();
+ lg("The strike over "+a.why+" ended.");
+ status("✊ The strike is over — people are heading home."+extra);
+ STK.leaving=true;renderTop()}
+function stkPoll(){
+ if(!state||state.ended||!state.player||!state.player.alive||$("game").style.display==="none")return;
+ const S=stkS(),me=state.player,day=dayN(),h=nowH();
+ if(S.active&&state.clock>=S.active.end&&!modalOpen())stkEnd();
+ if(S.day!==day){S.day=day;stkDaily(day)}
+ stkJudge();
+ if(!S.active&&!modalOpen()){
+  if(me.job==="Mayor"){const p=S.pend;if(p&&(day>p.day||(day===p.day&&h>=p.hr))){S.pend=null;if(day-p.day<=1)stkStart("mayor",p.issue)}}
+  else{
+   S.pend=null;const wk=Math.floor(day/7),dw=day%7;
+   if(S.wk!==wk){const fresh=dw===0&&S.wk===wk-1;S.wk=wk;S.fired=false;const c=[0,1,2,3,4].filter(d=>fresh?true:d>dw);S.wd=c.length?pick(c):-1;S.sh=8+Math.floor(Math.random()*3);S.dur=9+Math.floor(Math.random()*3)}
+   if(!S.fired&&S.wd>=0&&dw===S.wd&&h>=S.sh){S.fired=true;if(h<S.sh+S.dur)stkStart("weekly")}}}
+ stkBanner()}
+
+/* ---------- Mayor's response ---------- */
+function stkDemand(k){
+ const t=TW(),me=state.player;
+ if(k==="tax")return{label:"💶 Give in: cut income tax by 2 points",apply:()=>{t.tax=Math.max(5,t.tax-2);lg(me.name+", the Mayor, cut income tax to "+t.tax+"% after the strike.");return"Income tax is now "+t.tax+"%."}};
+ if(k==="police"||k==="health"||k==="edu"){const nm={police:"Police",health:"Healthcare",edu:"Education"}[k],to=t.pol[k]===0?1:Math.min(2,t.pol[k]+1);return{label:"🏛️ Give in: raise "+nm.toLowerCase()+" funding to "+POL_NAMES[to],apply:()=>{t.pol[k]=to;lg(me.name+", the Mayor, raised "+nm.toLowerCase()+" funding to "+POL_NAMES[to]+" after the strike.");return nm+" funding is now "+POL_NAMES[to]+"."}}}
+ return{label:"🗣️ Give in: public apology and an open town meeting",apply:()=>{lg(me.name+", the Mayor, apologised publicly after the strike.");return"You apologise in public and promise to listen."}}}
+function stkResult(title,msg){modal('<h2>'+title+'</h2><p>'+msg+'</p><button id="close" class="gold">OK</button>');$("close").onclick=()=>{closeModal();renderTop()}}
+function stkSettle(a,mins,cheer){a.resolved=true;a.end=Math.min(a.end,state.clock+mins);a.cheer=!!cheer}
+function stkModal(a){
+ const t=TW(),F=FV(),me=state.player,S=stkS(),I=STK_ISS[a.theme],dm=stkDemand(a.theme);
+ modal('<h2>✊ The town is on strike!</h2><p><b>'+a.ids.length+'</b> citizens have walked off their jobs and are gathering outside the Town Hall (East Side) over <b>'+esc(a.why)+'</b>.</p><div class="card"><div class="row"><span>Public approval</span><b>'+F.appr+'/100</b></div><div class="row"><span>Treasury</span><b>'+fm(t.cash)+'</b></div><p class="muted">'+esc(I.blurb)+'</p></div><h3>How do you respond?</h3><div class="choices"><button id="stA" class="gold">'+esc(dm.label)+'</button><button id="stB">🎤 Go out and address the crowd</button><button id="stC">🚔 Send the police to disperse them</button><button id="stD">🙈 Ignore them</button></div>');
+ const scale=f=>{for(const k in S.iss)S.iss[k]*=f};
+ $("stA").onclick=()=>{const r=dm.apply();stkSettle(a,90,true);F.appr=clamp(F.appr+5,0,100);scale(.3);a.ids.forEach(id=>changeRel(id,4));stkResult("🤝 You gave in",esc(r)+" The crowd cheers and starts to drift home.")};
+ $("stB").onclick=()=>{const ch=me.stats.charisma||50,ok=Math.random()<clamp(.2+ch/100*.65,.2,.85);
+  if(ok){stkSettle(a,120,true);F.appr=clamp(F.appr+3,0,100);scale(.6);a.ids.forEach(id=>changeRel(id,2));me.stats.charisma=Math.min(100,ch+1);stkResult("🎤 They listened","Your speech calmed the crowd. The protest will wind down within a couple of hours.")}
+  else{F.appr=clamp(F.appr-2,0,100);a.heat=Math.min(1.3,a.heat+.1);STK.heat=a.heat;a.ids.forEach(id=>changeRel(id,-2));stkResult("😠 They booed you","Your words fell flat and the crowd got louder. The strike goes on.")}};
+ $("stC").onclick=()=>{const ok=Math.random()<.7+copBonus();
+  if(ok){stkSettle(a,60,false);F.appr=clamp(F.appr-10,0,100);S.iss.mood=(S.iss.mood||0)+15;a.ids.forEach(id=>changeRel(id,-8));state.people.filter(x=>x.alive&&!x.away&&x!==me).sort(()=>Math.random()-.5).slice(0,12).forEach(x=>changeRel(x.id,-4));me.mem.push(state.year+" — Sent the police to break up a strike.");lg(me.name+", the Mayor, sent the police to break up the strike.");stkResult("🚔 Dispersed","The police clear the square within the hour — but people won't forget it.")}
+  else{F.appr=clamp(F.appr-12,0,100);a.end+=120;a.heat=1.3;STK.heat=1.3;a.ids.forEach(id=>changeRel(id,-10));stkResult("💥 It backfired","Scuffles broke out and the crowd dug in. The strike drags on, angrier than before.")}};
+ $("stD").onclick=()=>{closeModal();status("✊ You decide to ignore the strike. It will run its course.");renderTop()}}
+
+/* ---------- crowd: layout, sprites, simulation ---------- */
+function stkHit(x,y){return STK.obs.some(r=>x>r.l-8&&x<r.r+8&&y>r.t-6&&y<r.b+10)}
+function stkFree(x,y){return x>=26&&x<=STK.W-26&&y>=46&&y<=STK.H-22&&!stkHit(x,y)}
+function stkObs(){const w=$("world"),wr=w.getBoundingClientRect();STK.W=w.clientWidth;STK.H=w.clientHeight;STK.obs=[...w.querySelectorAll(".building,.water")].map(e=>{const r=e.getBoundingClientRect();return{l:r.left-wr.left,t:r.top-wr.top,r:r.right-wr.left,b:r.bottom-wr.top}})}
+function stkPt(cx,cy,rx,ry){for(let i=0;i<30;i++){const a=Math.random()*6.283,r=Math.sqrt(Math.random()),x=cx+Math.cos(a)*r*rx,y=cy+Math.sin(a)*r*ry;if(stkFree(x,y))return{x,y}}return{x:cx,y:cy}}
+function stkBase(a){
+ const W=STK.W,H=STK.H;let x=W*.5,y=H*.55,rx=Math.min(160,W*.18),ry=Math.min(100,H*.16);
+ if(a.area==="east"){const b=document.querySelector('#world .building[data-place="townhall"]');if(b){const r=b.getBoundingClientRect(),wr=$("world").getBoundingClientRect();x=(r.left+r.right)/2-wr.left;y=r.bottom-wr.top+140;rx=Math.min(260,W*.3);ry=Math.min(60,H*.1)}}
+ if(!stkFree(x,y)){outer:for(let r=14;r<300;r+=14)for(let k=0;k<16;k++){const nx=x+Math.cos(k*Math.PI/8)*r,ny=y+Math.sin(k*Math.PI/8)*r;if(stkFree(nx,ny)){x=nx;y=ny;break outer}}}
+ return{x,y,rx,ry}}
+function stkSignText(th,used){const pool=th.signs.concat(th.signs,STK_GSIGN);for(let i=0;i<12;i++){const s=stkTxt(pick(pool));if(!used.has(s)){used.add(s);return s}}return stkTxt(pick(pool))}
+function stkBuild(a){
+ const B=STK.B=stkBase(a),th=STK.th,used=new Set();
+ STK.C={x:B.x,y:B.y,tx:B.x,ty:B.y,sp:.35};STK.E={rx:B.rx*.95,ry:B.ry*.9};
+ STK.tChant=performance.now()+1500;STK.tMarch=performance.now()+20000+Math.random()*12000;STK.tBant=performance.now()+4000;STK.tWp=performance.now()+8000;STK.tPart=0;
+ STK.list=[];
+ a.ids.forEach(id=>{const p=find(id);if(!p||!p.alive||p.away)return;lookOf(p);const s=stkPt(B.x,B.y,STK.E.rx,STK.E.ry);
+  STK.list.push({id,p,x:s.x,y:s.y,tx:null,ty:null,mode:"idle",wait:Math.random()*1800,sp:.7+Math.random()*.7,face:Math.random()<.5?"l":"r",stuck:0,
+   sign:stkSignText(th,used),bg:pick(a.kind==="mayor"?STK_COL.concat(["#ffb8b0","#ff9d94"]):STK_COL),rot:Math.round(Math.random()*22-11),sx:Math.round(Math.random()*26-13),dl:(Math.random()*1.2).toFixed(2),wd:(1+Math.random()*.7).toFixed(2),
+   chantUntil:0,shakeUntil:0,say:null,bub:null,leader:false,_ch:false,_sh:false})});
+ if(STK.list.length)STK.list[0].leader=true}
+function stkEl(c){
+ const tmp=document.createElement("div");
+ tmp.innerHTML=personHTML({id:c.id,first:c.p.first,age:c.p.age,look:c.p.look,x:c.x,y:c.y,face:c.face},false,"pr-");
+ const el=tmp.firstChild;el.classList.add("pr");el.style.zIndex=Math.round(c.y);
+ el.insertAdjacentHTML("beforeend",'<div class="stSign'+(c.sign.length>17?' sm':'')+'" style="--bg:'+c.bg+';--rot:'+c.rot+'deg;--sx:'+c.sx+'px;--dl:-'+c.dl+'s;--wd:'+c.wd+'s">'+esc(c.sign)+'</div>'+(c.leader?'<div class="stMega">📢</div>':''));
+ c._ch=c._sh=false;return el}
+function stkMakeBub(c,text,chant,until){const el=document.createElement("div");el.className="stBub"+(chant?" chant":"");el.textContent=text;$("stBubs").appendChild(el);c.bub={el,text,chant,until}}
+function stkDropBub(c){if(!c.bub)return;const e=c.bub.el;c.bub=null;e.classList.add("out");setTimeout(()=>e.remove(),300)}
+function stkSay(c,text,chant){
+ if(!$("stBubs"))return false;
+ if(c.bub){if(!chant)return false;stkDropBub(c)}
+ else if(!chant&&STK.nb>=(STK.heat>.8?8:6))return false;
+ stkMakeBub(c,stkTxt(text),chant,performance.now()+1800+text.length*55+(chant?600:0));STK.nb++;return true}
+function stkPart(x,y){const L=$("stBubs");if(!L||L.children.length>46)return;const e=document.createElement("div");e.className="stPart";e.textContent=pick(STK_PART);e.style.left=x+"px";e.style.top=y+"px";e.style.setProperty("--dx",(Math.random()*50-25)+"px");e.style.setProperty("--rt",(Math.random()*60-30)+"deg");L.appendChild(e);setTimeout(()=>e.remove(),1300)}
+function stkHop(c){const e=c.el;if(!e)return;e.classList.remove("hop");void e.offsetWidth;e.classList.add("hop")}
+function stkChant(now,march,cheer){
+ const th=STK.th,txt=cheer?pick(["THANK YOU!","WE WON!","VICTORY!"]):march?"MARCH! MARCH! MARCH!":pick(th.chants.concat(STK_GCHANT));
+ const L=STK.list.filter(c=>c.mode!=="leave");
+ L.forEach(c=>{c.chantUntil=now+2400+Math.random()*700});
+ const sp=L.slice().sort(()=>Math.random()-.5).slice(0,6);const lead=L.find(c=>c.leader);if(lead&&!sp.includes(lead))sp.push(lead);
+ sp.forEach(c=>{c.say={text:txt,at:now+Math.random()*700,chant:true}});
+ for(let i=0;i<4;i++){const c=pick(L);if(c)setTimeout(()=>stkPart(c.x+Math.random()*10-5,c.y-70),Math.random()*700)}}
+function stkBanter(now){
+ const L=STK.list.filter(c=>c.mode!=="leave"&&!c.bub&&!c.say);if(L.length<2)return;
+ const a=pick(L);let b=null,bd=1e9;L.forEach(o=>{if(o===a)return;const d=Math.hypot(o.x-a.x,o.y-a.y);if(d<bd){bd=d;b=o}});if(!b)return;
+ const fight=Math.random()<.12+.35*STK.heat,pair=pick(fight?STK_FIGHT:STK_BANTER);
+ a.say={text:pair[0],at:now};b.say={text:pair[1],at:now+1500};
+ a.face=b.x<a.x?"l":"r";b.face=a.x<b.x?"l":"r";a.fd=b.fd=true;
+ a.mode=b.mode="idle";a.wait=b.wait=2600;
+ if(fight){a.shakeUntil=b.shakeUntil=now+1900;setTimeout(()=>{stkPart(a.x,a.y-60);stkPart(b.x,b.y-60)},300)}}
+function stkFrame(){
+ STK.raf=0;const L=$("stLayer"),S=state&&state.strike,a=S&&S.active;
+ if(!L||!state||state.inside||$("game").style.display==="none")return;
+ if(!a&&!STK.leaving&&!STK.list.length)return;
+ STK.raf=requestAnimationFrame(stkFrame);
+ const now=performance.now();if(modalOpen()){STK.last=now;return}
+ const dt=Math.min(60,STK.last?now-STK.last:16),k=dt/16.67,heat=STK.heat,C=STK.C,E=STK.E,B=STK.B;STK.last=now;
+ /* strike over → everybody drifts off the screen */
+ if(!a&&STK.leaving){STK.list.forEach(c=>{if(c.mode==="leave")return;c.mode="leave";c.chantUntil=0;c.tx=c.x<STK.W/2?6:STK.W-6;c.ty=clamp(c.y+Math.random()*60-30,50,STK.H-20);c.stuck=0;if(Math.random()<.45)c.say={text:pick(STK_LEAVE),at:now+Math.random()*1500}})}
+ /* crowd centre drifts / marches */
+ if(a){
+  const dx=C.tx-C.x,dy=C.ty-C.y,d=Math.hypot(dx,dy);
+  if(d>3){const st=Math.min(d,C.sp*k*(.8+.4*heat));C.x+=dx/d*st;C.y+=dy/d*st}
+  else if(now>STK.tWp){const t=stkPt(B.x,B.y,B.rx*.55,B.ry*.55);C.tx=t.x;C.ty=t.y;C.sp=.35;STK.tWp=now+9000+Math.random()*9000}
+  if(now>STK.tMarch){STK.tMarch=now+(24000+Math.random()*22000)/heat;const t=stkPt(B.x,B.y,B.rx*.85,B.ry*.85);C.tx=t.x;C.ty=t.y;C.sp=1.0;STK.tWp=now+12000;stkChant(now,true)}
+  if(now>STK.tChant){STK.tChant=now+(6500+Math.random()*7500)/heat;stkChant(now,false,a.cheer)}
+  if(now>STK.tBant){STK.tBant=now+(8000+Math.random()*9000)/heat;stkBanter(now)}
+  if(now>STK.tPart){STK.tPart=now+(1500+Math.random()*1500)/heat;const c=pick(STK.list);if(c)stkPart(c.x+Math.random()*12-6,c.y-68)}}
+ STK.nb=0;STK.list.forEach(c=>{if(c.bub)STK.nb++});
+ for(let i=STK.list.length-1;i>=0;i--){
+  const c=STK.list[i];let gone=false;
+  if(c.say&&now>=c.say.at){stkSay(c,c.say.text,c.say.chant);c.say=null}
+  if(!c.bub&&c.mode!=="leave"&&a&&Math.random()<.1*heat*dt/1000){const th=STK.th;stkSay(c,pick(th.says.concat(th.says,STK_GSAY)),false)}
+  if(c.mode==="idle"){
+   c.wait-=dt;
+   if(Math.abs(c.x-C.x)>E.rx*1.5||Math.abs(c.y-C.y)>E.ry*1.9)c.wait=0;
+   if(c.wait<=0){const t=stkPt(C.x,C.y,E.rx,E.ry);c.tx=t.x;c.ty=t.y;c.mode="mill";c.stuck=0}
+   else{if(Math.random()<.0009*dt*heat)stkHop(c);if(a&&Math.random()<.00012*dt*heat){const t=stkPt(C.x,C.y,E.rx*1.15,E.ry*1.15);c.tx=t.x;c.ty=t.y;c.mode="rush";c.stuck=0;if(Math.random()<.5)c.say={text:pick(["WOOOO!","Make way!","Coming through!","I'm FIRED UP!"]),at:now}}}}
+  if(c.mode==="mill"||c.mode==="rush"||c.mode==="leave"){
+   const dx=c.tx-c.x,dy=c.ty-c.y,d=Math.hypot(dx,dy);
+   if(d<3){if(c.mode==="leave")gone=true;else{c.mode="idle";c.wait=300+Math.random()*2200}}
+   else{
+    const spd=(c.mode==="rush"?2.4:c.mode==="leave"?1.9:c.sp*(.8+.5*heat)*(now<c.chantUntil?.55:1))*k,st=Math.min(d,spd),nx=c.x+dx/d*st,ny=c.y+dy/d*st,ok=c.mode==="leave"?((x,y)=>!stkHit(x,y)):stkFree,ox=c.x,oy=c.y;
+    if(ok(nx,c.y))c.x=nx;if(ok(c.x,ny))c.y=ny;
+    c.stuck=Math.hypot(c.x-ox,c.y-oy)>.3*k?0:c.stuck+1;if(c.stuck>40){if(c.mode==="leave")gone=true;else{c.mode="idle";c.wait=200;c.stuck=0}}
+    if(Math.abs(dx)>.5){const f=dx<0?"l":"r";if(f!==c.face){c.face=f;c.fd=true}}}}
+  const el=c.el;
+  if(gone){stkDropBub(c);if(el)el.remove();STK.list.splice(i,1);continue}
+  if(!el)continue;
+  el.style.left=c.x.toFixed(1)+"px";el.style.top=c.y.toFixed(1)+"px";el.style.zIndex=Math.round(c.y);
+  if(c.fd){c.fd=false;el.classList.remove("fl","fr");el.classList.add("f"+c.face)}
+  const ch=now<c.chantUntil;if(ch!==c._ch){c._ch=ch;el.classList.toggle("chant",ch)}
+  const sh=now<c.shakeUntil;if(sh!==c._sh){c._sh=sh;el.classList.toggle("shake",sh)}
+  if(c.bub){if(now>c.bub.until)stkDropBub(c);else{const b=c.bub.el;b.style.left=clamp(c.x,70,STK.W-70).toFixed(1)+"px";b.style.top=Math.max(40,c.y-86).toFixed(1)+"px"}}}
+ if(STK.leaving&&!STK.list.length){STK.leaving=false;STK.area=null;STK.sid=null}}
+function stkArrow(from,to){const L=LK[from]||{},ar={N:"⬆",S:"⬇",W:"⬅",E:"➡"},nm={N:"North",S:"South",W:"West",E:"East"};for(const d in L)if(L[d]===to)return ar[d]+" "+nm[d];for(const d in L)if(L[d]==="centre")return ar[d]+" "+nm[d];return""}
+function stkBannerHTML(a){const where=a.kind==="mayor"?"Town Hall, East Side":"Town Centre";return'<div id="stBanner" class="stBanner">✊ STRIKE at the '+where+' — '+esc(a.why)+' · '+stkArrow(AREA(),a.area)+'</div>'}
+function stkBanner(){
+ const w=$("world"),a=state&&state.strike&&state.strike.active,old=$("stBanner"),show=!!(a&&w&&!state.inside&&AREA()!==a.area&&$("game").style.display!=="none");
+ if(old&&!show)old.remove();else if(show&&!old)w.insertAdjacentHTML("beforeend",stkBannerHTML(a))}
+function stkMount(){
+ if(!state||state.inside)return;
+ const S=stkS(),a=S.active,w=$("world"),area=AREA(),old=$("stBanner");if(old)old.remove();
+ if(a&&a.area!==area)w.insertAdjacentHTML("beforeend",stkBannerHTML(a));
+ const here=(a&&a.area===area)||(!a&&STK.leaving&&STK.area===area&&STK.list.length);
+ if(!here){STK.list=[];STK.area=null;STK.sid=null;STK.leaving=false;return}
+ stkObs();
+ w.insertAdjacentHTML("beforeend",'<div id="stLayer"></div><div id="stBubs"></div>');
+ if(a){
+  STK.sur=(()=>{const M=mayorOf();return M?String(M.surname||M.name||"MAYOR").toUpperCase():"MAYOR"})();
+  if(STK.area!==area||STK.sid!==a.id||!STK.list.length){STK.area=area;STK.sid=a.id;STK.th=stkTheme(a);STK.heat=a.heat;STK.leaving=false;stkBuild(a)}}
+ const L=$("stLayer");
+ STK.list.forEach(c=>{c.el=stkEl(c);L.appendChild(c.el);if(c.bub){const b=c.bub;stkMakeBub(c,b.text,b.chant,b.until)}});
+ if(!STK.raf){STK.last=0;STK.raf=requestAnimationFrame(stkFrame)}}
+
+/* ---------- hooks ---------- */
+const _roStk=renderOutdoor;renderOutdoor=function(){_roStk();try{stkMount()}catch(e){console.error(e)}};
+const _rtStk=renderTop;renderTop=function(){_rtStk();try{const a=state&&state.strike&&state.strike.active,tp=$("topstats");if(a&&tp)tp.insertAdjacentHTML("beforeend","<span>✊ <b>STRIKE</b></span>")}catch(e){}};
+setInterval(()=>{try{stkPoll()}catch(e){console.error(e)}},700);
+/* handy for testing: GEN_STRIKE.weekly() / GEN_STRIKE.mayor("tax") / GEN_STRIKE.end() */
+window.GEN_STRIKE={weekly(){if(!state)return;stkS().active&&stkEnd();return stkStart("weekly")},mayor(i){if(!state)return;stkS().active&&stkEnd();return stkStart("mayor",i||"tax")},end(){if(state)stkEnd()}};
+
+
 })();
 </script>
 </body>
