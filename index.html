@@ -2307,6 +2307,305 @@ setInterval(()=>{try{stkPoll()}catch(e){console.error(e)}},700);
 window.GEN_STRIKE={weekly(){if(!state)return;stkS().active&&stkEnd();return stkStart("weekly")},mayor(i){if(!state)return;stkS().active&&stkEnd();return stkStart("mayor",i||"tax")},end(){if(state)stkEnd()}};
 
 
+/* ===== v15: interactive home Computer (Friendbook, Calculator, Paint, Wallpapers, Notes) ===== */
+(function(){
+const css=document.createElement("style");css.textContent=`
+.pcDesk{position:relative;height:min(68vh,500px);border-radius:10px;overflow:hidden;border:3px solid #111;user-select:none;background:#1b3a5c}
+.pcIcons{position:absolute;top:8px;left:8px;display:grid;gap:6px;grid-template-rows:repeat(4,auto);grid-auto-flow:column}
+.pcIcon{width:72px;text-align:center;font-size:11px;color:#fff;text-shadow:0 1px 3px #000;background:none!important;border:0!important;padding:4px!important;position:relative}
+.pcIcon span{display:block;font-size:30px}.pcIcon i{position:absolute;top:0;right:8px;background:#e41e3f;border-radius:9px;font-style:normal;padding:0 6px;font-size:11px}
+.pcWin{position:absolute;background:#f0f2f5;color:#1c1e21;border:1px solid #222;border-radius:8px;box-shadow:0 8px 24px #0009;display:flex;flex-direction:column;overflow:hidden}
+.pcBar{background:#2c5ea8;color:#fff;padding:5px 8px;display:flex;justify-content:space-between;align-items:center;cursor:move;touch-action:none;font-size:13px}
+.pcBar button{padding:0 9px!important;min-height:0!important;background:#c0392b!important;border:0!important}
+.pcBody{flex:1;overflow:auto;padding:8px;min-height:0}
+.pcWin button{background:#e4e6eb;color:#1c1e21;border:1px solid #bbb;padding:5px 9px}.pcWin .pri{background:#1877f2;color:#fff;border-color:#1877f2}
+.pcWin textarea{width:100%;box-sizing:border-box;border:1px solid #ccc;border-radius:8px;padding:6px;color:#000;background:#fff}
+.pcTask{position:absolute;left:0;right:0;bottom:0;height:34px;background:#0c1626e0;display:flex;align-items:center;gap:6px;padding:0 8px;color:#fff;font-size:12px}
+.pcTask button{background:#26385a;color:#fff;border:0;padding:3px 8px;min-height:0!important}.pcTask .sp{flex:1}
+.fbPost{background:#fff;border-radius:8px;padding:8px;margin-top:8px;box-shadow:0 1px 2px #0003}.fbPost img{max-width:100%;border-radius:6px;margin-top:4px}
+.fbC{margin:4px 0 0 10px;padding:4px 8px;background:#f0f2f5;border-radius:12px;font-size:13px}.fbC b{color:#1c1e21}.fbM{font-size:11px;color:#65676b}
+.calcG{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}.calcG button{padding:10px 0;font-size:16px}
+.calcD{background:#111;color:#7CFC9a;font:22px monospace;text-align:right;padding:8px;border-radius:6px;margin-bottom:6px;min-height:30px;overflow:hidden}
+.swG{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px}.swG button{height:48px;border-radius:8px}
+`;document.head.appendChild(css);
+
+const WALLS=[["Ocean","linear-gradient(135deg,#0f4c81,#2bb3c0)"],["Sunset","linear-gradient(160deg,#ff5e62,#ff9966 60%,#4a2a6b)"],["Forest","linear-gradient(135deg,#134e2a,#6aa84f)"],["Night city","linear-gradient(180deg,#0b0b2b,#3a2a6b 70%,#d46a9f)"],["Pastel","linear-gradient(135deg,#ffd6e8,#cfe8ff)"],["Matrix","repeating-linear-gradient(90deg,#001a00 0 14px,#003300 14px 15px)"],["Gold","linear-gradient(135deg,#7a5c14,#e1c575)"],["Dark","#15171c"]];
+const PERS=[{n:"TownGossip 📰",t:"neutral"},{n:"xX_Troll_Xx 👹",t:"snark"},{n:"Random Stranger 🧍",t:"neutral"},{n:"CoolBot3000 🤖",t:"nice"},{n:"Mystery Admirer 💌",t:"nice"}];
+const TP={
+joy:{nice:["So happy for you!! 🎉","You deserve this, congrats!","Love this energy 😍"],snark:["Good for you, I guess.","Wow, brag much?"],neutral:["Nice one.","Congrats, I think?"]},
+sad:{nice:["Sending you a big hug 💛","I'm here if you need to talk.","Hang in there, it gets better."],snark:["Main character moment again?","Drama, drama..."],neutral:["That sounds rough.","Hope tomorrow is better."]},
+angry:{nice:["Take a deep breath, friend.","Ugh, they don't deserve your energy."],snark:["Calm down lol","Touch grass."],neutral:["Yikes. Who was it?","Sounds heated."]},
+food:{nice:["Now I'm hungry 😋","Save me a plate!"],snark:["Nobody asked what you ate.","Is that edible?"],neutral:["Looks tasty.","Recipe please."]},
+love:{nice:["Aww, relationship goals ❤️","This is so sweet!"],snark:["Cringe.","Get a room."],neutral:["Cute.","Who's the lucky one?"]},
+crime:{nice:["Um... please tell me this is a joke?","Be careful out there!"],snark:["Delete this before the cops see 👀","Snitches get stitches, post more."],neutral:["I did NOT read that.","Police are watching this feed, you know."]},
+gen:{nice:["Love this!","Haha, so true.","Thanks for sharing :)"],snark:["Anyway.","Who asked?","Cool story."],neutral:["Interesting.","Ok.","Fair enough.","lol"]}};
+const ECHO=["Wait, \"{k}\"? Tell me more.","{k} is the whole mood.","Not me reading about {k} at midnight.","{k}?? Explain."];
+const TOP=[["crime",/rob|steal|stole|kill|murder|punch|fight|jail|cop|police|drug|gang|knife|gun|crime|bribe/i],["love",/love|date|kiss|crush|wedding|married|girlfriend|boyfriend|baby|wife|husband/i],["angry",/hate|angry|mad|furious|annoy|rage|worst|sick of|ugh/i],["sad",/sad|cry|lonely|alone|tired|broke|died|miss|sorry|depress|bad day/i],["joy",/happy|great|win|won|promot|party|birthday|best|awesome|yay|excited|new job|rich/i],["food",/eat|food|pizza|lunch|dinner|coffee|cake|burger|cook|hungry|breakfast/i]];
+const MOODT={"😊":"joy","😢":"sad","😡":"angry","🎉":"joy","🤔":"gen"};
+const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1)),P=a=>a[Math.floor(Math.random()*a.length)];
+function pc(){const s=state;s.pc=s.pc||{posts:[],wall:{t:"css",v:WALLS[0][1]},art:"",notes:"",unread:0,seq:0,nextNpc:0,wifi:null,nets:null};return s.pc}
+function stamp(c){const d=Math.floor(c/1440),h=Math.floor(c/60)%24,m=Math.floor(c%60);return DAYS[d%7]+" "+String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")}
+function tone(p){const r=relation(p.id);if(r>=15||p.trait==="kind"||p.trait==="generous")return"nice";if(r<=-15||p.trait==="stubborn")return"snark";return"neutral"}
+function genEvents(post){
+ const kw=(post.text.match(/[A-Za-z]{5,}/g)||[]).sort((a,b)=>b.length-a.length)[0];
+ let tp=(TOP.find(t=>t[1].test(post.text))||[])[0]||MOODT[post.mood]||"gen";
+ const pool=state.people.filter(p=>p.alive&&p!==state.player&&p.age>=10).sort(()=>Math.random()-.5).slice(0,5).map(p=>({id:p.id,n:p.first+" "+p.surname,t:tone(p)}));
+ const who=pool.concat(PERS.sort(()=>Math.random()-.5).slice(0,R(1,2))).sort(()=>Math.random()-.5).slice(0,R(3,6));
+ who.forEach((w,i)=>{
+  let txt=Math.random()<.25&&kw?P(ECHO).replace("{k}",kw.toLowerCase()):P(TP[tp][w.t]||TP.gen.neutral);
+  const fast=i<2;post.q.push({k:"c",who:w.n,rid:w.id||null,tn:w.t,txt,fast,due:state.clock+(fast?20:R(60,900)),rt:fast?Date.now()+R(3000,11000)*spd():0});
+  if(Math.random()<.7)post.q.push({k:"l",n:R(1,4),due:state.clock+R(10,700)})});
+}
+const NG=["Beautiful day in town ☀️","Coffee first, questions later ☕","Anyone else tired today?","Rain again? Typical.","New week, new goals 💪","Taxes, bills... adulthood is a scam.","Does anyone know a good place to eat?","Missing my family today ❤️","Thinking about changing careers.","Walked across town today. My feet hurt."];
+const NJ=["Just finished a shift as a {j}. Long day.","Proud to be a {j} in this town.","Being a {j} is harder than it looks.","Another day, another {j} problem."];
+const NT={funny:["My life is a sitcom and nobody's laughing 😂","Why did the {j} cross the road? Overtime."],kind:["Be nice to each other today 💛","Free hugs at the park!"],ambitious:["Grinding. Future mayor loading... 📈"],shy:["Social battery: 2%."],creative:["Made something new today 🎨"],"family-oriented":["Family dinner tonight! 🍝"],outgoing:["Who's up for a party tonight?? 🎉"],serious:["Discipline beats motivation."],stubborn:["I said what I said."],generous:["Bought a round for the whole café 🍻"],practical:["Tip: write things down."],independent:["Doing it my way, as always."]};
+const NG2=[{n:"TownGossip 📰",t:["Heard there was trouble downtown... stay safe, everyone.","Hot rumour: someone in this town has a secret. 👀"]},{n:"xX_Troll_Xx 👹",t:["Hot take: this town is boring.","Rate my hot take: pineapple belongs everywhere."]},{n:"CoolBot3000 🤖",t:["BEEP. Reminder: drink water.","Daily fact: 3 cameras are watching Main St."]}];
+function npcPost(at){
+ const q=pc();let a,id=null,txt,tn="neutral",job="";
+ if(Math.random()<.2){const g=P(NG2);a=g.n;txt=P(g.t)}
+ else{const L=state.people.filter(p=>p.alive&&p!==state.player&&p.age>=10);if(!L.length)return;const p=P(L);a=p.first+" "+p.surname;id=p.id;tn=tone(p);job=p.job&&p.job!=="Unemployed"?p.job:"";
+  const pool=[...NG];if(job)pool.push(...NJ);if(NT[p.trait])pool.push(...NT[p.trait],...NT[p.trait]);txt=P(pool).replace(/\{j\}/g,(job||"worker").toLowerCase())}
+ if(state.player.crime>0&&Math.random()<.1)txt="Rumour mill: someone around here has a record... 👀";
+ q.posts.push({id:++q.seq,a,aid:id,tn,text:txt,mood:"",at:at==null?state.clock:at,likes:R(0,6),cm:[],q:[],img:""});if(q.posts.length>40)q.posts.shift()}
+function deliver(){
+ if(!state||!state.pc||!online())return;let ch=0;const open=!!$("fbF"),Q=state.pc;
+ if(!Q.nextNpc)Q.nextNpc=state.clock+30;
+ if(state.clock>=Q.nextNpc){npcPost();Q.nextNpc=state.clock+R(90,360);ch=1;if(!open)Q.unread++}
+ if(open){if(!live)live=Date.now()+8000;if(Date.now()>=live){npcPost();live=Date.now()+R(9000,20000);ch=1}}else live=0;
+ state.pc.posts.forEach(po=>{po.q=po.q.filter(e=>{
+  const ready=state.clock>=e.due||(e.fast&&open&&e.rt&&Date.now()>=e.rt);if(!ready)return true;
+  if(e.k==="l")po.likes+=e.n;else{po.cm.push({who:e.who,txt:e.txt,at:state.clock});
+   if(e.rid)try{changeRel(e.rid,e.tn==="snark"?-1:e.tn==="nice"?2:0)}catch(x){}
+   if(!open){state.pc.unread++;status("💬 "+e.who+" commented on your Friendbook post.")}}
+  ch=1;return false})});
+ if(ch&&open)fbRender();
+}
+let live=0;
+setInterval(()=>{try{deliver()}catch(e){console.error(e)}},1500);
+
+let WZ=10;
+function win(id,title,w,h,html,init){
+ const dk=$("pcDesk");if(!dk)return;let el=$("w_"+id);
+ if(el){el.style.zIndex=++WZ;return}
+ const small=dk.clientWidth<560,n=dk.querySelectorAll(".pcWin").length;
+ el=document.createElement("div");el.className="pcWin";el.id="w_"+id;
+ el.style.cssText="z-index:"+(++WZ)+";"+(small?"left:0;top:0;width:100%;height:calc(100% - 34px)":"left:"+(90+n*26)+"px;top:"+(14+n*22)+"px;width:"+Math.min(w,dk.clientWidth-100)+"px;height:"+Math.min(h,dk.clientHeight-60)+"px");
+ el.innerHTML='<div class="pcBar"><b>'+title+'</b><button>✕</button></div><div class="pcBody">'+html+'</div>';dk.appendChild(el);
+ el.addEventListener("pointerdown",()=>el.style.zIndex=++WZ);
+ el.querySelector(".pcBar button").onclick=()=>{el.remove();taskBar()};
+ const bar=el.querySelector(".pcBar");let ox,oy,dr=0;
+ bar.onpointerdown=e=>{if(e.target.tagName==="BUTTON")return;dr=1;ox=e.clientX-el.offsetLeft;oy=e.clientY-el.offsetTop;bar.setPointerCapture(e.pointerId)};
+ bar.onpointermove=e=>{if(!dr)return;el.style.left=Math.max(0,Math.min(dk.clientWidth-60,e.clientX-ox))+"px";el.style.top=Math.max(0,Math.min(dk.clientHeight-70,e.clientY-oy))+"px"};
+ bar.onpointerup=()=>dr=0;
+ init&&init(el);taskBar();
+}
+function taskBar(){const t=$("pcTaskW");if(!t)return;t.innerHTML=[...$("pcDesk").querySelectorAll(".pcWin")].map(w=>'<button data-w="'+w.id+'">'+w.querySelector("b").textContent+'</button>').join("");
+ t.querySelectorAll("button").forEach(b=>b.onclick=()=>{$(b.dataset.w).style.zIndex=++WZ})}
+function setWall(w){const q=pc();q.wall=w;const d=$("pcDesk");if(d)d.style.background=w.t==="img"?"url("+w.v+") center/cover":w.v}
+
+function fbRender(){const f=$("fbF");if(!f)return;const q=pc(),ae=document.activeElement;if(ae&&ae.classList&&ae.classList.contains("fbR")&&ae.value)return;q.unread=0;
+ f.innerHTML=q.posts.length?q.posts.slice().sort((x,y)=>y.at-x.at).map(po=>{const me=!po.a;return'<div class="fbPost"><b>'+esc(me?state.player.name:po.a)+'</b> '+(po.mood||"")+' <span class="fbM">'+stamp(po.at)+'</span><div>'+esc(po.text)+'</div>'+(po.img?'<img src="'+po.img+'">':'')+
+  '<div class="fbM">👍 '+po.likes+' · 💬 '+po.cm.length+(me&&po.q.length?' · ⏳ more reactions coming...':'')+'</div>'+po.cm.map(c=>'<div class="fbC"><b>'+esc(c.who)+'</b> '+esc(c.txt)+'</div>').join("")+
+  (me?'':'<div style="margin-top:4px"><button data-act="lk" data-id="'+po.id+'">'+(po.liked?'👍 Liked':'👍 Like')+'</button> <input class="fbR" placeholder="Write a comment..." style="color:#000;width:50%;border:1px solid #ccc;border-radius:8px;padding:4px"> <button data-act="rp" data-id="'+po.id+'">Send</button></div>')+'</div>'}).join(""):'<p class="fbM">No posts yet. Say something to the town!</p>'}
+function appFeed(){if(!online()){status("📵 No internet. Connect to Wi-Fi first.");return appWifi()}win("fb","📘 Friendbook",420,420,'<textarea id="fbT" rows="3" maxlength="280" placeholder="What\'s on your mind?"></textarea><div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap"><select id="fbM" style="color:#000"><option value="">Mood</option><option>😊</option><option>😢</option><option>😡</option><option>🎉</option><option>🤔</option></select><button id="fbA">🖌️ Attach my painting</button><button class="pri" id="fbP" style="margin-left:auto">Post</button></div><div id="fbF"></div>',el=>{
+ let att=0;$("fbA").onclick=()=>{if(!pc().art)return status("Draw something in Paint and press Save first.");att=!att;$("fbA").textContent=att?"🖌️ Painting attached ✓":"🖌️ Attach my painting"};
+ $("fbP").onclick=()=>{const t=$("fbT").value.trim();if(!t)return;const q=pc(),po={id:++q.seq,text:t,mood:$("fbM").value,at:state.clock,likes:0,cm:[],q:[],img:att?q.art:""};
+  q.posts.push(po);if(q.posts.length>25)q.posts.shift();q.posts.forEach((x,i)=>{if(i<q.posts.length-6)x.img=""});genEvents(po);
+  const p=state.player,day=Math.floor(state.clock/1440);p.fxd=p.fxd||{};if(p.fxd.fb!==day){p.fxd.fb=day;p.stats.charisma=clamp(p.stats.charisma+1,0,100)}
+  $("fbT").value="";att=0;$("fbA").textContent="🖌️ Attach my painting";fbRender();renderTop()};
+ const q0=pc();if(q0.posts.filter(x=>x.a).length<3)for(let i=0;i<4;i++)npcPost(state.clock-R(20,600));
+ $("fbF").onclick=e=>{const b=e.target.closest("button[data-act]");if(!b)return;const po=pc().posts.find(x=>x.id==b.dataset.id);if(!po)return;
+  if(b.dataset.act==="lk"){if(!po.liked){po.liked=1;po.likes++;if(po.aid)try{changeRel(po.aid,1)}catch(x){}}}
+  else{const i=b.parentNode.querySelector(".fbR"),t=i.value.trim();if(!t)return;i.value="";po.cm.push({who:state.player.name,me:1,txt:t,at:state.clock});
+   po.q.push({k:"c",who:po.a,rid:po.aid,tn:po.tn,txt:P(TP.gen[po.tn]||TP.gen.neutral),fast:true,due:state.clock+30,rt:Date.now()+R(3000,8000)})}
+  fbRender()};
+ $("fbF").onkeydown=e=>{if(e.key==="Enter"&&e.target.classList.contains("fbR")){e.preventDefault();e.target.parentNode.querySelector("button[data-act=rp]").click()}};
+ fbRender()})}
+function appCalc(){win("calc","🧮 Calculator",250,330,'<div class="calcD" id="cD">0</div><div class="calcG" id="cG"></div>',el=>{
+ const K=["C","⌫","(",")","7","8","9","/","4","5","6","*","1","2","3","-","0",".","=","+"];let ex="";const D=$("cD");
+ const show=()=>D.textContent=ex||"0",press=k=>{if(k==="C")ex="";else if(k==="⌫")ex=ex.slice(0,-1);else if(k==="="){try{if(/^[0-9+\-*/.() ]+$/.test(ex)&&ex){const r=Function('"use strict";return ('+ex+')')();ex=String(Math.round(r*1e8)/1e8)}}catch(e){ex="Error"}}else{if(ex==="Error")ex="";ex+=k}show()};
+ $("cG").innerHTML=K.map(k=>'<button data-k="'+k+'">'+k.replace("*","×").replace("/","÷")+'</button>').join("");$("cG").querySelectorAll("button").forEach(b=>b.onclick=()=>press(b.dataset.k));
+ el._press=press})}
+document.addEventListener("keydown",e=>{const c=$("w_calc");if(!c||!c._press||/^(INPUT|TEXTAREA|SELECT)$/.test((e.target||{}).tagName))return;const k=e.key==="Enter"?"=":e.key==="Backspace"?"⌫":e.key==="Escape"?"C":e.key;if("0123456789+-*/.()=⌫C".includes(k)&&k.length===1||k==="⌫"){c._press(k);e.preventDefault()}});
+function appPaint(){win("paint","🎨 Paint",380,400,'<canvas id="pcv" width="340" height="220" style="width:100%;max-width:340px;background:#fff;border:1px solid #999;touch-action:none;border-radius:6px"></canvas><div id="pcol" style="display:flex;gap:4px;margin:6px 0;flex-wrap:wrap"></div><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">Size <input type="range" id="psz" min="1" max="24" value="4"><button id="per">🩹 Eraser</button><button id="pcl">🗑️ Clear</button><button id="psv" class="pri">💾 Save</button><button id="pwl">🖼️ Set as wallpaper</button></div>',el=>{
+ const cv=$("pcv"),x=cv.getContext("2d");let col="#000",er=0,dn=0;x.fillStyle="#fff";x.fillRect(0,0,340,220);x.lineCap=x.lineJoin="round";
+ if(pc().art){const im=new Image();im.onload=()=>x.drawImage(im,0,0,340,220);im.src=pc().art}
+ $("pcol").innerHTML=["#000","#e41e3f","#f5a623","#f8e71c","#2ecc71","#1877f2","#8e44ad","#8b5a2b","#ffffff"].map(c=>'<button style="background:'+c+';width:26px;height:26px;padding:0" data-c="'+c+'"></button>').join("")+'<input type="color" id="pcc">';
+ $("pcol").querySelectorAll("button").forEach(b=>b.onclick=()=>{col=b.dataset.c;er=0});$("pcc").oninput=e=>{col=e.target.value;er=0};$("per").onclick=()=>er=1;
+ $("pcl").onclick=()=>{x.fillStyle="#fff";x.fillRect(0,0,340,220)};
+ const pos=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*340/r.width,(e.clientY-r.top)*220/r.height]},ln=e=>{const[a,b]=pos(e);x.strokeStyle=er?"#fff":col;x.lineWidth=+$("psz").value;x.lineTo(a,b);x.stroke()};
+ cv.onpointerdown=e=>{dn=1;cv.setPointerCapture(e.pointerId);x.beginPath();const[a,b]=pos(e);x.moveTo(a,b);ln(e)};cv.onpointermove=e=>{if(dn)ln(e)};cv.onpointerup=()=>dn=0;
+ const sv=()=>pc().art=cv.toDataURL("image/jpeg",.7);$("psv").onclick=()=>{sv();status("Painting saved — attach it to a Friendbook post!")};
+ $("pwl").onclick=()=>{sv();setWall({t:"img",v:pc().art})}})}
+function appWall(){win("wall","🖼️ Wallpapers",330,300,'<div class="swG" id="swG"></div><p>Custom gradient:</p><input type="color" id="wc1" value="#1b3a5c"> <input type="color" id="wc2" value="#6aa84f"> <button id="wgo" class="pri">Apply</button>',el=>{
+ $("swG").innerHTML=WALLS.map((w,i)=>'<button data-i="'+i+'" style="background:'+w[1]+';color:#fff;text-shadow:0 1px 2px #000">'+w[0]+'</button>').join("");
+ $("swG").querySelectorAll("button").forEach(b=>b.onclick=()=>setWall({t:"css",v:WALLS[b.dataset.i][1]}));$("wgo").onclick=()=>setWall({t:"css",v:"linear-gradient(135deg,"+$("wc1").value+","+$("wc2").value+")"})})}
+function appNotes(){win("notes","📝 Notes",320,280,'<textarea id="nT" rows="10" placeholder="Private notes..."></textarea>',el=>{$("nT").value=pc().notes;$("nT").oninput=e=>pc().notes=e.target.value})}
+
+/* ----- Wi-Fi: no connection at first; buy a plan or hack a neighbour ----- */
+const PLANS=[{id:"b",n:"Basic",d:30,c:20,s:1,t:"standard speed"},{id:"f",n:"Fast",d:90,c:55,s:.6,t:"faster reactions"},{id:"x",n:"Fiber",d:365,c:160,s:.35,t:"fastest reactions"}];
+const sl=ms=>new Promise(r=>setTimeout(r,ms)),dayN=()=>Math.floor(state.clock/1440);
+function online(){const w=state&&state.pc&&state.pc.wifi;return !!w&&!!((w.plan&&state.clock<w.plan.exp)||(w.stolen&&state.clock<w.stolen.exp))}
+function spd(){const w=pc().wifi;return w&&w.plan&&state.clock<w.plan.exp?w.plan.s:1}
+function nets(){const q=pc();if(q.nets)return q.nets;const L=state.people.filter(p=>p.alive&&p!==state.player&&p.age>=18&&p.surname).sort(()=>Math.random()-.5),used=new Set(),out=[],sg=[1,2,2,3,4,5].sort(()=>Math.random()-.5),F=[s=>s+"_Home",s=>"The "+s+"s",s=>s+"-5G",s=>s+" Family WiFi"];
+ L.forEach(p=>{if(out.length>=6||used.has(p.surname))return;used.add(p.surname);out.push({ssid:P(F)(p.surname),own:p.id,sig:sg[out.length]||R(1,5),lock:-1})});
+ ["Cafe_Guest","Hotspot_9"].forEach(n=>{if(out.length<7)out.push({ssid:n,own:null,sig:R(1,3),lock:-1})});
+ q.nets=out.sort((a,b)=>b.sig-a.sig);return out}
+function appWifi(){win("wifi","📶 Wi-Fi",360,400,'<div id="wfB"></div>',()=>wfHome())}
+function wfHome(){const b=$("wfB");if(!b)return;const q=pc(),w=q.wifi||{},dl=n=>Math.max(1,Math.ceil((n-state.clock)/1440)),pl=w.plan&&state.clock<w.plan.exp;
+ const s=online()?(pl?'✅ Connected: <b>'+esc(state.player.surname||"My")+'_Home</b> ('+w.plan.n+', '+dl(w.plan.exp)+' days left)':'⚠️ Connected to <b>'+esc(w.stolen.ssid)+'</b> (stolen, ~'+dl(w.stolen.exp)+' days left)'):'📵 Not connected. Buy Wi-Fi or hack a neighbour.';
+ b.innerHTML='<p>'+s+'</p><b>Buy your own Wi-Fi</b>'+PLANS.map(p=>'<div class="fbPost"><b>'+p.n+'</b> · '+p.d+' days · €'+p.c+' <span class="fbM">'+p.t+'</span> <button class="pri" data-p="'+p.id+'">Buy</button></div>').join("")+
+  '<p><b>Nearby networks</b> <span class="fbM">weaker signal = easier to hack, stronger = harder (but lasts longer)</span></p>'+nets().map((n,i)=>'<div class="fbPost">🔒 <b>'+esc(n.ssid)+'</b> <span>'+"▮".repeat(n.sig)+"▯".repeat(5-n.sig)+'</span> <span class="fbM">'+(n.sig<=2?"Easy":n.sig===3?"Medium":"Hard")+'</span> '+(n.lock===dayN()?'<span class="fbM">🚫 locked out today</span>':'<button data-n="'+i+'">Hack</button>')+'</div>').join("");
+ b.querySelectorAll("button[data-p]").forEach(x=>x.onclick=()=>{const p=PLANS.find(y=>y.id===x.dataset.p),me=state.player;if(me.money<p.c)return status("You can't afford that (€"+p.c+").");me.money-=p.c;const base=pl?w.plan.exp:state.clock;q.wifi={plan:{n:p.n,exp:base+p.d*1440,s:p.s},stolen:null};renderTop();status("Wi-Fi purchased: "+p.n+" for "+p.d+" days.");wfHome()});
+ b.querySelectorAll("button[data-n]").forEach(x=>x.onclick=()=>wfHack(nets()[x.dataset.n]));
+ const nt=$("pcNet");if(nt)nt.textContent=online()?"📶 Online":"📵 Offline"}
+function wfHack(n){const b=$("wfB"),me=state.player,cols=["🔴","🟢","🔵","🟡"],len=Math.max(2,2+n.sig-(me.stats.intelligence>=60?1:0)),seq=[],inp=[];let busy=1;
+ for(let i=0;i<len;i++)seq.push(R(0,3));
+ b.innerHTML='<p>Cracking <b>'+esc(n.ssid)+'</b> ('+"▮".repeat(n.sig)+'). Memorise the key sequence, then repeat it.</p><div id="wfS" style="font-size:32px;min-height:44px;text-align:center"></div><div class="choices">'+cols.map((c,i)=>'<button data-i="'+i+'" style="font-size:24px">'+c+'</button>').join("")+'</div><p id="wfM" class="fbM">Watch closely...</p><button id="wfX">Cancel</button>';
+ $("wfX").onclick=wfHome;
+ const over=ok=>{const q=pc();if(ok){q.wifi=q.wifi||{};q.wifi.stolen={ssid:n.ssid,exp:state.clock+(n.sig+1)*1440};status("📶 You cracked "+n.ssid+"!");return wfHome()}
+  n.lock=dayN();const own=n.own&&find(n.own),caught=own&&Math.random()<.25+n.sig*.08;let m="Access denied. The network locked you out for today.";
+  if(caught){changeRel(own.id,-12);crimeRec("Wi-Fi theft",own,0);me.money=Math.max(0,me.money-40);m="🚨 "+esc(own.first)+" noticed someone on their network! They're furious (relationship -12), you got a Wi-Fi theft record and paid a €40 fine.";renderTop()}
+  $("wfB").innerHTML='<p>❌ '+m+'</p><button id="wfBk">Back</button>';$("wfBk").onclick=wfHome};
+ (async()=>{await sl(700);for(const v of seq){if(!$("wfS"))return;$("wfS").textContent=cols[v];await sl(Math.max(250,560-n.sig*60));if(!$("wfS"))return;$("wfS").textContent="";await sl(180)}busy=0;if($("wfM"))$("wfM").textContent="Your turn!"})();
+ b.querySelectorAll(".choices button").forEach(x=>x.onclick=()=>{if(busy)return;const i=+x.dataset.i;inp.push(i);$("wfS").textContent=inp.map(k=>cols[k]).join(" ");if(i!==seq[inp.length-1]){busy=1;return over(false)}if(inp.length===len){busy=1;over(true)}})}
+function openPC(){
+ pc();const un=pc().unread;
+ modal('<div class="pcDesk" id="pcDesk"><div class="pcIcons"><button class="pcIcon" data-a="fb"><span>📘</span>Friendbook'+(un?'<i>'+un+'</i>':'')+'</button><button class="pcIcon" data-a="calc"><span>🧮</span>Calculator</button><button class="pcIcon" data-a="paint"><span>🎨</span>Paint</button><button class="pcIcon" data-a="wall"><span>🖼️</span>Wallpaper</button><button class="pcIcon" data-a="notes"><span>📝</span>Notes</button><button class="pcIcon" data-a="wifi"><span>📶</span>Wi-Fi</button></div><div class="pcTask"><span id="pcTaskW" style="display:flex;gap:4px"></span><span class="sp"></span><span id="pcNet">'+(online()?"📶 Online":"📵 Offline")+'</span><span>'+stamp(state.clock)+' · '+state.year+'</span><button id="pcOff">⏻ Shut down</button></div></div>');
+ setWall(pc().wall);const A={fb:appFeed,calc:appCalc,paint:appPaint,wall:appWall,notes:appNotes,wifi:appWifi};
+ $("pcDesk").querySelectorAll(".pcIcon").forEach(b=>b.onclick=()=>A[b.dataset.a]());$("pcOff").onclick=closeModal;
+ status("You sit down at the computer.");
+}
+INT.home.o.forEach(o=>{if(o[3]==="Computer")o[4]="pc"});
+const _ro=runObj;runObj=function(pl,o){if(o&&o[4]==="pc")return openPC();return _ro(pl,o)};
+const _tf=trimForSave;trimForSave=function(){_tf();if(state.pc){state.pc.posts=state.pc.posts.slice(-12);state.pc.posts.forEach(p=>p.img="");state.pc.art=""}};
+})();
+
+/* ===== v17: kitchen cooking minigames, dining table, hosted family dinners ===== */
+(function(){
+const st=document.createElement("style");st.textContent=`
+.dnPanel{position:relative;height:380px;background:#d9b88c;border-radius:12px;border:4px solid #4a3426;margin-top:6px}
+.dnTable{position:absolute;left:24%;top:36%;width:52%;height:32%;background:#8b5a2b;border-radius:50%;border:4px solid #5b3d30;display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:inset 0 0 20px #0006}
+.dnB{position:absolute;transform:translate(-50%,-100%);background:#fffdf2;color:#2b3028;border:2px solid #675d47;border-radius:12px;padding:5px 9px;font:13px Georgia,serif;max-width:200px;z-index:30;text-align:center}
+.dnLog{max-height:110px;overflow:auto;font-size:13px;margin-top:6px;background:#0003;padding:6px;border-radius:8px}
+.ckBar{position:relative;height:30px;background:#333;border-radius:8px;overflow:hidden;margin:10px 0}.ckBar i{position:absolute;top:0;bottom:0}
+`;document.head.appendChild(st);
+const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1)),P=a=>a[Math.floor(Math.random()*a.length)],wait=ms=>new Promise(r=>setTimeout(r,ms)),day=()=>Math.floor(state.clock/1440);
+const FOODS=[{id:"om",ic:"🍳",n:"Omelette",cost:4,hp:2,rel:1,how:"Press FLIP when the marker is in the green zone."},{id:"sp",ic:"🍝",n:"Spaghetti",cost:6,hp:3,rel:2,how:"Add the steps in the right order, fast: boil water, pasta, sauce, cheese."},{id:"st",ic:"🍲",n:"Hearty Stew",cost:9,hp:4,rel:3,how:"Keep stirring so the heat meter stays in the green band."}];
+const QN=["🔥 Burnt","👍 Decent","🌟 Perfect"];
+function skill(){const p=state.player;return Math.min(12,(p.cook||0)/5)+(p.stats.creativity||0)/25}
+/* ----- cooking minigames: cb(q) with q = 0 burnt, 1 ok, 2 perfect ----- */
+function cookGame(f,cb,back){
+ const b=skill();let T=null;const alive=()=>$("ckBox"),end=q=>{clearInterval(T);cb(q)};
+ modal('<h2>'+f.ic+' Cooking '+f.n+'</h2><p class="muted">'+f.how+'</p><div id="ckBox"></div><br><button id="ckX">'+(back?"BACK":"CANCEL")+'</button>');
+ $("ckX").onclick=()=>{clearInterval(T);back?back():closeModal()};const B=$("ckBox");
+ if(f.id==="om"){const w=22+b,z=R(15,Math.round(85-w));let v=0,d=1.6;B.innerHTML='<div class="ckBar"><i style="left:'+z+'%;width:'+w+'%;background:#2ecc71"></i><i id="ckM" style="width:4px;background:#fff"></i></div><button class="gold" id="ckGo">🍳 FLIP!</button>';
+  T=setInterval(()=>{if(!alive())return clearInterval(T);v+=d;if(v>=96||v<=0)d=-d;$("ckM").style.left=v+"%"},16);
+  $("ckGo").onclick=()=>{const m=v+2,c=z+w/2,dist=Math.abs(m-c);end(dist<=w/2?2:dist<=w/2+14?1:0)}}
+ else if(f.id==="sp"){const S=["💧 Boil water","🍝 Add pasta","🍅 Add sauce","🧀 Add cheese"];let n=0,mis=0;const t0=Date.now();
+  B.innerHTML='<div id="ckL" class="muted">Step 1 of 4</div><div class="choices">'+S.map((s,i)=>[s,i]).sort(()=>Math.random()-.5).map(x=>'<button class="ckS" data-i="'+x[1]+'">'+x[0]+'</button>').join("")+'</div>';
+  B.querySelectorAll(".ckS").forEach(x=>x.onclick=()=>{if(+x.dataset.i===n){x.disabled=true;x.textContent="✔ "+x.textContent;n++;$("ckL").textContent=n<4?"Step "+(n+1)+" of 4":"Done!";if(n===4)end(mis===0&&Date.now()-t0<9000+b*400?2:mis<=1?1:0)}else{mis++;$("ckL").textContent="Wrong step! Mistakes: "+mis}})}
+ else{const lo=38-b/2,hi=66+b/2;let v=50,ok=0,t=0;B.innerHTML='<div class="ckBar"><i style="left:'+lo+'%;width:'+(hi-lo)+'%;background:#2ecc71"></i><i id="ckM" style="width:6px;background:#fff"></i></div><button class="gold" id="ckGo">🥄 STIR!</button><p class="muted" id="ckT">Stir for 8 seconds...</p>';
+  $("ckGo").onclick=()=>v=Math.min(100,v+9);
+  T=setInterval(()=>{if(!alive())return clearInterval(T);v=Math.max(0,v-1.5);t++;if(v>=lo&&v<=hi)ok++;$("ckM").style.left=v+"%";$("ckT").textContent="Stirring... "+Math.max(0,8-Math.floor(t/10))+"s";if(t>=80)end(ok/80>=.65?2:ok/80>=.35?1:0)},100)}
+}
+function cookResult(f,q){
+ const p=state.player;p.cook=(p.cook||0)+q+1;p.money-=f.cost;renderTop();const m=[.4,1,1.6][q];
+ modal('<h2>'+f.ic+' '+f.n+': '+QN[q]+'</h2><p>'+["It came out black and smoky. Brave of you to serve it.","A solid, tasty meal.","Restaurant quality! The whole house smells wonderful."][q]+'</p><div class="choices"><button id="rEat" class="gold">🍴 Eat it yourself</button><button id="rFam">👨‍👩‍👧 Feed the family</button></div><br><button id="close">DONE</button>');
+ $("close").onclick=closeModal;
+ $("rEat").onclick=()=>{p.stats.health=clamp(p.stats.health+Math.round(f.hp*m),0,100);closeModal();status("You ate your "+f.n.toLowerCase()+" ("+QN[q]+") +"+Math.round(f.hp*m)+" health.");renderTop();renderPanel()};
+ $("rFam").onclick=()=>{const F=fam();closeModal();if(!F.length)return status("You have no family nearby to feed.");
+  const d=Math.round(f.rel*[-.5,1,1.6][q]);F.forEach(x=>{changeRel(x.id,d);if(x.stats&&x.stats.health!=null)x.stats.health=clamp(x.stats.health+Math.round(f.hp*m),0,100)});
+  status("You fed "+F.map(x=>x.first).join(", ")+" ("+QN[q]+"). Relationships "+(d>=0?"+":"")+d+".");renderPanel()}
+}
+function openKitchen(){
+ const p=state.player;modal('<h2>🍳 Kitchen</h2><p class="muted">Cook a meal. Better cooks get a wider green zone. Meals cooked: '+(p.cook?Math.round(p.cook/2):0)+'</p><div class="choices">'+FOODS.map(f=>'<button class="kf" data-i="'+FOODS.indexOf(f)+'">'+f.ic+' '+f.n+' (€'+f.cost+')</button>').join("")+'</div><br><button id="close">CLOSE</button>');
+ $("close").onclick=closeModal;document.querySelectorAll(".kf").forEach(b=>b.onclick=()=>{const f=FOODS[b.dataset.i];if(p.money<f.cost)return status("You can't afford the ingredients (€"+f.cost+").");cookGame(f,q=>cookResult(f,q),openKitchen)})}
+/* ----- family & dinners ----- */
+function fam(){const me=state.player,s=new Set();(me.parents||[]).forEach(i=>{s.add(i);const q=find(i);q&&(q.children||[]).forEach(c=>s.add(c))});(me.children||[]).forEach(i=>s.add(i));const sp=pOf(me);sp&&s.add(sp.id);s.delete(me.id);return[...s].map(find).filter(x=>x&&x.alive!==false&&(x.age==null||x.age>=1))}
+const DT=[{id:"casual",ic:"🍽️",n:"Casual family dinner",cost:10,rounds:3,bonus:2,pool:[]},{id:"bday",ic:"🎂",n:"Birthday celebration",cost:30,rounds:4,bonus:4,pool:["bday"]},{id:"hol",ic:"🎄",n:"Holiday feast",cost:50,rounds:5,bonus:5,pool:["hol"]},{id:"peace",ic:"🕊️",n:"Make-peace dinner",cost:15,rounds:4,bonus:2,pool:["peace","tense"]},{id:"news",ic:"📣",n:"Big announcement dinner",cost:15,rounds:3,bonus:3,pool:["news"]}];
+const SC=`gen|ma|m:Pass the salt, {a}?|a:Here. Don't use it all.|m:It's one pinch!|a:Famous last words.
+gen|ma|a:Did you see the sky today?|m:Looked like rain.|a:Typical. I forgot my umbrella again.
+gen|ma|a:Work was exhausting this week.|m:Same. Let's not talk about it tonight.|a:Deal. Eat first, complain later.
+gen|ma|m:Remember that road trip when we got lost?|a:Three hours lost! You refused to ask for directions.|m:I had a sense of direction!|a:You had a sense of denial.
+gen|ma|a:Did you hear the new rumour going around town?|m:Don't believe everything you hear.|a:Still... juicy.
+gen|ma|a:I had the strangest dream last night.|m:Flying again?|a:No! I was the mayor.|m:Terrifying.
+gen|ma|m:Everything is so expensive these days.|a:Remember when a coffee cost nothing?|m:Those were the days.
+gen|ma|a:I'm thinking about a new hobby.|m:Please not the trumpet again.|a:...it was one time!
+gen|ma|m:You look well today, {a}.|a:Thank you. I slept properly for once.|m:Teach me your secrets.
+gen|ma|m:To family!|a:To family! And to whoever cooked this.|m:That would be me, thanks.
+gen|ma|a:Do you ever think about moving away?|m:Sometimes. Then I remember this table.|a:Yeah. Same.
+gen|ma|a:I heard the café has a new chef.|m:Is he better than this?|a:Never. Don't tell him I said that.
+gen|mab|a:Who took the last roll?|b:Not me.|m:...maybe me.|a:Unbelievable.|b:Respect, though.
+gen|mab|m:Tell me one good thing that happened this week.|a:I found money in an old coat!|b:I finally fixed the leaking tap.|m:Small victories matter.
+gen|mab|a:Let me tell you about my day.|b:Is this going to be long?|m:Let {a} talk.|a:Thank you! It began at 6 a.m....
+gen|mab|a:Who does the dishes tonight?|b:Not it!|m:Not it!|a:I hate this family. I love this family. Not it!
+gen|mab|b:{a} used to hide vegetables under the table.|a:That was ONE time!|m:It was every day.|b:We found a pea fossil.
+gen|mab|m:If you could live anywhere, where?|a:Somewhere warm, by the sea.|b:Somewhere quiet, no neighbours.|m:So a cabin on a beach. Impossible.
+gen|mk|k:Can I have dessert yet?|m:Finish your plate first.|k:But I ate three bites!|m:Five more.
+gen|mak|k:Why is the sky blue?|a:Because of the way light bounces in the air.|k:Boring. I think it likes blue.|m:I like that answer better.
+gen|mk|k:Today we learned about volcanoes!|m:Did you make one?|k:It exploded on the teacher!|m:...tell me more.
+gen|me|e:Back in my day we walked miles to school.|m:Uphill both ways?|e:Don't mock your elders, dear.|m:Never. Pass the bread.
+gen|mae|e:Eat more, you're too thin.|a:I've had three servings!|e:Then have a fourth.|m:There's no winning.
+gen|me|e:I remember when this town had one shop.|m:And a donkey at the crossroads?|e:Two donkeys. Show some respect.
+bday|ma|a:Make a wish!|m:I wish for... more cake.|a:That's not how it works.|m:It's my wish.
+bday|mab|a:How old are we all now?|m:Old enough to know better.|b:And young enough not to care.|a:Cheers to that!
+bday|mab|b:Presents! I forgot mine at home.|a:Sure you did.|b:Next time, I promise.|m:The best gift is you all being here.
+hol|mab|a:This feast beats any restaurant.|b:Don't tell {m}, the ego will explode.|m:Too late. I heard it.|a:Seconds, please.
+hol|ma|a:I miss when everyone could be here.|m:Me too. But tonight, it's us.|a:Then let's make it count.
+hol|mak|k:Is there pie?|a:There's always pie at holidays.|k:Best holiday ever.|m:Every year, same answer.
+peace|ma|m:{a}, I'm sorry about before.|a:I'm sorry too. I said things I didn't mean.|m:Let's move on.|a:Deal. Pass the bread.
+peace|ma|a:I didn't think you'd invite me.|m:Family is family. I wanted you here.|a:That means a lot, really.
+peace|mab|b:Are we all good now?|a:I think so.|m:As long as nobody mentions the incident.|b:The incident?! I wasn't going to... until now.
+news|mab|m:I have an announcement.|a:Oh no, that's what people say before bad news.|m:It's good news! I think.|b:Don't leave us hanging.
+news|mab|m:I've decided to change something big in my life.|a:A new job?|b:Moving away?|m:Not saying yet. Eat first.
+news|ma|m:I wanted to thank you all for being in my life.|a:Is this a speech?|m:Yes, and you're a captive audience.|a:Fine. Make it short.
+tense|ma|a:Interesting that you only invite us when you need something.|m:That's not true. I wanted you here.|a:Hm.|m:Please, let's just eat.
+tense|ma|a:Pass the salt. If it's not too much trouble.|m:Here. You don't have to be like this.|a:Like what?|m:...never mind.
+tense|mab|a:I still think you owe me an apology.|b:Not at the table, please!|m:We'll talk later, {a}. Tonight we eat.|a:Fine. Later.`.split("\n").map(s=>{const a=s.split("|");return{t:a[0],L:a[1],l:a.slice(2).map(x=>{const i=x.indexOf(":");return[x[0],x.slice(i+1)]})}});
+const TQ={funny:["I'd tell a pizza joke but it's too cheesy.","Why did the potato cry? It was mashed."],kind:["I'm so grateful to be here with you all.","Does everyone have enough?"],ambitious:["Mark my words, one day I'll run this town."],serious:["Dinner conversations should have purpose."],shy:["...this is nice. Quietly nice."],outgoing:["Let's do this every week!"],stubborn:["I'm not changing my mind, so don't try."],"family-oriented":["Nothing beats a full table."],creative:["I could paint this table setting."],practical:["Someone check the oven is off."],generous:["Take more, there's plenty!"],independent:["I'm fine, I'll get it myself."]};
+const FR=[["Is... this supposed to be black?","Smells like regret.","I'll be polite and say it's... crunchy."],["Not bad at all!","Tasty. A little salty maybe.","Good, honest cooking."],["Wow, this is amazing!","Seconds, please!","Where did you learn to cook like this?!"]];
+function resolve(sc,G,me){const M={m:me},used=new Set(),rest=G.slice().sort(()=>Math.random()-.5);
+ for(const c of [...sc.L].sort((x,y)=>("ke".includes(y)?1:0)-("ke".includes(x)?1:0))){if(c==="m")continue;let pool=rest.filter(x=>!used.has(x.id)&&(c==="k"?x.age<13:c==="e"?x.age>=60:sc.t==="tense"&&c==="a"?relation(x.id)<=-5:true));if(!pool.length)return null;M[c]=pool[0];used.add(pool[0].id)}return M}
+function hostDinner(){
+ const me=state.player,G=fam();if(!G.length)return status("You have no family to invite yet.");if(me.hostDay===day())return status("You already hosted a dinner today.");
+ modal('<h2>🍽️ Host a family dinner</h2><p class="muted">Guests: '+G.slice(0,7).map(x=>esc(x.first)).join(", ")+'. Your family comes to the table and talks. You have €'+me.money+'.</p><div class="choices">'+DT.map((t,i)=>'<button class="dt" data-i="'+i+'">'+t.ic+' '+t.n+' (€'+t.cost+')</button>').join("")+'</div><br><button id="close">CANCEL</button>');
+ $("close").onclick=closeModal;document.querySelectorAll(".dt").forEach(b=>b.onclick=()=>pickDish(DT[b.dataset.i],G.slice(0,7)))}
+function pickDish(t,G){const me=state.player;
+ modal('<h2>'+t.ic+' '+t.n+'</h2><p>What will you cook? You play the cooking minigame first; the better the dish, the better the mood.</p><div class="choices">'+FOODS.map((f,i)=>'<button class="df" data-i="'+i+'">'+f.ic+' '+f.n+' (+€'+f.cost+')</button>').join("")+'</div><br><button id="back">BACK</button>');
+ $("back").onclick=hostDinner;document.querySelectorAll(".df").forEach(b=>b.onclick=()=>{const f=FOODS[b.dataset.i];if(me.money<t.cost+f.cost)return status("You need €"+(t.cost+f.cost)+" for this dinner.");cookGame(f,q=>startDinner(t,f,q,G),()=>pickDish(t,G))})}
+function buildLines(t,f,q,G,me){
+ const L=[],say=(p,x)=>L.push([p,x]);const g1=P(G);
+ say(me,"Dinner's ready, everyone! "+f.ic);say(g1,P(FR[q]));
+ const pool=SC.filter(s=>s.t==="gen"||t.pool.includes(s.t)||(s.t==="tense"&&G.some(x=>relation(x.id)<=-5)&&Math.random()<.5)).sort(()=>Math.random()-.5);
+ if(t.id==="peace"){const i=pool.findIndex(s=>s.t==="peace");if(i>0)pool.unshift(pool.splice(i,1)[0])}
+ let n=0;for(const s of pool){if(n>=t.rounds)break;const M=resolve(s,G,me);if(!M)continue;n++;
+  s.l.forEach(([c,x])=>say(M[c],x.replace(/\{(\w)\}/g,(_,k)=>M[k]?M[k].first:"")));
+  if(Math.random()<.6){const w=P([me].concat(G));if(TQ[w.trait])say(w,P(TQ[w.trait]))}}
+ say(g1,q>=1?"Thank you for hosting, "+me.first+". This was lovely.":"Next time, let's order out. Kidding... mostly.");return L}
+async function startDinner(t,f,q,G){
+ const me=state.player;me.money-=t.cost+f.cost;me.hostDay=day();renderTop();
+ modal('<h2>'+t.ic+' '+t.n+'</h2><div class="dnPanel" id="dnPanel"><div class="dnTable">'+f.ic+' 🍽️ '+f.ic+'</div></div><div class="dnLog" id="dnLog"></div><br><button id="dnSkip">⏩ SPEED UP</button> <button id="dnLeave">🚪 LEAVE TABLE</button>');
+ const pn=$("dnPanel"),W=pn.clientWidth,H=pn.clientHeight,seat={},all=[me].concat(G);let fast=0,left=0;
+ all.forEach((p,i)=>{const a=i===0?Math.PI/2:Math.PI/2+2*Math.PI*i/all.length,x=W*(.5+.44*Math.cos(a)),y=H*(.55+.36*Math.sin(a));seat[p.id]={x,y};
+  pn.insertAdjacentHTML("beforeend",personHTML(Object.assign({},p,{x,y}),p===me,"dn-"));const e=$("dn-"+p.id);if(e)e.style.transform="translate(-50%,-75%) scale(1.7)"});
+ $("dnSkip").onclick=()=>fast=1;
+ const fin=done=>{const d=done?t.bonus+[-1,1,3][q]:-2;G.forEach(g=>{changeRel(g.id,d);if(done&&t.id==="peace"&&relation(g.id)<0)changeRel(g.id,6)});
+  if(done)me.stats.health=clamp(me.stats.health+1,0,100);state.clock+=90;me.dinners=(me.dinners||0)+1;
+  state.events.push(state.year+" — "+(done?"Hosted a "+t.n.toLowerCase()+" for the family.":"Left a family dinner early."));
+  modal('<h2>'+(done?"🍽️ Dinner finished":"🚪 You left early")+'</h2><p>'+(done?"Everyone left full and talking. Relationships "+(d>=0?"+":"")+d+" with each guest"+(t.id==="peace"?", plus extra healing for rough ones":"")+".":"The family is annoyed that you walked out. Relationships "+d+".")+'</p><button id="close">OK</button>');$("close").onclick=closeModal;renderTop();renderPanel()};
+ $("dnLeave").onclick=()=>{left=1;fin(false)};
+ const lines=buildLines(t,f,q,G,me),log=$("dnLog");
+ for(const[p,x]of lines){if(left||!$("dnPanel"))return;const o=pn.querySelector(".dnB");o&&o.remove();const s=seat[p.id];
+  pn.insertAdjacentHTML("beforeend",'<div class="dnB" style="left:'+s.x+'px;top:'+(s.y-60)+'px"><b>'+esc(p.first)+':</b> '+esc(x)+'</div>');
+  log.insertAdjacentHTML("beforeend",'<div><b>'+esc(p.first)+':</b> '+esc(x)+'</div>');log.scrollTop=log.scrollHeight;await wait(fast?250:1500+x.length*45)}
+ if(!left&&$("dnPanel"))fin(true)}
+/* ----- hooks: kitchen, dining table, Events tab ----- */
+INT.home.o.forEach(o=>{if(o[3]==="Kitchen")o[4]="kitchen"});INT.home.o.push(["🍽️",50,46,"Dining table","table"]);
+const _r2=runObj;runObj=function(pl,o){if(o&&o[4]==="kitchen")return openKitchen();if(o&&o[4]==="table")return hostDinner();return _r2(pl,o)};
+const _ep=evPanel;evPanel=function(){_ep();const c=$("content");if(!c)return;c.insertAdjacentHTML("afterbegin",'<div class="card"><h3>🍽️ Family dinner</h3><p class="muted">Cook a meal and gather your family at the dining table. Pick the occasion, then watch them talk.</p><button class="gold" id="hostBtn">🍽️ HOST A DINNER</button></div>');$("hostBtn").onclick=hostDinner};
+})();
+
 })();
 </script>
 </body>
