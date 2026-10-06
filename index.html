@@ -1322,7 +1322,7 @@ document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{tabName=b.da
 $("random").onclick=randomize;$("start").onclick=start;$("save").onclick=()=>save(false);$("new").onclick=newGame;$("names").onclick=()=>{if(!state)return;state.friendly=!state.friendly;state.people.forEach(applyName);render();status(state.friendly?"Showing English-friendly name spellings.":"Showing original cultural spellings.")};
 /* ===== v11: population tiers — visible NPCs vs. background ("rabbit-hole") simulation =====
    Every person lives in state.people and is simulated by the SAME life code (aging, jobs, dating,
-   marriage, births, moving, death, friendships, events, inheritance, family lines).
+   marriage, births, moving, dead, friendships, events, inheritance, family lines).
    What differs is only whether they are PHYSICALLY SPAWNED on screen:
      • background  = pure data, a logical location (p.location) and no coordinates, no DOM, no walking
      • visible     = in VIS: has x/y, walks, is drawn. Capped per place and time of day.
