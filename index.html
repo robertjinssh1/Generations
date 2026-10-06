@@ -1322,7 +1322,7 @@ document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{tabName=b.da
 $("random").onclick=randomize;$("start").onclick=start;$("save").onclick=()=>save(false);$("new").onclick=newGame;$("names").onclick=()=>{if(!state)return;state.friendly=!state.friendly;state.people.forEach(applyName);render();status(state.friendly?"Showing English-friendly name spellings.":"Showing original cultural spellings.")};
 /* ===== v11: population tiers — visible NPCs vs. background ("rabbit-hole") simulation =====
    Every person lives in state.people and is simulated by the SAME life code (aging, jobs, dating,
-   marriage, births, moving, dead, friendships, events, inheritance, family lines).
+   marriage, births, moving, death, friendships, events, inheritance, family lines).
    What differs is only whether they are PHYSICALLY SPAWNED on screen:
      • background  = pure data, a logical location (p.location) and no coordinates, no DOM, no walking
      • visible     = in VIS: has x/y, walks, is drawn. Capped per place and time of day.
@@ -2604,6 +2604,161 @@ async function startDinner(t,f,q,G){
 INT.home.o.forEach(o=>{if(o[3]==="Kitchen")o[4]="kitchen"});INT.home.o.push(["🍽️",50,46,"Dining table","table"]);
 const _r2=runObj;runObj=function(pl,o){if(o&&o[4]==="kitchen")return openKitchen();if(o&&o[4]==="table")return hostDinner();return _r2(pl,o)};
 const _ep=evPanel;evPanel=function(){_ep();const c=$("content");if(!c)return;c.insertAdjacentHTML("afterbegin",'<div class="card"><h3>🍽️ Family dinner</h3><p class="muted">Cook a meal and gather your family at the dining table. Pick the occasion, then watch them talk.</p><button class="gold" id="hostBtn">🍽️ HOST A DINNER</button></div>');$("hostBtn").onclick=hostDinner};
+})();
+
+
+/* ===== SAVE SYSTEM v2: slots + autosave + auto-resume + export/import ===== */
+const SV={slots:["auto","1","2","3","4","5"],mem:{},ls:false,db:null,lock:false,last:0,timer:0};
+function svLsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function svLsSet(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}
+function svLsDel(k){try{localStorage.removeItem(k)}catch(e){}}
+function svOpenDB(){return new Promise(res=>{try{const r=indexedDB.open("GENERATIONS_DB",1);r.onupgradeneeded=()=>{try{r.result.createObjectStore("saves",{keyPath:"slot"})}catch(e){}};r.onsuccess=()=>res(r.result);r.onerror=()=>res(null);r.onblocked=()=>res(null)}catch(e){res(null)}})}
+function svAll(){return new Promise(res=>{try{const q=SV.db.transaction("saves").objectStore("saves").getAll();q.onsuccess=()=>res(q.result||[]);q.onerror=()=>res([])}catch(e){res([])}})}
+function svPut(rec){return new Promise(res=>{if(!SV.db)return res(false);try{const t=SV.db.transaction("saves","readwrite");t.objectStore("saves").put({slot:rec.slot,meta:rec.meta,data:rec.data});t.oncomplete=()=>res(true);t.onerror=t.onabort=()=>res(false)}catch(e){res(false)}})}
+function svRemove(slot){return new Promise(res=>{if(!SV.db)return res(false);try{const t=SV.db.transaction("saves","readwrite");t.objectStore("saves").delete(slot);t.oncomplete=()=>res(true);t.onerror=t.onabort=()=>res(false)}catch(e){res(false)}})}
+async function svInit(){
+ SV.ls=svLsSet("GEN_TEST","1");svLsDel("GEN_TEST");
+ const recs={};
+ for(const s of SV.slots){const m=svLsGet("GEN_M_"+s),d=svLsGet("GEN_D_"+s);if(m&&d){try{recs[s]={slot:s,meta:JSON.parse(m),data:d}}catch(e){}}}
+ const old=svLsGet("GENERATIONS_SAVE");
+ if(old&&!recs.auto){try{const s=JSON.parse(old);if(s&&s.player&&s.people){recs.auto={slot:"auto",meta:svMeta(s,old,"auto"),data:old};svLsSet("GEN_D_auto",old);svLsSet("GEN_M_auto",JSON.stringify(recs.auto.meta));svLsDel("GENERATIONS_SAVE")}}catch(e){}}
+ SV.db=await Promise.race([svOpenDB(),new Promise(r=>setTimeout(()=>r(null),2500))]);
+ if(SV.db){
+  const rows=await svAll(),seen={};
+  for(const r of rows){if(!r||!r.meta||typeof r.data!=="string")continue;seen[r.slot]=1;const cur=recs[r.slot];
+   if(!cur||(r.meta.savedAt||0)>(cur.meta.savedAt||0)){recs[r.slot]={slot:r.slot,meta:r.meta,data:r.data};svLsSet("GEN_D_"+r.slot,r.data);svLsSet("GEN_M_"+r.slot,JSON.stringify(r.meta))}
+   else if((cur.meta.savedAt||0)>(r.meta.savedAt||0))svPut(cur)}
+  for(const s in recs)if(!seen[s])svPut(recs[s])
+ }
+ SV.mem=recs;
+}
+function svMeta(s,data,slot){const p=s.player||{};return{slot:slot,name:p.name||"Unknown",age:p.age||0,year:s.year||0,money:Math.round(Number(p.money)||0),gen:p.gen||1,alive:(s.people||[]).filter(x=>x.alive).length,kb:Math.round((data||"").length/1024),ended:!!s.ended,savedAt:Date.now()}}
+async function svPersist(rec){
+ const a=svLsSet("GEN_D_"+rec.slot,rec.data)&&svLsSet("GEN_M_"+rec.slot,JSON.stringify(rec.meta));
+ const b=await svPut(rec);
+ return a||b}
+async function svWrite(slot){
+ if(!state)return false;
+ let data;try{data=packState()}catch(e){console.error(e);return false}
+ const rec={slot:slot,meta:svMeta(state,data,slot),data:data};
+ SV.mem[slot]=rec;
+ let ok=await svPersist(rec);
+ if(!ok&&(SV.ls||SV.db)){try{trimForSave();rec.data=packState();rec.meta=svMeta(state,rec.data,slot);ok=await svPersist(rec)}catch(e){}}
+ return ok}
+async function svDelete(slot){delete SV.mem[slot];svLsDel("GEN_D_"+slot);svLsDel("GEN_M_"+slot);await svRemove(slot)}
+function svAuto(){if(!state||SV.lock||$("game").style.display==="none")return Promise.resolve(false);
+ return svWrite("auto").then(ok=>{const b=$("save");if(ok&&b){b.textContent="✔ SAVED";clearTimeout(SV.flash);SV.flash=setTimeout(()=>{b.textContent="💾 SAVE"},1200)}svBar();return ok})}
+save=function(silent){
+ if(!state||SV.lock)return;
+ if(!silent){svAuto().then(ok=>status(ok?"Game saved.":"Couldn't save in this browser — use SAVE → Export to keep a copy."));return}
+ const now=Date.now();
+ if(now-SV.last>2000){SV.last=now;svAuto()}
+ else if(!SV.timer)SV.timer=setTimeout(()=>{SV.timer=0;SV.last=Date.now();svAuto()},2100)};
+function svWhen(t){try{return new Date(t).toLocaleString([], {dateStyle:"medium",timeStyle:"short"})}catch(e){return new Date(t).toLocaleString()}}
+function svNote(){return SV.ls||SV.db?"Autosaves every year, every 45 seconds, and when you leave the page. Saves live in this browser on this device — use ⬇ Export to back up or move a save to another device.":"⚠ This browser is blocking storage (private mode or an embedded preview), so progress can't be kept between visits. Use ⬇ Export to download your save and Import to restore it."}
+/* ---- loading ---- */
+function svCreatorError(msg){state=null;$("game").style.display="none";$("creator").style.display="flex";$("creatorMsg").innerHTML='<div class="error">'+esc(msg)+'</div>';svBar()}
+function svLoadData(str){
+ let s;try{s=JSON.parse(str);if(!s||!s.player||!Array.isArray(s.people))throw new Error("save data is incomplete")}catch(e){svCreatorError("That save could not be loaded ("+e.message+").");return false}
+ try{
+  closeModal();state=null;VIS.clear();ROSTER.key="";FOCUS=[];CIRC=null;tabName="home";pressed={};
+  state=s;IDXs=null;$("creator").style.display="none";$("game").style.display="grid";normalize();render();status("Save loaded.");
+  if(state.ended)endLineage();else if(!state.player.alive)resolveDeath();
+  return true}catch(e){console.error(e);svCreatorError("That save could not be loaded ("+e.message+").");return false}}
+loadSaved=function(){const r=SV.mem.auto;return r?svLoadData(r.data):false};
+function svLoadSlot(slot){
+ const rec=SV.mem[slot];if(!rec)return;
+ if(state&&(SV.ls||SV.db)){
+  SV.lock=true;
+  (async()=>{if(slot!=="auto"){const r2={slot:"auto",meta:Object.assign({},rec.meta,{slot:"auto",savedAt:Date.now()}),data:rec.data};SV.mem.auto=r2;await svPersist(r2)}
+   try{location.hash="#resume"}catch(e){}location.reload()})()
+ }else svLoadData(rec.data)}
+/* ---- export / import ---- */
+function svFileFor(rec){const o={game:"GENERATIONS",format:1,exportedAt:new Date().toISOString(),meta:rec.meta,data:rec.data};const nm=("generations-"+(rec.meta.name||"save")+"-"+rec.meta.year).replace(/[^A-Za-z0-9_-]+/g,"_")+".json";return{text:JSON.stringify(o),name:nm}}
+function svLiveRec(){if(!state)return null;const d=packState();return{slot:"live",meta:svMeta(state,d,"live"),data:d}}
+function svDownload(rec){
+ const f=svFileFor(rec);
+ try{const b=new Blob([f.text],{type:"application/json"}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=f.name;document.body.appendChild(a);a.click();setTimeout(()=>{a.remove();URL.revokeObjectURL(u)},1500);return true}catch(e){return false}}
+async function svShare(rec){
+ const f=svFileFor(rec);
+ try{const file=new File([f.text],f.name,{type:"application/json"});if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"GENERATIONS save"});return true}}catch(e){if(e&&e.name==="AbortError")return true}
+ return false}
+function svParse(text){
+ let o;try{o=JSON.parse(String(text).trim())}catch(e){throw new Error("not a valid save file")}
+ let data;
+ if(o&&o.game==="GENERATIONS"&&typeof o.data==="string")data=o.data;
+ else if(o&&o.player&&Array.isArray(o.people))data=JSON.stringify(o);
+ else throw new Error("this isn't a GENERATIONS save");
+ const s=JSON.parse(data);if(!s||!s.player||!Array.isArray(s.people))throw new Error("save data is incomplete");
+ return{data:data,meta:svMeta(s,data,"")}}
+async function svImport(text){
+ const r=svParse(text);let slot=SV.slots.slice(1).find(s=>!SV.mem[s]);
+ if(!slot)slot="5";
+ const rec={slot:slot,meta:Object.assign(r.meta,{slot:slot}),data:r.data};SV.mem[slot]=rec;await svPersist(rec);return slot}
+/* ---- UI ---- */
+function svRows(){
+ const run=!!state;
+ return SV.slots.map(s=>{const r=SV.mem[s],m=r&&r.meta,label=s==="auto"?"⟳ Autosave":"Slot "+s;
+  const info=m?esc(m.name)+" · age "+m.age+" · "+m.year+" · €"+Number(m.money).toLocaleString()+" · gen "+m.gen+" · "+m.alive+" alive"+(m.ended?" · <i>ended</i>":"")+"<br>"+esc(svWhen(m.savedAt))+" · "+m.kb+" KB":"Empty";
+  return '<div class="svRow"><div class="svInfo"><b>'+label+'</b><small>'+info+'</small></div><div class="svBtns">'+
+   (run&&s!=="auto"?'<button data-a="save" data-s="'+s+'">Save</button>':"")+
+   (m?'<button class="gold" data-a="load" data-s="'+s+'">Load</button><button data-a="exp" data-s="'+s+'" title="Export to file">⬇</button>'+(s!=="auto"?'<button data-a="del" data-s="'+s+'" title="Delete">🗑</button>':""):"")+
+   '</div></div>'}).join("")}
+function svMsg(t,bad){const e=$("svMsg");if(e){e.textContent=t;e.style.color=bad?"#f0a0a0":"#bfe0b0"}}
+function svArm(b,txt){if(b.dataset.armed==="1")return true;b.dataset.armed="1";const o=b.textContent;b.textContent=txt;clearTimeout(b._t);b._t=setTimeout(()=>{b.dataset.armed="";b.textContent=o},3000);return false}
+function svOpen(){
+ modal('<h2>💾 Save &amp; Load</h2><p class="muted" style="font-size:13px">'+svNote()+'</p><div id="svMsg" class="svMsg"></div><div id="svList">'+svRows()+'</div>'+
+  '<div class="svTools">'+(state?'<button data-a="expLive">⬇ Export current game</button><button data-a="shareLive" id="svShareB" style="display:none">📤 Share</button><button data-a="copyLive">📋 Copy as text</button>':"")+'<button data-a="imp">⬆ Import file</button><button data-a="pasteB">📥 Paste text</button></div>'+
+  '<div id="svPaste"></div><input type="file" id="svFile" style="display:none"><br><button id="svClose">CLOSE</button>');
+ try{if(state&&navigator.canShare&&navigator.canShare({files:[new File(["x"],"x.json",{type:"application/json"})]}))$("svShareB").style.display=""}catch(e){}
+ $("svClose").onclick=closeModal;
+ $("svFile").onchange=async e=>{const f=e.target.files&&e.target.files[0];if(!f)return;try{const s=await svImport(await f.text());$("svList").innerHTML=svRows();svBar();svMsg("Imported into Slot "+s+". Press Load to play it.")}catch(er){svMsg("Import failed: "+er.message,true)}e.target.value=""};
+ $("modalRoot").querySelector(".modal").onclick=async e=>{
+  const b=e.target.closest("button[data-a]");if(!b)return;const a=b.dataset.a,s=b.dataset.s;
+  if(a==="save"){if(SV.mem[s]&&!svArm(b,"Overwrite?"))return;svMsg("Saving…");const ok=await svWrite(s);$("svList").innerHTML=svRows();svBar();svMsg(ok?"Saved to Slot "+s+".":"Couldn't store it in this browser — use Export to keep a copy.",!ok);if(ok)try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(x){}}
+  else if(a==="load"){if(state&&!svArm(b,"Replace game?"))return;svLoadSlot(s)}
+  else if(a==="del"){if(!svArm(b,"Delete?"))return;await svDelete(s);$("svList").innerHTML=svRows();svBar();svMsg("Slot "+s+" deleted.")}
+  else if(a==="exp"){const ok=svDownload(SV.mem[s]);svMsg(ok?"Save file downloaded (check your Downloads / Files).":"Download blocked — try 'Copy as text' instead.",!ok)}
+  else if(a==="expLive"){const ok=svDownload(svLiveRec());svMsg(ok?"Save file downloaded (check your Downloads / Files).":"Download blocked — try 'Copy as text' instead.",!ok)}
+  else if(a==="shareLive"){const ok=await svShare(svLiveRec());svMsg(ok?"Shared.":"Sharing isn't available here — use Export.",!ok)}
+  else if(a==="copyLive"){const t=svFileFor(svLiveRec()).text;let ok=false;try{await navigator.clipboard.writeText(t);ok=true}catch(x){}
+   if(!ok){$("svPaste").innerHTML='<textarea id="svTa" rows="5" style="width:100%" readonly></textarea>';$("svTa").value=t;$("svTa").select();svMsg("Select all and copy this text manually.")}else svMsg("Save copied to clipboard. Paste it into a note to keep it.")}
+  else if(a==="imp"){$("svFile").click()}
+  else if(a==="pasteB"){$("svPaste").innerHTML='<textarea id="svTa" rows="5" style="width:100%" placeholder="Paste save text here"></textarea><button data-a="pasteGo" class="gold">Import pasted text</button>'}
+  else if(a==="pasteGo"){try{const sl=await svImport($("svTa").value);$("svPaste").innerHTML="";$("svList").innerHTML=svRows();svBar();svMsg("Imported into Slot "+sl+". Press Load to play it.")}catch(er){svMsg("Import failed: "+er.message,true)}}
+ }}
+function svBar(){
+ const c=$("svCont");if(!c)return;const r=SV.mem.auto;
+ if(r&&!state){c.style.display="";c.textContent="▶ CONTINUE — "+r.meta.name+", age "+r.meta.age+" ("+r.meta.year+")"}else c.style.display="none"}
+function svNew(){
+ modal('<h2>🌱 Start a new life?</h2><p>Your current game stays in the Autosave slot until the new life begins, then it is replaced. Slots 1–5 are never touched.</p><div class="choices">'+(state?'<button id="svNS">💾 Save current game first</button>':"")+'<button class="gold" id="svNG">Start new life</button><button id="svNC">Cancel</button></div>');
+ $("svNC").onclick=closeModal;if(state)$("svNS").onclick=svOpen;
+ $("svNG").onclick=async()=>{SV.lock=true;if(state)await svWrite("auto");try{location.hash="#new"}catch(e){}location.reload()}}
+newGame=svNew;
+const _fsOrig=freshStart;
+freshStart=function(){svDelete("auto");_fsOrig();svBar()};
+/* ---- wiring ---- */
+(function(){
+ const st=document.createElement("style");
+ st.textContent=".svRow{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:#18231a;border:1px solid #4b5b49;border-radius:10px;padding:9px 11px;margin:7px 0}.svInfo{flex:1 1 220px;min-width:0}.svInfo b{display:block;color:#e1c575}.svInfo small{color:#bdc6b9;line-height:1.5}.svBtns,.svTools{display:flex;gap:6px;flex-wrap:wrap}.svTools{margin:12px 0}.svMsg{min-height:18px;font-size:13px;margin:6px 0}#svBar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}";
+ document.head.appendChild(st);
+ $("save").textContent="💾 SAVE";$("save").onclick=svOpen;$("new").onclick=svNew;
+ const box=document.querySelector("#creator .box"),first=box.firstElementChild;
+ first.insertAdjacentHTML("afterend",'<div id="svBar"><button id="svCont" class="gold" style="display:none"></button><button id="svOpenB">📂 SAVES / LOAD / IMPORT</button></div>');
+ $("svCont").onclick=()=>{if(SV.mem.auto)svLoadData(SV.mem.auto.data)};$("svOpenB").onclick=svOpen;
+ document.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&(e.key==="s"||e.key==="S")){e.preventDefault();e.stopPropagation();if(state&&!modalOpen())svOpen()}},true);
+ const flush=()=>{if(state&&!SV.lock){clearTimeout(SV.timer);SV.timer=0;svWrite("auto")}};
+ document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")flush()});
+ window.addEventListener("pagehide",flush);
+ setInterval(()=>{if(state&&!SV.lock&&$("game").style.display!=="none"&&!modalOpen())svAuto()},45000);
+ svInit().then(()=>{
+  $("creatorMsg").innerHTML="";svBar();
+  let skip=false;try{skip=location.hash==="#new";if(location.hash==="#new"||location.hash==="#resume")history.replaceState(null,"",location.pathname+location.search)}catch(e){}
+  if(!skip&&SV.mem.auto){
+   let m=null;try{m=localStorage.getItem("GEN_MODE")}catch(e){}
+   if(m!=="mobile"&&m!=="pc")m=(window.matchMedia&&matchMedia("(pointer:coarse)").matches)?"mobile":"pc";
+   setMode(m,true);svLoadData(SV.mem.auto.data)}
+ }).catch(e=>console.error("save init failed",e));
 })();
 
 })();
