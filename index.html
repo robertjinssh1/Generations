@@ -646,6 +646,60 @@ function comingOfAge(){const p=state.player;
 
 /* ===== town hall ===== */
 INT.townhall={t:"🏛️ Town Hall",f:"#cfc6b0",o:[["📚",28,34,"Town archives","archives"],["📝",72,34,"Registry office (change name)","rename"],["🖼️",50,70,"Portraits of old mayors","fx:You admire the old portraits.|creativity|0|0"]]};
+/* ===== Bookshelf: pick a book, spam-click to read it, gain intelligence ===== */
+const BOOKS=[
+ {id:"comic",e:"🦸",t:"Comic Anthology",c:20,g:1,r:0,d:.30},
+ {id:"stories",e:"📖",t:"Short Stories",c:35,g:1,r:0,d:.35},
+ {id:"atlas",e:"🌍",t:"World Atlas & Geography",c:50,g:2,r:20,d:.45},
+ {id:"science",e:"🔬",t:"Science Encyclopedia",c:70,g:2,r:35,d:.55},
+ {id:"maths",e:"📐",t:"Mathematics Handbook",c:95,g:3,r:50,d:.65},
+ {id:"logic",e:"🏛️",t:"Philosophy & Logic",c:130,g:3,r:65,d:.80}
+];
+(function(){const h=INT.home.o.find(o=>o[3]==="Bookshelf");if(h)h[4]="books"})();
+const _runObjBooks=runObj;
+runObj=function(pl,o){
+ if(o[4]==="books"){if(state.player.age<5){status("You're too young to read these books yet.");return}bookshelf();return}
+ return _runObjBooks(pl,o)
+};
+function bookshelf(msg){
+ const p=state.player,day=Math.floor(state.clock/1440);
+ p.books=p.books||{};
+ if(!p.bookD||p.bookD.day!==day)p.bookD={day:day,n:0};
+ const left=Math.max(0,2-p.bookD.n),iq=p.stats.intelligence;
+ modal('<h2>📚 Your Bookshelf</h2><p class="muted">'+(msg||"Pick a book. To read it, click the book as fast as you can. If you stop, you lose your place. Finish it to get smarter.")+'</p><p class="muted">Books you can finish today: <b>'+left+'</b> · Intelligence: <b>'+Math.round(iq)+'</b></p><div class="interiorGrid">'+BOOKS.map(b=>{
+  const lock=iq<b.r,read=p.books[b.id]===state.year,off=lock||read||left<1;
+  const note=lock?"🔒 Needs intelligence "+b.r:read?"✓ Read this year":"+"+b.g+" intelligence · "+b.c+" pages";
+  return '<button data-b="'+b.id+'"'+(off?" disabled":"")+' style="padding:12px 8px"><div style="font-size:30px">'+b.e+'</div><b>'+b.t+'</b><div class="muted" style="font-size:11px;margin-top:4px">'+note+'</div></button>'}).join("")+'</div><br><button id="close">CLOSE</button>');
+ $("modalRoot").querySelectorAll("button[data-b]").forEach(bt=>bt.onclick=()=>readBook(bt.dataset.b));
+ $("close").onclick=closeModal;
+}
+function readBook(id){
+ const p=state.player,b=BOOKS.find(x=>x.id===id);if(!b)return;
+ let pg=0,done=false;
+ modal('<h2>'+b.e+' '+b.t+'</h2><p class="muted">Click the book fast! Stop and the pages slip away.</p><div class="bar"><i id="bkBar" style="width:0%"></i></div><div class="row"><span>Pages read</span><b id="bkTxt">0 / '+b.c+'</b></div><div style="text-align:center;margin:14px 0"><button id="bkBtn" class="gold" style="font-size:64px;padding:14px 30px;line-height:1;user-select:none;touch-action:manipulation;transition:transform .05s">'+b.e+'</button></div><button id="bkBack">PUT IT BACK</button>');
+ const btn=$("bkBtn"),bar=$("bkBar"),txt=$("bkTxt");
+ const draw=()=>{bar.style.width=Math.min(100,pg/b.c*100)+"%";txt.textContent=Math.floor(pg)+" / "+b.c};
+ const tm=setInterval(()=>{
+  if(!document.body.contains(btn)){clearInterval(tm);return}
+  if(done)return;
+  if(pg>0){pg=Math.max(0,pg-b.d);draw()}
+ },200);
+ btn.onclick=()=>{
+  if(done)return;
+  pg++;draw();
+  btn.style.transform="scale(.88) rotate(-5deg)";setTimeout(()=>{btn.style.transform=""},60);
+  if(pg>=b.c){
+   done=true;clearInterval(tm);
+   p.stats.intelligence=clamp(p.stats.intelligence+b.g,0,100);
+   p.books[b.id]=state.year;p.bookD.n++;state.clock+=90;
+   p.mem.push(state.year+" — Finished reading "+b.t+".");
+   renderTop();
+   status("You finished "+b.t+". (+"+b.g+" intelligence)");
+   bookshelf("🎉 You finished <b>"+b.t+"</b>! +"+b.g+" intelligence.");
+  }
+ };
+ $("bkBack").onclick=()=>{done=true;clearInterval(tm);bookshelf()};
+}
 function archives(){const ev=(state.events||[]).slice().reverse().slice(0,40),dead=state.people.filter(x=>!x.alive).slice(-25).reverse();
  modal('<h2>📚 Town archives</h2><div class="card"><h3>Recent records</h3>'+(ev.map(e=>'<div class="event">'+esc(e)+'</div>').join("")||'<p class="muted">Nothing recorded yet.</p>')+'</div><div class="card"><h3>Deaths register</h3>'+(dead.map(x=>'<div class="event"><b>'+esc(x.name)+'</b> · died at '+x.age+(x.died?' in '+x.died:'')+'</div>').join("")||'<p class="muted">Nobody has died yet.</p>')+'</div><button id="close">CLOSE</button>');$("close").onclick=closeModal}
 function renameMe(){const p=state.player;modal('<h2>📝 Registry office</h2><p class="muted">Change your first name and surname officially.</p><div class="field"><label>First name</label><input id="rnF" maxlength="20" value="'+esc(p.first)+'"></div><div class="field"><label>Surname</label><input id="rnL" maxlength="20" value="'+esc(p.surname)+'"></div><div class="choices"><button id="rnOk" class="gold">CONFIRM NAME CHANGE</button><button id="close">CANCEL</button></div>');
@@ -2761,6 +2815,898 @@ freshStart=function(){svDelete("auto");_fsOrig();svBar()};
  }).catch(e=>console.error("save init failed",e));
 })();
 
+
+/* ===================================================================
+   v21: HITMAN OFFICE
+   - South Side building: order a contract on an adult, or become a hitman
+   - Hitmen carry a knife and a pistol (Q or the weapon bar switches)
+   - Gun: click / hold to fire along a line, hits adults, blood splatter
+   - Hospital medics come and drag bodies away (v22); anything left vanishes after one in-game day, or when a year is skipped
+   =================================================================== */
+PL.hitman={a:"south",x:10,y:56,w:160,h:100};
+INT.hitman={t:"🕴️ Hitman Office — Discreet Solutions",f:"#4a4650",o:[
+ ["📋",20,28,"Order a contract","ht:order"],
+ ["🕴️",50,28,"The Fixer (become a hitman)","ht:join"],
+ ["🗂️",80,28,"Contract board","ht:board"],
+ ["🔫",20,64,"Armory","ht:armory"],
+ ["🚬",80,64,"Ashtray","fx:Cold cigarette ends. Nobody here asks questions.|health|0|0"]
+]};
+document.head.insertAdjacentHTML("beforeend","<style>"+
+"#htHud{position:fixed;left:12px;top:62px;z-index:30;display:none;gap:6px;align-items:center;flex-wrap:wrap;max-width:330px;background:#000b;padding:6px 8px;border-radius:10px;border:1px solid #7a2a2a}"+
+"#htHud button{padding:6px 9px;font-size:12px}#htHud button.on{background:#8e2a2a;border-color:#ff7b7b}"+
+".htHeat{color:#ff8b8b;font-weight:bold;font-size:12px}.htTip{flex-basis:100%;font-size:11px;color:#d8c4c4}"+
+".htHeld{position:absolute;left:15px;top:15px;font-size:14px;z-index:6;pointer-events:none}"+
+".htBody{position:absolute;inset:0;pointer-events:none;z-index:4;transform-origin:var(--ox) var(--oy);transform:translate(var(--tx,0px),var(--ty,0px)) rotate(var(--rot));filter:grayscale(.45) brightness(.78);transition:opacity .9s}"+
+".htBody.fall{animation:htfall .5s ease-in}.htBody .name{display:none}"+
+"@keyframes htfall{from{transform:rotate(0)}to{transform:rotate(var(--rot))}}"+
+".htStain{position:absolute;inset:0;pointer-events:none;z-index:3;transition:opacity .9s}"+
+".htStain i{position:absolute;border-radius:50%;background:radial-gradient(circle,#8f0d0d,#4f0505);opacity:.82;animation:htstain .6s ease-out}"+
+".htStain i.pool{border-radius:50%}"+
+".htBody.gone,.htStain.gone{opacity:0}"+
+"@keyframes htstain{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:.82}}"+
+".htPart{position:absolute;border-radius:50%;background:#b01212;z-index:9;pointer-events:none;animation:htpart .55s ease-out forwards}"+
+"@keyframes htpart{from{transform:translate(0,0);opacity:1}to{transform:translate(var(--dx),var(--dy)) scale(.4);opacity:0}}"+
+".htTrace{position:absolute;height:2px;background:linear-gradient(90deg,#fff7c0,#ffd34d55);transform-origin:0 50%;z-index:8;pointer-events:none;animation:htfade .16s forwards}"+
+".htFlash{position:absolute;width:14px;height:14px;margin:-7px;border-radius:50%;background:#ffe9a0;box-shadow:0 0 12px 6px #ffb830;z-index:8;pointer-events:none;animation:htfade .12s forwards}"+
+"@keyframes htfade{from{opacity:1}to{opacity:0}}"+
+".htMark{position:absolute;left:4px;top:-24px;font-size:16px;z-index:7;pointer-events:none;animation:htbob .8s infinite alternate}"+
+"@keyframes htbob{from{transform:translateY(0)}to{transform:translateY(-4px)}}"+
+"</style>");
+
+const HT={last:0,down:0,px:0,py:0,pol:null,iv:null};
+const HTR=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const HT_CLOSE=["Spouse","Partner","Mother","Father","Son","Daughter","Brother","Sister"];
+function htIsHM(){const m=state&&state.player;return !!(m&&m.hitman&&m.alive!==false)}
+function htBodies(){return state.bodies||(state.bodies=[])}
+function htHits(){return state.hits||(state.hits=[])}
+
+/* ---------- pricing & risk ---------- */
+function htPrice(v,rl){return Math.round((1500+Math.min(4000,(v.money||0)*.12)+(rl?600:0))/50)*50}
+function htRisk(v,rl){let r=.12+copBonus();if(HT_CLOSE.includes(rl))r+=.15;if(rl==="Spouse"||rl==="Partner")r+=.08;if(relation(v.id)<=-40)r+=.08;return clamp(r,.05,.8)}
+
+/* ---------- killing helpers ---------- */
+function htDie(v){let kin=[];try{kin=kinList(v).map(k=>k.p).filter(p=>p.alive&&p!==state.player&&p!==v)}catch(e){}
+ try{lookOf(v)}catch(e){}
+ die(v);v.x=v.y=-999;try{VIS.delete(v);ROSTER.key=""}catch(e){}
+ const a=$("person-"+v.id);if(a)a.remove();const b=$("ip-"+v.id);if(b)b.remove();return kin}
+
+/* ---------- ORDER A CONTRACT ---------- */
+function htOrder(){
+ const me=state.player;
+ if(inPrison()){status("You are in prison.");return}
+ if(me.age<18){status("Receptionist: \"No place for kids. Come back at 18.\"");return}
+ const kin=kinList(me).filter(k=>k.p.alive),ids=new Set(kin.map(k=>k.p.id));
+ if(!state.htPool||state.htPool.y!==state.year){const c=state.people.filter(x=>x.alive&&adult(x)&&!x.away&&x!==me&&!ids.has(x.id)),s=[];while(s.length<8&&c.length)s.push(c.splice(Math.floor(Math.random()*c.length),1)[0].id);state.htPool={y:state.year,ids:s}}
+ const town=state.htPool.ids.map(find).filter(x=>x&&x.alive),pend=new Set(htHits().map(h=>h.id));
+ const row=(p,r)=>{if(!adult(p))return'<div class="event" style="opacity:.55"><b>'+esc(p.name)+'</b> · '+esc(r)+' · age '+p.age+'<br><span class="muted">🚫 The office refuses contracts on minors.</span></div>';
+  return'<div class="event"><b>'+esc(p.name)+'</b> · '+esc(r||"Townsperson")+' · age '+p.age+'<br><span class="muted">❤ '+relation(p.id)+' · '+fm(htPrice(p,r))+'</span> '+(pend.has(p.id)?'<span class="pill">⏳ pending</span>':'<button class="danger htPick" data-id="'+p.id+'" data-r="'+esc(r||"")+'">ORDER</button>')+'</div>'};
+ modal('<h2>📋 Order a contract</h2><p class="muted">Pick a target. The office handles it within a few days. You have '+fm(me.money)+'.'+(pend.size?' · '+pend.size+' order(s) pending.':'')+'</p><div class="card"><h3>👪 Family</h3>'+(kin.map(k=>row(k.p,k.role)).join("")||'<span class="muted">No living relatives.</span>')+'</div><div class="card"><h3>🏘️ Townspeople</h3>'+(town.map(p=>row(p,"")).join("")||'<span class="muted">Nobody available.</span>')+'</div><div class="choices"><button id="close">CLOSE</button></div>');
+ $("close").onclick=closeModal;document.querySelectorAll(".htPick").forEach(b=>b.onclick=()=>htConfirm(b.dataset.id,b.dataset.r));
+}
+function htConfirm(id,rl){
+ const v=find(id),me=state.player;if(!v||!v.alive||!adult(v))return;
+ const pr=htPrice(v,rl),risk=htRisk(v,rl),ok=me.money>=pr;
+ modal('<h2>📋 Confirm contract</h2><p><b>'+esc(v.name)+'</b>'+(rl?' · '+esc(rl):'')+' · age '+v.age+'</p><div class="row"><span>Price</span><b>'+fm(pr)+'</b></div><div class="row"><span>Your cash</span><b>'+fm(me.money)+'</b></div><div class="row"><span>Chance police trace it to you</span><b>'+Math.round(risk*100)+'%</b></div><p class="muted">Done within 1–3 days. If it is traced back, you go to prison for 12–18 years. This is permanent.</p>'+(ok?'':'<p class="muted">You cannot afford this.</p>')+'<div class="choices"><button id="htYes" class="danger"'+(ok?'':' disabled')+'>PAY & CONFIRM</button><button id="htBack">← BACK</button></div>');
+ $("htBack").onclick=htOrder;$("htYes").onclick=()=>htPlace(id,rl,pr);
+}
+function htPlace(id,rl,pr){
+ const v=find(id),me=state.player;if(!v||!v.alive||me.money<pr)return;
+ me.money-=pr;me.hitOrders=(me.hitOrders||0)+1;htHits().push({id,rl:rl||"",pr,due:state.clock+1440*HTR(1,3)});
+ me.mem.push(state.year+" -- Paid for a contract on "+v.first+".");
+ closeModal();renderTop();status("📞 Contract accepted. It will be done within a few days.");
+}
+function htExec(h){
+ const me=state.player,v=find(h.id);if(!v||!v.alive)return;
+ const kin=htDie(v);
+ v.mem.push(state.year+" -- Was killed by a hired assassin.");
+ state.events.push(state.year+" -- "+v.name+" was found dead. Police suspect a contract killing.");
+ me.mem.push(state.year+" -- "+v.first+" died by the contract I ordered.");
+ const caught=!inPrison()&&Math.random()<htRisk(v,h.rl);
+ if(caught){kin.forEach(p=>{p.rel[me.id]=-100;me.rel[p.id]=-100});crimeRec("Ordered a murder",v,0);return sentence(HTR(12,18),"ordering the murder of "+v.name,"Murder",v)}
+ outcome("📞 The job is done",esc(v.name)+" is dead. Nobody has traced it back to you — yet.");
+}
+function htHour(){
+ if(state.heat>0)state.heat=Math.max(0,state.heat-.25);if(state.spree>0)state.spree=Math.max(0,state.spree-1);htEnsureTarget();
+ const due=htHits().filter(h=>state.clock>=h.due);if(due.length){state.hits=htHits().filter(h=>!due.includes(h));due.forEach(h=>{try{htExec(h)}catch(e){console.error(e)}})}
+ htExpire();
+}
+
+/* ---------- BECOME A HITMAN ---------- */
+function htJoin(){
+ const me=state.player;
+ if(inPrison()){status("You are in prison.");return}
+ if(me.age<18){status("The Fixer: \"Kid, go home.\"");return}
+ if(me.hitman){modal('<h2>🕴️ The Fixer</h2><p>"You are already on the books. Check the contract board when you need work."</p><div class="row"><span>Kills</span><b>'+me.hitman.kills+'</b></div><div class="row"><span>Contracts done</span><b>'+(me.hitman.jobs||0)+'</b></div><div class="choices"><button id="close">CLOSE</button></div>');$("close").onclick=closeModal;return}
+ const ok=me.money>=250;
+ modal('<h2>🕴️ The Fixer</h2><p>"Looking for work? Sign here. €250 registration and you walk out with a <b>🔪 knife</b> and a <b>🔫 pistol</b> (24 rounds). Pull the gun out in public and people will fall. Police do not like that."</p>'+(ok?'':'<p class="muted">You need €250.</p>')+'<div class="choices"><button id="htSign" class="danger"'+(ok?'':' disabled')+'>SIGN THE CONTRACT (€250)</button><button id="close">NO THANKS</button></div>');
+ $("close").onclick=closeModal;
+ $("htSign").onclick=()=>{me.money-=250;me.hitman={y:state.year,kills:0,jobs:0,rep:0};me.weapon=null;me.ammo=24;me.mem.push(state.year+" -- Became a hitman.");closeModal();renderTop();renderPanel();htDecor();htHud();status("🕴️ You are a hitman now. Press Q (or use the weapon bar) to draw your knife or gun.")};
+}
+function htArmory(){
+ const me=state.player;
+ if(!me.hitman){status("Armory: \"Members only.\"");return}
+ modal('<h2>🔫 Armory</h2><div class="row"><span>🔪 Knife</span><b>owned</b></div><div class="row"><span>🔫 Pistol ammo</span><b>'+(me.ammo||0)+'</b></div><div class="row"><span>Cash</span><b>'+fm(me.money)+'</b></div><div class="choices"><button id="htAmmo" class="gold"'+(me.money<60?' disabled':'')+'>Buy 24 rounds (€60)</button><button id="close">CLOSE</button></div>');
+ $("close").onclick=closeModal;$("htAmmo").onclick=()=>{if(me.money<60)return;me.money-=60;me.ammo=(me.ammo||0)+24;renderTop();htHud();htArmory()};
+}
+
+/* ---------- CONTRACT BOARD: accept, then hunt the target yourself ---------- */
+function htCT(){return state&&state.contract}
+function htDaysLeft(){const ct=htCT();return ct?Math.max(0,Math.ceil((ct.due-state.clock)/1440)):0}
+function htVoid(msg){const ct=htCT();if(ct){FOCUS=FOCUS.filter(x=>x!==ct.id);const e=$("person-"+ct.id);if(e){const m=e.querySelector(".htMark");if(m)m.remove()}}state.contract=null;if(msg)status(msg);htHud()}
+function htBoard(){
+ const me=state.player;
+ if(!me.hitman){status("Contract board: \"Hitmen only.\"");return}
+ if(inPrison()){status("You are in prison.");return}
+ const ct=htCT();
+ if(ct){const v=find(ct.id);
+  modal('<h2>🎯 Active contract</h2><div class="event"><b>'+esc(v?v.name:"?")+'</b>'+(v?' · age '+v.age+' · '+esc(v.job):'')+'<br><span class="muted">Pays '+fm(ct.pay)+' · '+htDaysLeft()+' day(s) left. Find them in the town centre and kill them yourself, then get away. A clean kill with no witnesses pays +25%.</span></div><div class="choices"><button id="htAb" class="danger">ABANDON CONTRACT</button><button id="close">CLOSE</button></div>');
+  $("close").onclick=closeModal;$("htAb").onclick=()=>{closeModal();htVoid("You walked away from the contract.")};return}
+ if(!state.htBoard||state.htBoard.y!==state.year){const pend=new Set(htHits().map(h=>h.id)),c=state.people.filter(x=>x.alive&&adult(x)&&!x.away&&x!==me&&!role(me,x)&&!pend.has(x.id)),L=[];while(L.length<3&&c.length){const v=c.splice(Math.floor(Math.random()*c.length),1)[0];L.push({id:v.id,pay:HTR(900,2600),why:pick(["owes the wrong people money","knows too much","is a business rival","crossed a client","is an ex of a client"])})}state.htBoard={y:state.year,list:L}}
+ const L=state.htBoard.list;
+ modal('<h2>🗂️ Contract board</h2><p class="muted">One contract at a time. Accept it, then hunt the target down yourself. You have 5 days.</p>'+(L.map((c,i)=>{const v=find(c.id);if(!v||!v.alive||c.done)return'<div class="event" style="opacity:.55">'+(v?esc(v.name):"?")+' — closed</div>';return'<div class="event"><b>'+esc(v.name)+'</b> · age '+v.age+' · '+esc(v.job)+'<br><span class="muted">'+esc(v.first)+' '+esc(c.why)+'. Pays '+fm(c.pay)+'.</span><br><button class="gold htTake" data-i="'+i+'">ACCEPT CONTRACT</button></div>'}).join("")||'<p>Nothing posted.</p>')+'<div class="choices"><button id="close">CLOSE</button></div>');
+ $("close").onclick=closeModal;document.querySelectorAll(".htTake").forEach(b=>b.onclick=()=>htAccept(+b.dataset.i));
+}
+function htAccept(i){
+ const c=state.htBoard&&state.htBoard.list[i];if(!c||c.done||htCT())return;
+ const v=find(c.id);if(!v||!v.alive){status("That target is already gone.");return}
+ c.done=1;state.contract={id:c.id,pay:c.pay,why:c.why,due:state.clock+1440*5};
+ closeModal();htEnsureTarget();
+ modal('<h2>🎯 Contract accepted</h2><p><b>'+esc(v.name)+'</b> '+esc(c.why)+'. They are roaming the <b>town centre</b> (streets and park).</p><p class="muted">Walk out of the office, draw your knife or gun (Q), and take them out yourself. Reward '+fm(c.pay)+'. A quiet kill with no witnesses pays +25%. Shoot up a crowd and the police will come — a big enough massacre ends in the death penalty.</p><div class="choices"><button id="close" class="gold">LET\'S GO</button></div>');
+ $("close").onclick=closeModal;
+}
+function htEnsureTarget(){
+ const ct=htCT();if(!ct||!state)return;const v=find(ct.id),me=state.player;
+ if(!v||!v.alive){htVoid("The target died before you got to them. Contract void.");return}
+ if(state.clock>=ct.due){if(me.hitman)me.hitman.rep=Math.max(0,(me.hitman.rep||0)-2);htVoid("⌛ The client's patience ran out. Contract cancelled.");return}
+ focusOn(v.id);v.away=false;
+ if(!v.vis||v.exit){v.exit=0;v.location="street";spawn(v,"street",true)}
+ else if(v.dest&&v.dest!=="street"&&v.dest!=="park")setDest(v,"street");
+}
+function htTargetView(){
+ const ct=htCT();if(!ct||!state||state.inside||AREA()!=="centre")return;const v=find(ct.id);
+ if(v&&v.alive&&v.vis&&!v.exit&&!$("person-"+v.id)&&performance.now()-(HT.lrw||0)>3000){HT.lrw=performance.now();renderWorld()}
+ htDecor();
+}
+
+/* ---------- WEAPONS: HUD, drawing, shooting, stabbing ---------- */
+function htSetWeapon(w){const me=state.player;if(!htIsHM())return;me.weapon=w==="fists"?null:w;htDecor();htHud();status(w==="gun"?"🔫 Gun drawn. Click / tap (or hold) to shoot. Adults only.":w==="knife"?"🔪 Knife drawn. Click someone close to stab.":"✋ Weapon put away.")}
+function htHud(){
+ let h=$("htHud");const show=!!state&&$("game").style.display!=="none"&&htIsHM()&&!inPrison()&&!modalOpen();
+ if(!h){document.body.insertAdjacentHTML("beforeend",'<div id="htHud"></div>');h=$("htHud");h.addEventListener("pointerdown",e=>{const b=e.target.closest("[data-w]");if(!b)return;e.preventDefault();e.stopPropagation();htSetWeapon(b.dataset.w)})}
+ if(!show){h.style.display="none";return}
+ const me=state.player,w=me.weapon||"fists",heat=Math.round(state.heat||0);
+ const s=[["fists","✋","Fists"],["knife","🔪","Knife"],["gun","🔫","Gun · "+(me.ammo||0)]].map(x=>'<button data-w="'+x[0]+'" class="'+(w===x[0]?"on":"")+'">'+x[1]+" "+x[2]+"</button>").join("")+(heat>0?'<span class="htHeat">🚨 '+heat+'</span>':"")+((state.spree||0)>=6?'<span class="htHeat">⚠️ MASSACRE '+Math.round(state.spree)+'/10</span>':"")+(htCT()?'<span class="htHeat" style="color:#ffd37a">🎯 '+esc((find(htCT().id)||{}).name||"?")+' · '+htDaysLeft()+'d</span>':"")+'<span class="htTip">'+(w==="gun"?"Click / hold to shoot · Q switches":w==="knife"?"Click someone close · Q switches":"Q cycles weapons")+'</span>';
+ if(h._s!==s){h._s=s;h.innerHTML=s}h.style.display="flex";
+ const wd=$("world");if(wd)wd.style.cursor=w==="gun"?"crosshair":w==="knife"?"pointer":"";
+}
+function htDecor(){if(!state)return;const me=state.player,e=$("person-"+me.id);if(!e)return;const o=e.querySelector(".htHeld");if(o)o.remove();if(me.hitman&&me.weapon)e.insertAdjacentHTML("beforeend",'<span class="htHeld">'+(me.weapon==="gun"?"🔫":"🔪")+"</span>");
+ const ct=htCT();if(ct){const t=$("person-"+ct.id);if(t&&!t.querySelector(".htMark"))t.insertAdjacentHTML("beforeend",'<span class="htMark">🎯</span>')}}
+document.addEventListener("keydown",e=>{if(!state||!htIsHM()||modalOpen())return;const t=e.target;if(t&&/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))return;if((e.key==="q"||e.key==="Q")&&!e.repeat){const m=state.player;htSetWeapon(["fists","knife","gun"][(["fists","knife","gun"].indexOf(m.weapon||"fists")+1)%3])}});
+
+function htCands(){
+ const me=state.player;let L=[];
+ if(state.inside){insideNPCs(state.inside).forEach(n=>{if(n.alive&&n.ix!=null)L.push({p:n,x:n.ix,y:n.iy-8})})}
+ else VIS.forEach(n=>{if(n.alive&&n!==me&&$("person-"+n.id))L.push({p:n,x:n.x,y:n.y-8})});
+ return L.filter(c=>c.p!==me&&adult(c.p));
+}
+function htSeg(px,py,ax,ay,bx,by){const dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy||1;let t=clamp(((px-ax)*dx+(py-ay)*dy)/l2,0,1);return{d:Math.hypot(px-(ax+t*dx),py-(ay+t*dy)),t}}
+function htShoot(mx,my){
+ const me=state.player;if(!htIsHM()||me.weapon!=="gun"||inPrison())return;
+ const now=performance.now();if(now-HT.last<160)return;HT.last=now;
+ if((me.ammo||0)<=0){status("🔫 Click. Out of ammo — buy more at the Hitman Office armory.");return}
+ const ox=me.x,oy=me.y-10,dx=mx-ox,dy=my-oy,len=Math.hypot(dx,dy);if(len<4)return;
+ me.ammo--;const R=460,ex=ox+dx/len*R,ey=oy+dy/len*R;
+ const hits=htCands().map(c=>Object.assign({c},htSeg(c.x,c.y,ox,oy,ex,ey))).filter(h=>h.d<=22).sort((a,b)=>a.t-b.t).slice(0,3);
+ const last=hits.length?hits[hits.length-1].c:null;
+ htTracer(ox,oy,last?last.x:ex,last?last.y:ey);
+ if(!hits.length){status("💨 Missed. "+me.ammo+" rounds left.");htHud();return}
+ htKillMany(hits.map(h=>h.c),"gun");
+}
+function htStab(mx,my){
+ const me=state.player;if(!htIsHM()||me.weapon!=="knife"||inPrison())return;
+ const now=performance.now();if(now-HT.last<300)return;HT.last=now;
+ const L=htCands().filter(c=>Math.hypot(c.x-me.x,c.y-8-me.y)<90).map(c=>({c,d:Math.hypot(c.x-mx,c.y-my)})).filter(x=>x.d<55).sort((a,b)=>a.d-b.d);
+ if(!L.length){status("🔪 Nobody within reach — walk up to someone and click on them.");return}
+ htKillMany([L[0].c],"knife");
+}
+function htTracer(x1,y1,x2,y2){const w=$("world"),len=Math.hypot(x2-x1,y2-y1),a=Math.atan2(y2-y1,x2-x1)*180/Math.PI;
+ w.insertAdjacentHTML("beforeend",'<i class="htTrace" onanimationend="this.remove()" style="left:'+x1+'px;top:'+y1+'px;width:'+len+'px;transform:rotate('+a+'deg)"></i><i class="htFlash" onanimationend="this.remove()" style="left:'+x1+'px;top:'+y1+'px"></i>')}
+function htSplash(x,y,n){const w=$("world");if(!w)return;let h="";for(let i=0;i<n;i++){const a=Math.random()*6.283,d=10+Math.random()*34,s=2+Math.random()*4;h+='<i class="htPart" onanimationend="this.remove()" style="left:'+Math.round(x)+'px;top:'+Math.round(y)+'px;width:'+s.toFixed(1)+'px;height:'+s.toFixed(1)+'px;--dx:'+Math.round(Math.cos(a)*d)+'px;--dy:'+Math.round(Math.sin(a)*d+8)+'px"></i>'}w.insertAdjacentHTML("beforeend",h)}
+function htPanic(){if(state.inside)return;const me=state.player,[W,H]=WH();VIS.forEach(n=>{if(!n.alive||n===me||n.exit)return;const d=Math.hypot(n.x-me.x,n.y-me.y);if(d>0&&d<320){const k=170/d,s=safeSpot(clamp(n.x+(n.x-me.x)*k,30,W-30),clamp(n.y+(n.y-me.y)*k,40,H-30));n.tx=s.x;n.ty=s.y;n.stuck=0}})}
+
+function htKillMany(list,how){
+ const me=state.player,pre=htCands();let n=0,last=null;
+ list.forEach(c=>{
+  const v=c.p,x=c.x,y=c.y+8,kin=htDie(v);
+  kin.forEach(k=>{k.mem.push(state.year+" -- "+me.first+" killed "+v.first+".");k.rel[me.id]=-100;me.rel[k.id]=-100});
+  htSplash(x,y-6,how==="gun"?14:10);htAddBody(v,x,y);n++;last=v});
+ me.hitman.kills+=n;me.hitman.rep=(me.hitman.rep||0)+n;
+ const r=me.rec||[],l=r[r.length-1],lab=k=>(how==="gun"?"Shooting":"Stabbing")+" ("+k+" killed)";
+ if(l&&l.htk===how&&l.y===state.year&&!l.yrs){l.n+=n;l.t=lab(l.n);l.v=last.name}else{crimeRec(lab(n),last,0);const q=me.rec[me.rec.length-1];q.htk=how;q.n=n}
+ state.events.push(state.year+" -- "+me.name+(how==="gun"?" shot ":" stabbed ")+(n>1?n+" people":last.name)+".");
+ const heat0=state.heat||0,ct=htCT(),hit=!!(ct&&list.some(c=>c.p.id===ct.id));
+ if(how==="gun"){htPanic();htHeat(n*2+1)}
+ else{const w=pre.filter(c=>!list.includes(c)&&Math.hypot(c.x-list[0].x,c.y-list[0].y)<170).length;if(w)htHeat(1+w*.5)}
+ state.spree=(state.spree||0)+n;
+ let msg=(how==="gun"?"🔫 ":"🔪 ")+n+" down"+(how==="gun"?" · "+me.ammo+" rounds left":"")+".";
+ if(hit){const clean=(state.heat||0)<=heat0,pay=Math.round(ct.pay*(clean?1.25:1));me.money+=pay;me.hitman.jobs=(me.hitman.jobs||0)+1;
+  me.mem.push(state.year+" -- Killed my contract target "+(find(ct.id)||{first:"?"}).first+" (+"+fm(pay)+").");
+  htVoid();msg="🎯 CONTRACT COMPLETE +"+fm(pay)+(clean?" (clean kill bonus)":" — you were seen. Get out of there!")}
+ if(state.spree>=10){htDeathSoon();msg="🚨 THE POLICE ARE ON YOU — IT IS TOO LATE."}
+ else if(state.spree>=6)msg+=" ⚠️ Too much bloodshed — stop now!";
+ renderTop();htHud();status(msg);
+}
+function htDeathSoon(){if(HT.dp||HT.cut)return;clearTimeout(HT.pol);HT.dp=setTimeout(()=>{HT.dp=null;htDeathPenalty()},3500)}
+/* ---------- DEATH PENALTY CUTSCENE (animated SVG scenes) ---------- */
+document.head.insertAdjacentHTML("beforeend","<style>"+
+"#htCut{position:fixed;inset:0;z-index:9999;background:#000;overflow:hidden;font-family:Georgia,serif;color:#eee}"+
+"#htCut.shake .htcStage{animation:htcshake .5s}"+
+"@keyframes htcshake{0%,100%{transform:translate(0)}15%{transform:translate(-14px,8px)}30%{transform:translate(12px,-10px)}45%{transform:translate(-9px,-6px)}60%{transform:translate(8px,7px)}80%{transform:translate(-4px,2px)}}"+
+".htcStage{position:absolute;inset:0;transition:opacity .6s}.htcStage svg{width:100%;height:100%;display:block}"+
+".htcVig{position:absolute;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at center,transparent 45%,#000c 100%)}"+
+".htcBar{position:absolute;left:0;right:0;height:8%;background:#000;z-index:3}.htcBar.t{top:0}.htcBar.b{bottom:0}"+
+".htcCap{position:absolute;left:0;right:0;bottom:10%;text-align:center;padding:0 22px;z-index:4;text-shadow:0 2px 10px #000,0 0 3px #000;transition:opacity .6s}"+
+".htcCap h1{margin:0 0 6px;font-size:22px;letter-spacing:5px}.htcCap p{margin:4px auto;max-width:560px;font-size:17px;line-height:1.45}"+
+"#htCut.flash::after{content:'';position:absolute;inset:0;background:#fff;z-index:6;pointer-events:none;animation:htcflash .45s forwards}@keyframes htcflash{from{opacity:.9}to{opacity:0}}"+
+"#htSkip{position:absolute;right:14px;bottom:14px;z-index:7;background:#0008;color:#ccc;border:1px solid #666;padding:6px 12px}"+
+".htc-fR{animation:htcfl .5s infinite}.htc-fB{animation:htcfl .5s .25s infinite}@keyframes htcfl{0%,100%{opacity:.12}50%{opacity:1}}"+
+".htc-gR{animation:htcgl .5s infinite}.htc-gB{animation:htcgl .5s .25s infinite}@keyframes htcgl{0%,100%{opacity:0}50%{opacity:.35}}"+
+".htc-slL{animation:htcslL 4s ease-out both}.htc-slR{animation:htcslR 4s ease-out both}"+
+"@keyframes htcslL{from{transform:translateX(-170px)}to{transform:translateX(0)}}@keyframes htcslR{from{transform:translateX(170px)}to{transform:translateX(0)}}"+
+".htc-drop{animation:htcdrop 1.2s 1s ease-in both}@keyframes htcdrop{from{transform:translateY(-70px) rotate(-30deg);opacity:0}to{transform:none;opacity:1}}"+
+".htc-gav{animation:htcgav 5s both}@keyframes htcgav{0%{transform:rotate(-45deg)}10%{transform:rotate(5deg)}16%{transform:rotate(-35deg)}26%{transform:rotate(5deg)}32%{transform:rotate(-30deg)}42%,100%{transform:rotate(5deg)}}"+
+".htc-gav2{animation:htcgav2 4s both}@keyframes htcgav2{0%,22%{transform:rotate(-62deg)}30%{transform:rotate(0)}34%{transform:rotate(-9deg)}38%,100%{transform:rotate(0)}}"+
+".htc-stamp{transform-box:fill-box;transform-origin:center;animation:htcstamp 4.5s both}@keyframes htcstamp{0%,45%{transform:rotate(-8deg) scale(3.4);opacity:0}58%{transform:rotate(-8deg) scale(1);opacity:1}100%{transform:rotate(-8deg) scale(1);opacity:1}}"+
+".htc-slam{transform-box:fill-box;transform-origin:center;animation:htcslam 4s both}@keyframes htcslam{0%,28%{transform:scale(4);opacity:0}38%{transform:scale(1);opacity:1}100%{transform:scale(1.04);opacity:1}}"+
+".htc-in{animation:htcin 1s both}@keyframes htcin{from{opacity:0}to{opacity:1}}"+
+".htc-walk{animation:htcwalk 6.5s linear both}@keyframes htcwalk{from{transform:translateY(0) scale(1)}to{transform:translateY(-172px) scale(.38)}}"+
+".htc-lampfl{animation:htcfl2 .9s infinite}@keyframes htcfl2{0%,100%{opacity:.75}30%{opacity:1}55%{opacity:.35}80%{opacity:.9}}"+
+".htc-pulse{animation:htcpulse 2s infinite alternate}@keyframes htcpulse{from{opacity:.5}to{opacity:1}}"+
+".htc-out{animation:htcout 6s both}@keyframes htcout{0%,76%{opacity:0}82%{opacity:1}100%{opacity:1}}"+
+".htc-lampdim{animation:htcdim 6s both}@keyframes htcdim{0%,55%{opacity:1}62%{opacity:.2}68%{opacity:.9}74%{opacity:.1}80%,100%{opacity:0}}"+
+".htc-rain{animation:htcrain 1s linear infinite}@keyframes htcrain{from{transform:translateY(-40px)}to{transform:translateY(470px)}}"+
+".htc-fog{animation:htcfog 14s ease-in-out infinite alternate}@keyframes htcfog{from{transform:translateX(-60px)}to{transform:translateX(60px)}}"+
+"</style>");
+
+function htSil(x,y,s,c,pose){
+ const st='stroke="'+c+'" stroke-width="6" stroke-linecap="round" fill="none"';
+ const arms=pose==="up"?'<path d="M-8 -42L-22 -76M8 -42L22 -76" '+st+'/>':pose==="bow"?'<path d="M-8 -42L-6 -16M8 -42L6 -16" '+st+'/>':'<path d="M-9 -42L-13 -17M9 -42L13 -17" '+st+'/>';
+ const hx=pose==="bow"?3:0,hy=pose==="bow"?-52:-56;
+ return '<g transform="translate('+x+' '+y+') scale('+s+')"><rect x="-8" y="-20" width="7" height="20" rx="3" fill="'+c+'"/><rect x="1" y="-20" width="7" height="20" rx="3" fill="'+c+'"/><rect x="-10" y="-48" width="20" height="32" rx="7" fill="'+c+'"/><circle cx="'+hx+'" cy="'+hy+'" r="10" fill="'+c+'"/>'+arms+'</g>';
+}
+function htAv(x,y,s,pose,mono){
+ const me=state.player,L=lookOf(me),sk=L.skin,tp=L.top;
+ const arm=(x1,y1,x2,y2)=>'<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+tp+'" stroke-width="5" stroke-linecap="round"/><circle cx="'+x2+'" cy="'+y2+'" r="3" fill="'+sk+'"/>';
+ const arms=pose==="up"?arm(-10,-17,-19,-41)+arm(10,-17,19,-41):pose==="cuff"?arm(-10,-17,-3,-5)+arm(10,-17,3,-5):"";
+ const rot=pose==="bow"?7:pose==="sit"?-7:0;
+ return '<g transform="translate('+x+' '+y+') rotate('+rot+') scale('+s+')"><ellipse cx="0" cy="1" rx="14" ry="3" fill="#000" opacity=".35"/>'+arms+'<foreignObject x="-13" y="-38" width="26" height="40" style="overflow:visible"><div style="position:relative;width:26px;height:38px'+(mono?';filter:grayscale(.85) sepia(.35) contrast(1.05)':'')+'"><div class="person" style="position:relative;left:0;top:0;transform:none;--sc:1">'+avatar(L)+'</div></div></foreignObject></g>';
+}
+function htSvg(inner){return '<svg viewBox="0 0 800 450" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">'+inner+'</svg>'}
+function htCar(x,flip){
+ return '<g transform="translate('+x+' 330)'+(flip?' scale(-1 1) translate(-170 0)':'')+'"><rect width="170" height="46" rx="10" fill="#e9e9ef"/><rect y="16" width="170" height="14" fill="#15151d"/><rect x="40" y="-14" width="90" height="22" rx="8" fill="#cfd2dc"/><circle cx="36" cy="46" r="13" fill="#0a0a0a"/><circle cx="134" cy="46" r="13" fill="#0a0a0a"/><rect x="62" y="-22" width="22" height="8" fill="#ff2a2a" class="htc-fR"/><rect x="88" y="-22" width="22" height="8" fill="#2a5aff" class="htc-fB"/></g>';
+}
+function htSceneStreet(){
+ let win="";for(let i=0;i<14;i++)win+='<rect x="'+(14+(i%7)*18)+'" y="'+(150+Math.floor(i/7)*40)+'" width="10" height="16"/>';
+ return htSvg('<defs><linearGradient id="sk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#04060f"/><stop offset="1" stop-color="#1c2342"/></linearGradient><linearGradient id="cn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".6"/><stop offset="1" stop-color="#fff" stop-opacity=".05"/></linearGradient></defs>'
+ +'<rect width="800" height="450" fill="url(#sk)"/><g fill="#0b0f22"><rect x="0" y="110" width="150" height="260"/><rect x="160" y="170" width="110" height="200"/><rect x="530" y="150" width="120" height="220"/><rect x="660" y="90" width="140" height="280"/></g>'
+ +'<g fill="#e7c76a" opacity=".45">'+win+'</g><rect y="352" width="800" height="98" fill="#13151e"/><path d="M0 405H800" stroke="#444" stroke-dasharray="34 24"/>'
+ +'<polygon points="115,322 -120,450 360,450" fill="#ff2a2a" class="htc-gR"/><polygon points="685,322 920,450 440,450" fill="#2a5aff" class="htc-gB"/>'
+ +htCar(20,0)+htCar(610,1)
+ +'<polygon points="350,0 450,0 540,392 260,392" fill="url(#cn)"/>'
+ +'<g class="htc-slL">'+htSil(160,395,1.15,"#1d2540")+htSil(225,402,1.15,"#1d2540")+'</g><g class="htc-slR">'+htSil(640,395,1.15,"#1d2540")+htSil(575,402,1.15,"#1d2540")+'</g>'
+ +'<g class="htc-drop"><rect x="440" y="388" width="26" height="8" rx="2" fill="#111" stroke="#555"/></g>'+htAv(400,392,2.4,"up"));
+}
+function htSceneCourt(){
+ let jl="",jr="";for(let i=0;i<6;i++){jl+='<circle cx="'+(62+i*28)+'" cy="'+(214+(i%2)*22)+'" r="10" fill="#120c07"/>';jr+='<circle cx="'+(578+i*28)+'" cy="'+(214+(i%2)*22)+'" r="10" fill="#120c07"/>'}
+ return htSvg('<defs><linearGradient id="wl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a3322"/><stop offset="1" stop-color="#2a1b10"/></linearGradient><linearGradient id="sp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe9b0" stop-opacity=".5"/><stop offset="1" stop-color="#ffe9b0" stop-opacity=".05"/></linearGradient></defs>'
+ +'<rect width="800" height="450" fill="url(#wl)"/><g fill="#33220f"><rect x="30" y="20" width="40" height="330"/><rect x="730" y="20" width="40" height="330"/><rect x="250" y="30" width="300" height="100" opacity=".5"/></g>'
+ +'<rect y="340" width="800" height="110" fill="#1d120a"/>'
+ +'<rect x="30" y="250" width="190" height="70" rx="6" fill="#3b2614"/>'+jl+'<rect x="580" y="250" width="190" height="70" rx="6" fill="#3b2614"/>'+jr
+ +htSil(400,215,1.4,"#0b0b0b")+'<rect x="280" y="200" width="240" height="100" rx="6" fill="#5d3b21"/><rect x="280" y="200" width="240" height="12" fill="#7a5130"/>'
+ +'<g class="htc-gav" style="transform-origin:468px 200px"><rect x="464" y="150" width="8" height="52" fill="#a8733e"/><rect x="446" y="140" width="46" height="16" rx="4" fill="#8a5a2c"/></g>'
+ +'<polygon points="340,0 460,0 520,360 280,360" fill="url(#sp)"/>'
+ +'<rect x="300" y="352" width="200" height="12" fill="#3b2614"/>'+htAv(400,425,3.1,"bow")
+ +'<g class="htc-stamp"><rect x="262" y="52" width="276" height="86" fill="none" stroke="#c01616" stroke-width="6"/><text x="400" y="118" text-anchor="middle" font-family="Impact,Arial Black,sans-serif" font-size="68" fill="#c01616">GUILTY</text></g>');
+}
+function htSceneVerdict(){
+ return htSvg('<defs><radialGradient id="rg" cx=".5" cy=".5" r=".7"><stop offset="0" stop-color="#4a0d0d"/><stop offset="1" stop-color="#0a0202"/></radialGradient></defs>'
+ +'<rect width="800" height="450" fill="url(#rg)"/><rect x="250" y="360" width="300" height="46" rx="8" fill="#4a2c18"/><ellipse cx="400" cy="360" rx="70" ry="12" fill="#6b4226"/>'
+ +'<g class="htc-gav2" style="transform-origin:400px 360px"><rect x="393" y="150" width="14" height="210" rx="5" fill="#a8733e"/><rect x="332" y="116" width="136" height="60" rx="10" fill="#8a5a2c"/><rect x="332" y="126" width="136" height="8" fill="#6b4226"/></g>'
+ +'<g class="htc-in">'+htAv(130,420,4.2,"bow")+'</g><text class="htc-slam" x="400" y="102" text-anchor="middle" font-family="Impact,Arial Black,sans-serif" font-size="120" fill="#c01616" stroke="#2a0000" stroke-width="3">DEATH</text>');
+}
+function htSceneCell(){
+ let bars="";for(let i=0;i<9;i++)bars+='<rect x="'+(20+i*92)+'" y="0" width="14" height="450" fill="#0b0b0f"/>';
+ let tal="";for(let g=0;g<4;g++){let l="";for(let k=0;k<4;k++)l+='<line x1="'+(430+g*46+k*8)+'" y1="120" x2="'+(430+g*46+k*8)+'" y2="152" />';tal+='<g class="htc-in" style="animation-delay:'+(g*1.1)+'s" stroke="#c9c9d3" stroke-width="3">'+l+'<line x1="'+(426+g*46)+'" y1="150" x2="'+(458+g*46)+'" y2="122"/></g>'}
+ return htSvg('<rect width="800" height="450" fill="#23232c"/><rect y="350" width="800" height="100" fill="#14141a"/>'
+ +'<rect x="560" y="50" width="130" height="150" fill="#0a0f2e"/><circle cx="640" cy="100" r="22" fill="#e9eaf6"/><g fill="#09090d"><rect x="595" y="50" width="6" height="150"/><rect x="630" y="50" width="6" height="150"/><rect x="665" y="50" width="6" height="150"/></g>'
+ +'<polygon points="560,200 690,200 560,450 400,450" fill="#b6c4ff" opacity=".1" class="htc-pulse"/>'
+ +tal+'<rect x="240" y="170" width="46" height="58" fill="#14141a" stroke="#555"/><circle cx="256" cy="194" r="6" fill="#777"/><circle cx="272" cy="194" r="6" fill="#777"/><rect x="250" y="203" width="12" height="16" fill="#777"/><rect x="266" y="203" width="12" height="16" fill="#777"/>'
+ +htAv(204,334,2.2,"sit")+'<rect x="90" y="318" width="250" height="18" fill="#41414d"/><rect x="100" y="336" width="10" height="26" fill="#2c2c36"/><rect x="320" y="336" width="10" height="26" fill="#2c2c36"/>'
+ 
+ +bars+'<rect y="30" width="800" height="14" fill="#0b0b0f"/><rect y="380" width="800" height="14" fill="#0b0b0f"/>');
+}
+function htSceneWalk(){
+ let tiles="";[-3,-2,-1,0,1,2,3].forEach(i=>{tiles+='<path d="M'+(400+i*220)+' 450L'+(400+i*35)+' 260" stroke="#2b2b38" stroke-width="2"/>'});
+ return htSvg('<rect width="800" height="450" fill="#07070a"/><polygon points="0,0 800,0 500,170 300,170" fill="#13131a"/><polygon points="0,0 300,170 300,260 0,450" fill="#22222d"/><polygon points="800,0 500,170 500,260 800,450" fill="#1d1d27"/><polygon points="0,450 800,450 500,260 300,260" fill="#1a1a23"/>'+tiles
+ +'<rect x="300" y="170" width="200" height="90" fill="#0e0e13"/><rect x="352" y="186" width="96" height="74" fill="#1c1c22" stroke="#3a3a46"/><rect x="392" y="196" width="16" height="64" fill="#e7dfb8" class="htc-pulse"/>'
+ +'<g class="htc-lampfl"><ellipse cx="400" cy="36" rx="60" ry="9" fill="#ffefb8" opacity=".85"/><ellipse cx="400" cy="108" rx="34" ry="5" fill="#ffefb8" opacity=".8"/><ellipse cx="400" cy="152" rx="16" ry="3" fill="#ffefb8" opacity=".8"/><ellipse cx="400" cy="400" rx="150" ry="24" fill="#ffefb8" opacity=".09"/><ellipse cx="400" cy="300" rx="70" ry="10" fill="#ffefb8" opacity=".08"/></g>'
+ +'<g class="htc-walk" style="transform-origin:400px 432px">'+htSil(335,432,2.5,"#000")+htAv(400,432,4.0,"cuff")+htSil(465,432,2.5,"#000")+'</g>');
+}
+function htSceneChamber(){
+ return htSvg('<rect width="800" height="450" fill="#050505"/><g opacity=".9"><rect x="610" y="120" width="150" height="200" fill="#0e1218" stroke="#2a2f38" stroke-width="4"/><g fill="#1b2029"><circle cx="650" cy="230" r="11"/><circle cx="690" cy="236" r="11"/><circle cx="728" cy="230" r="11"/><rect x="640" y="240" width="22" height="50"/><rect x="680" y="246" width="22" height="44"/><rect x="718" y="240" width="22" height="50"/></g></g>'
+ +'<ellipse cx="400" cy="420" rx="230" ry="30" fill="#111"/><g class="htc-lampdim"><polygon points="395,100 405,100 560,430 240,430" fill="#fff0c0" opacity=".2"/><ellipse cx="400" cy="420" rx="150" ry="22" fill="#fff0c0" opacity=".18"/></g>'
+ +'<line x1="400" y1="0" x2="400" y2="86" stroke="#333" stroke-width="3"/><g class="htc-lampdim"><polygon points="370,100 430,100 414,80 386,80" fill="#cfc7a0"/><ellipse cx="400" cy="101" rx="30" ry="5" fill="#fff6d0"/></g>'
+ +'<g fill="#161616"><rect x="360" y="150" width="80" height="110" rx="5"/><rect x="354" y="262" width="12" height="70"/><rect x="434" y="262" width="12" height="70"/></g>'
+ +'<g class="htc-lampdim">'+htAv(400,262,3.0,"")+'</g><g fill="#1d1d1d" class="htc-lampdim"><rect x="346" y="246" width="108" height="18" rx="4"/></g>'
+ +'<rect width="800" height="450" fill="#000" class="htc-out"/>');
+}
+function htSceneGrave(name,born,died,label){label=label||"EXECUTED";
+ let rain="";for(let i=0;i<26;i++)rain+='<line class="htc-rain" style="animation-delay:-'+(Math.random()).toFixed(2)+'s;animation-duration:'+(0.7+Math.random()*.5).toFixed(2)+'s" x1="'+(i*31+(i%3)*7)+'" y1="0" x2="'+(i*31+(i%3)*7-6)+'" y2="26" stroke="#8fa0c8" stroke-width="1.5" opacity=".5"/>';
+ return htSvg('<defs><linearGradient id="gs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#060914"/><stop offset="1" stop-color="#1a2038"/></linearGradient></defs>'
+ +'<rect width="800" height="450" fill="url(#gs)"/><circle cx="640" cy="90" r="30" fill="#dfe3f3" opacity=".85"/><circle cx="652" cy="84" r="28" fill="#0a0e1e"/>'
+ +'<path d="M0 360Q200 320 400 350T800 340V450H0Z" fill="#0b1018"/>'
+ +'<g class="htc-fog" opacity=".18"><ellipse cx="250" cy="380" rx="260" ry="26" fill="#cfd6e6"/><ellipse cx="560" cy="395" rx="240" ry="22" fill="#cfd6e6"/></g>'
+ +'<path d="M310 400V200A90 90 0 0 1 490 200V400Z" fill="#8c909c" stroke="#5a5e6a" stroke-width="4"/>'
+ +'<defs><clipPath id="pc"><ellipse cx="400" cy="165" rx="30" ry="36"/></clipPath></defs><ellipse cx="400" cy="165" rx="35" ry="41" fill="#4a4d58"/><ellipse cx="400" cy="165" rx="30" ry="36" fill="#bdb6a4"/><g clip-path="url(#pc)">'+htAv(400,204,2.0,"",1)+'</g>'
+ +'<text x="400" y="236" text-anchor="middle" font-family="Georgia,serif" font-size="'+(name.length>18?19:24)+'" fill="#2b2e38">'+name+'</text>'
+ +'<text x="400" y="266" text-anchor="middle" font-family="Georgia,serif" font-size="17" fill="#3a3d48">'+born+' — '+died+'</text>'
+ +'<text x="400" y="300" text-anchor="middle" font-family="Georgia,serif" font-size="14" letter-spacing="3" fill="#4a4d58">'+label+'</text>'
+ +'<g><line x1="520" y1="404" x2="520" y2="376" stroke="#2e6b2e" stroke-width="3"/><circle cx="520" cy="372" r="9" fill="#b01212"/><circle cx="516" cy="369" r="4" fill="#d83030"/></g>'+rain);
+}
+function htDeathPenalty(){
+ if(!state||state.ended||HT.cut)return;
+ if(modalOpen()){HT.dp=setTimeout(()=>{HT.dp=null;htDeathPenalty()},2000);return}
+ const me=state.player,sp=me.spouse&&find(me.spouse),n=Math.round(state.spree||0),born=state.year-me.age;
+ HT.cut=1;clearTimeout(HT.pol);state.heat=0;
+ const sc=[
+  {svg:htSceneStreet,t:"THE STREET GOES SILENT",s:"Sirens from every direction. Armed officers close in on "+esc(me.name)+". The weapon hits the pavement.",ms:5200},
+  {svg:htSceneCourt,t:"THE TRIAL",s:"Guilty on "+n+" counts of murder in a public massacre.",ms:5600},
+  {svg:htSceneVerdict,t:"THE VERDICT",s:"“The sentence of this court is <b>DEATH</b>.”",ms:4600,hit:1300},
+  {svg:htSceneCell,t:"THE LAST DAYS",s:(sp&&sp.alive?esc(sp.first)+" does not come to visit.":"The days are counted on the wall. Nobody writes back."),ms:5200},
+  {svg:htSceneWalk,t:"THE LAST WALK",s:"A long corridor. A heavy door. One last breath.",ms:7000},
+  {svg:htSceneChamber,t:"THE CHAMBER",s:"The lights go out.",ms:6400},
+  {svg:()=>htSceneGrave(esc(me.name),born,state.year),t:"THE END",s:esc(me.name)+" — executed at age "+me.age+".",end:1}];
+ modal("<div></div>");
+ const o=document.createElement("div");o.id="htCut";o.innerHTML='<div class="htcStage"></div><div class="htcVig"></div><div class="htcBar t"></div><div class="htcBar b"></div><div class="htcCap"></div><button id="htSkip">SKIP ▶▶</button>';document.body.appendChild(o);
+ const stage=o.querySelector(".htcStage"),cap=o.querySelector(".htcCap");
+ const cont=()=>{clearTimeout(HT.cutT);clearTimeout(HT.cutS);o.remove();HT.cut=0;closeModal();state.spree=0;htVoid();me.executed=true;
+  state.events.push(state.year+" -- "+me.name+" was sentenced to death for a public massacre and executed.");me.mem.push(state.year+" -- Executed for murder.");die(me)};
+ const show=k=>{const s=sc[k];stage.style.opacity=0;cap.style.opacity=0;
+  HT.cutS=setTimeout(()=>{stage.innerHTML=s.svg();cap.innerHTML='<h1>'+s.t+'</h1><p>'+s.s+'</p>'+(s.end?'<p><button id="htCont" class="gold">CONTINUE</button></p>':'');stage.style.opacity=1;cap.style.opacity=1;const c=$("htCont");if(c)c.onclick=cont;
+   if(s.hit)setTimeout(()=>{o.classList.add("shake","flash");setTimeout(()=>o.classList.remove("shake","flash"),600)},s.hit)},600);
+  if(!s.end)HT.cutT=setTimeout(()=>show(k+1),s.ms)};
+ $("htSkip").onclick=()=>{clearTimeout(HT.cutT);clearTimeout(HT.cutS);show(sc.length-1)};
+ show(0);
+}
+function htHeat(v){state.heat=(state.heat||0)+v;clearTimeout(HT.pol);HT.pol=setTimeout(htPolice,5500)}
+function htPolice(){
+ if(!state||state.ended||inPrison()||(state.heat||0)<=0)return;
+ if(modalOpen()){HT.pol=setTimeout(htPolice,3000);return}
+ const me=state.player,spd=(me.stats&&me.stats.speed)||40,h=state.heat;
+ if(Math.random()<clamp(.18+h*.06-(spd-40)*.004+copBonus(),.08,.95)){if((state.spree||0)>=10)return htDeathPenalty();const yrs=15+Math.min(25,Math.floor(h*1.5));state.heat=0;return sentence(yrs,"a shooting spree","Murder")}
+ status("🚨 Sirens in the distance… you slipped away for now.");if(h>=4)HT.pol=setTimeout(htPolice,8000);
+}
+
+/* ---------- BODIES & BLOOD ---------- */
+function htAddBody(v,x,y){
+ const b={id:v.id,x:Math.round(x),y:Math.round(y),in:state.inside||null,area:AREA(),t:state.clock,rot:(Math.random()<.5?-1:1)*HTR(80,100),st:[[0,0,0]]};
+ b.st=[];for(let i=HTR(4,7);i>0;i--)b.st.push([HTR(-26,26),HTR(-14,16),HTR(3,9)]);
+ htBodies().push(b);htDrawBody(b,true);
+}
+function htDrawBody(b,fresh){
+ if(!state)return;const w=$("world");if(!w)return;
+ if(b.in?state.inside!==b.in:(state.inside||AREA()!==b.area))return;
+ w.querySelectorAll('[data-hid="'+b.id+'"]').forEach(e=>e.remove());
+ const v=find(b.id);if(!v)return;
+ try{lookOf(v)}catch(e){}
+ const st='<div class="htStain" data-hid="'+b.id+'"><i class="pool" style="left:'+(b.x-18)+'px;top:'+(b.y-8)+'px;width:36px;height:20px"></i>'+b.st.map(s=>'<i style="left:'+(b.x+s[0]-s[2]/2)+'px;top:'+(b.y+s[1]-s[2]/2)+'px;width:'+s[2]+'px;height:'+s[2]+'px"></i>').join("")+(b.tr||[]).map(t=>'<i class="tr" style="left:'+(t[0]-5)+'px;top:'+(t[1]-3)+'px;width:10px;height:6px"></i>').join("")+'</div>';
+ const body='<div class="htBody'+(fresh?' fall':'')+'" data-hid="'+b.id+'" style="--ox:'+b.x+'px;--oy:'+b.y+'px;--rot:'+b.rot+'deg;--tx:'+(b.dx||0)+'px;--ty:'+(b.dy||0)+'px">'+personHTML(Object.assign({},v,{x:b.x,y:b.y,face:null}),false,"htb-")+'</div>';
+ w.insertAdjacentHTML("beforeend",st+(b.col?"":body));
+}
+function htDraw(){if(!state)return;const w=$("world");if(!w)return;w.querySelectorAll(".htBody,.htStain").forEach(e=>e.remove());htBodies().forEach(b=>htDrawBody(b,false));try{htMedDraw()}catch(e){console.error(e)}}
+function htExpire(){
+ if(!state||!state.bodies||!state.bodies.length)return;
+ const gone=state.bodies.filter(b=>state.clock-b.t>=1440||state.clock<b.t);if(!gone.length)return;
+ state.bodies=state.bodies.filter(b=>!gone.includes(b));
+ gone.forEach(b=>{document.querySelectorAll('[data-hid="'+b.id+'"]').forEach(e=>{e.classList.add("gone");setTimeout(()=>e.remove(),950)})});
+}
+
+/* ---------- world click (shoot / stab) ---------- */
+(function(){
+ const wd=$("world");
+ wd.addEventListener("pointerdown",e=>{
+  if(!state||state.ended||modalOpen()||!htIsHM()||inPrison())return;
+  const me=state.player;if(!me.weapon)return;
+  if(e.target.closest&&e.target.closest("button,input,select,textarea,a"))return;
+  const r=wd.getBoundingClientRect();HT.px=e.clientX-r.left;HT.py=e.clientY-r.top;HT.down=1;
+  if(me.weapon==="gun"){htShoot(HT.px,HT.py);clearInterval(HT.iv);HT.iv=setInterval(()=>{if(!HT.down||modalOpen()||!state){clearInterval(HT.iv);return}htShoot(HT.px,HT.py)},200)}
+  else htStab(HT.px,HT.py);
+ });
+ wd.addEventListener("pointermove",e=>{if(!HT.down)return;const r=wd.getBoundingClientRect();HT.px=e.clientX-r.left;HT.py=e.clientY-r.top});
+ const up=()=>{HT.down=0;clearInterval(HT.iv)};window.addEventListener("pointerup",up);window.addEventListener("pointercancel",up);window.addEventListener("blur",up);
+})();
+
+/* ---------- hooks into the existing game ---------- */
+const _htRO=runObj;runObj=function(pl,o){const a=o&&o[4];if(a&&typeof a==="string"&&a.startsWith("ht:")){({order:htOrder,join:htJoin,board:htBoard,armory:htArmory})[a.slice(3)]();return}_htRO(pl,o)};
+const _htRD=renderDistrict;renderDistrict=function(){const keep=PL.hitman;delete PL.hitman;try{_htRD()}finally{PL.hitman=keep}
+ if(AREA()==="south"){$("world").insertAdjacentHTML("afterbegin",dB(PL.hitman,"🕴️ HITMAN OFFICE","hitman","#3a3743",'<div class="fs" style="background:#111;color:#e7ca80;border-color:#e7ca80">BY APPOINTMENT</div>'))}};
+const _htRW=renderWorld;renderWorld=function(){_htRW();try{htDraw();htDecor();htHud()}catch(e){console.error(e)}};
+const _htHU=hourUpdate;hourUpdate=function(h,day){_htHU(h,day);try{htHour()}catch(e){console.error(e)}};
+const _htAY=advanceYear;advanceYear=function(){const y0=state&&state.year;_htAY();if(!state||state.ended||state.year===y0)return;
+ try{state.bodies=[];document.querySelectorAll(".htBody,.htStain").forEach(e=>e.remove());state.heat=Math.max(0,(state.heat||0)-3);state.spree=0;
+  const all=htHits().slice();state.hits=[];all.forEach(h=>{try{htExec(h)}catch(e){console.error(e)}})}catch(e){console.error(e)}};
+const _htCC=crimeCard;crimeCard=function(){let h=_htCC();const m=state.player;
+ if(m.hitman){const H=m.hitman;h+='<div class="card"><h3>🕴️ Hitman</h3><div class="row"><span>Since</span><b>'+H.y+'</b></div><div class="row"><span>Kills</span><b>'+H.kills+'</b></div><div class="row"><span>Contracts done</span><b>'+(H.jobs||0)+'</b></div><div class="row"><span>🔪 Knife</span><b>owned</b></div><div class="row"><span>🔫 Pistol ammo</span><b>'+(m.ammo||0)+'</b></div><p class="muted">Q or the weapon bar draws a weapon. With the gun out, click or hold to shoot. Only adults can be hit. Hospital medics come to drag the bodies away to the hospital (or they disappear after a day / when you skip a year).</p></div>'}
+ if(htCT()){const v=find(htCT().id);h+='<div class="card"><h3>🎯 Active contract</h3><div class="row"><span>Target</span><b>'+esc(v?v.name:"?")+'</b></div><div class="row"><span>Reward</span><b>'+fm(htCT().pay)+'</b></div><div class="row"><span>Days left</span><b>'+htDaysLeft()+'</b></div></div>'}
+ if(htHits().length)h+='<div class="card"><h3>📞 Pending contracts</h3>'+htHits().map(x=>{const v=find(x.id);return'<div class="event">'+(v?esc(v.name):"?")+' — in progress</div>'}).join("")+'</div>';
+ return h};
+setInterval(()=>{if(!state||$("game").style.display==="none")return;try{htExpire();htHud();htTargetView()}catch(e){}},500);
+
+/* ---------- Murder removed from the Crime menu: killing now goes through the Hitman Office ---------- */
+delete CR.murder;
+murder=function(){status("🕴️ Killing is handled through the Hitman Office now (South Side).")};
+
+/* ---------- DEATH SEQUENCE (any death): tombstone -> life stats -> choose heir ---------- */
+document.head.insertAdjacentHTML("beforeend","<style>"+
+".htcSum{position:absolute;left:0;right:0;top:8%;bottom:8%;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10px;overflow:auto}"+
+".htcSum h1{margin:0;font-size:26px;letter-spacing:3px}.htcSum .sub{opacity:.75;margin:4px 0 12px;font-size:15px}.htcSum h2{margin:0 0 8px;font-size:13px;letter-spacing:5px;color:#e7ca80}"+
+".htcRow{display:flex;justify-content:space-between;gap:20px;width:min(430px,88vw);padding:8px 14px;margin:4px 0;background:#ffffff14;border:1px solid #ffffff26;border-radius:8px;font-size:16px;animation:htcin .6s both}"+
+".htcRow b{color:#fff}.htcRow.big{background:#e7ca8026;border-color:#e7ca80}.htcRow.big b{color:#ffd877;font-size:18px}"+
+".htcSum button{margin-top:14px}</style>");
+function htDeathScreens(me,next){
+ HT.rd=1;clearTimeout(HT.pol);clearTimeout(HT.dp);HT.dp=null;state.heat=0;state.spree=0;try{htVoid()}catch(e){}
+ const born=state.year-me.age,died=state.year;
+ modal("<div></div>");
+ const o=document.createElement("div");o.id="htCut";o.innerHTML='<div class="htcStage"></div><div class="htcVig"></div><div class="htcBar t"></div><div class="htcBar b"></div><div class="htcCap"></div>';document.body.appendChild(o);
+ const stage=o.querySelector(".htcStage"),cap=o.querySelector(".htcCap");
+ stage.style.opacity=0;stage.innerHTML=htSceneGrave(esc(me.name),born,died,me.executed?"EXECUTED":"REST IN PEACE");
+ const finish=()=>{o.remove();closeModal();HT.rd=0;next()};
+ const stats=()=>{
+  const rec=me.rec||[],H=me.hitman||{},legacy=rec.filter(r=>r.t==="Murder").length,murders=rec.filter(r=>/murder|contract killing|shooting|stabbing/i.test(r.t)).length;
+  const rows=[["💀","Kills by your own hand",(H.kills||0)+legacy],["🩸","Murders on your record",murders],["⛓️","Years in prison",me.prisonYears||0],["👪","Children",(me.children||[]).length],["💼","Last job",esc(me.job||"—")],["💰","Money left behind",fm(Math.round(me.money||0)),1]];
+  cap.style.opacity=0;stage.style.opacity=.2;
+  o.insertAdjacentHTML("beforeend",'<div class="htcSum"><h2>LIFE SUMMARY</h2><h1>'+esc(me.name)+'</h1><div class="sub">'+born+' — '+died+' · lived '+me.age+' years'+(me.executed?' · executed':'')+'</div>'+rows.map((r,i)=>'<div class="htcRow'+(r[3]?' big':'')+'" style="animation-delay:'+(i*.35)+'s"><span>'+r[0]+' '+r[1]+'</span><b>'+r[2]+'</b></div>').join("")+'<button id="htHeir" class="gold htc-in" style="animation-delay:'+(rows.length*.35+.3)+'s">CONTINUE ▶ CHOOSE YOUR HEIR</button></div>');
+  $("htHeir").onclick=finish};
+ if(me.executed){stage.style.opacity=.2;stats()}
+ else{setTimeout(()=>{stage.style.opacity=1},50);cap.innerHTML='<h1>'+esc(me.name)+'</h1><p>'+born+' — '+died+' · died at age '+me.age+'</p><p><button id="htCont" class="gold">CONTINUE</button></p>';$("htCont").onclick=stats}
+}
+const _htRDth=resolveDeath;resolveDeath=function(){if(HT.rd)return;const me=state.player;try{htDeathScreens(me,_htRDth)}catch(e){console.error(e);HT.rd=0;_htRDth()}};
+
+/* ===================================================================
+   v22: SCHOOL LIFE (child players)
+   Classroom lessons, teachers, classmates, playground, detention,
+   friends, and a spam-able GET CLOSER button.
+   =================================================================== */
+document.head.insertAdjacentHTML("beforeend","<style>"+
+".scBar{height:12px;background:#0003;border-radius:8px;overflow:hidden;margin:4px 0 8px}.scBar i{display:block;height:100%;transition:width .12s,background .2s}"+
+".scHb{position:relative;height:0}.scHeart{position:absolute;bottom:0;font-size:15px;font-weight:bold;color:#e0457b;pointer-events:none;animation:scfloat .9s ease-out forwards}"+
+"@keyframes scfloat{from{transform:translateY(0);opacity:1}to{transform:translateY(-70px);opacity:0}}"+
+"#scGo{font-size:18px;padding:12px 22px;user-select:none}"+
+"</style>");
+INT.school.o.push(["🎒",12,42,"Classroom (attend lesson)","sc:class"],["🧑‍🏫",70,38,"Teachers","sc:teachers"],["👫",36,86,"Classmates","sc:mates"],["⚽",72,86,"Playground","sc:play"]);
+
+function scDay(){return Math.floor(state.clock/1440)}
+function scX(me){const x=me.scx=me.scx||{};x.att=x.att||0;x.det=x.det||0;x.sus=x.sus||0;if(x.lessonDay==null)x.lessonDay=-1;x.gc=x.gc||{};x.fr=x.fr||{};x.dl=x.dl||{};return x}
+function scOnce(k){const x=scX(state.player),d=scDay();if(x.dl[k]===d)return false;x.dl[k]=d;return true}
+function scGate(){
+ const me=state.player,x=scX(me),d=scDay();
+ if(inPrison()){status("You are in prison.");return false}
+ if(me.age>=18){status("School is for kids — you are too old to be a student. You can still talk to the teachers.");return false}
+ if(me.age<5){status("You are too young for school (it starts at 5).");return false}
+ if(x.sus>d){status("🚫 You are suspended for "+(x.sus-d)+" more day(s).");return false}
+ return true}
+function scTeachers_(){
+ let L=state.people.filter(p=>p.alive&&!p.away&&p.job==="Teacher"&&p.age>=21);
+ if(!L.length){const c=state.people.filter(p=>p.alive&&!p.away&&p.age>=26&&p.age<=58&&p!==state.player&&!role(state.player,p));for(let i=0;i<2&&c.length;i++){const q=c.splice(Math.floor(Math.random()*c.length),1)[0];q.job="Teacher";L.push(q)}}
+ return L.sort((a,b)=>String(a.id)<String(b.id)?-1:1)}
+function scTeacher(){const L=scTeachers_();return L.length?L[scDay()%L.length]:null}
+function scKids(){const me=state.player;return state.people.filter(p=>p.alive&&!p.away&&p!==me&&p.age>=5&&p.age<18).sort((a,b)=>Math.abs(a.age-me.age)-Math.abs(b.age-me.age)||(String(a.id)<String(b.id)?-1:1)).slice(0,10)}
+function scPick(n){const k=scKids();const o=[];while(o.length<n&&k.length)o.push(k.splice(Math.floor(Math.random()*k.length),1)[0]);return o}
+const scLab=r=>r>=70?"💞 Best friend":r>=40?"😊 Friend":r>=10?"🙂 Friendly":r>-15?"😐 Stranger":r>-40?"😒 Dislikes you":"😡 Enemy";
+const scTLab=r=>r>=60?"⭐ Teacher's pet":r>=30?"🙂 Likes you":r>-15?"😐 Neutral":r>-40?"😒 Annoyed":"😡 Despises you";
+const scCol=r=>r<-15?"#c0392b":r<40?"#e5b82a":"#27ae60";
+const scAv=p=>'<div class="person" style="position:relative;left:auto;top:auto;transform:scale(2.6);transform-origin:bottom center;margin:64px auto 10px;--sc:1">'+avatar(lookOf(p))+'</div>';
+function scFriendCheck(id,r0){
+ const p=find(id),me=state.player,x=scX(me),r=relation(id);if(!p||p.age>=18)return"";let s="";
+ if(r0<40&&r>=40){x.fr[id]=1;s=" 🎉 You and "+esc(p.first)+" are friends now!";me.mem.push(state.year+" — Became friends with "+p.first+" at school.");p.mem.push(state.year+" — Became friends with "+me.first+".")}
+ else if(r0<70&&r>=70){s=" 💞 "+esc(p.first)+" is your best friend!";me.mem.push(state.year+" — "+p.first+" became my best friend.")}
+ else if(r0>=40&&r<40&&x.fr[id]){delete x.fr[id];s=" 💔 You and "+esc(p.first)+" are not friends any more."}
+ return s}
+function scDetention(){
+ const me=state.player,x=scX(me),d=scDay();x.det++;me.mem.push(state.year+" — Got detention.");
+ (me.parents||[]).forEach(i=>{const q=find(i);if(q&&q.alive)changeRel(i,-3)});
+ let s="⚠️ <b>Detention!</b> Your parents are not happy (−3 ❤).";
+ if(x.det%5===0){x.sus=d+3;s+=" 🚫 That is your fifth one — you are <b>suspended for 3 days</b>.";state.events.push(state.year+" -- "+me.name+" was suspended from school.")}
+ return s}
+
+/* ---------- CLASSROOM ---------- */
+const SC_C={
+ listen:{n:"📖 Pay attention",t:3,st:["intelligence",1],txt:"You follow the whole lesson."},
+ extra:{n:"✍️ Do extra work",t:5,st:["intelligence",1],txt:"You finish the extra worksheet early. {T} is impressed."},
+ doodle:{n:"🎨 Doodle in your notebook",st:["creativity",1],catch:.35,ct:-2,txt:"Your notebook fills with little drawings."},
+ nap:{n:"😴 Sneak a nap",st:["health",1],catch:.5,ct:-3,txt:"You rest your head on the desk."},
+ whisper:{n:"🤫 Whisper with a classmate",mate:4,mn:1,catch:.4,ct:-2,txt:"You trade secrets and giggles."},
+ joke:{n:"🤡 Be the class clown",mate:3,mn:3,t:-3,catch:.7,ct:-4,det:.35,txt:"The whole class laughs."},
+ back:{n:"😠 Argue with the teacher",t:-10,mate:2,mn:2,det:.55,txt:"You refuse to do what {T} says."},
+ chaos:{n:"🔥 Cause chaos",t:-14,mate:4,mn:4,det:.85,txt:"Paper planes fly everywhere and {T} loses control of the room."}
+};
+function scClass(){
+ if(!scGate())return;
+ const me=state.player,x=scX(me),d=scDay(),h=nowH();
+ if(!(d%7<5&&h>=8&&h<15)){status("Class is not in session right now (weekdays 8:00–15:00).");return}
+ if(x.lessonDay===d){status("You already sat through today's lesson. See you tomorrow.");return}
+ const T=scTeacher(),subj=["Maths","Reading","Science","History","Art","Geography"][d%6];
+ modal('<h2>🎒 '+subj+' lesson</h2><p class="muted">'+(T?esc(T.name)+' is teaching today.':'The teacher is late.')+' How do you behave?</p><div class="choices">'+Object.keys(SC_C).map(k=>'<button class="scC'+(SC_C[k].t<0?' danger':'')+'" data-k="'+k+'">'+SC_C[k].n+'</button>').join("")+'</div><br><button id="close">LEAVE</button>');
+ $("close").onclick=closeModal;document.querySelectorAll(".scC").forEach(b=>b.onclick=()=>scClassDo(b.dataset.k));
+}
+function scClassDo(k){
+ const me=state.player,x=scX(me),d=scDay(),a=SC_C[k],T=scTeacher();if(!a||x.lessonDay===d)return;
+ x.lessonDay=d;x.att++;let tv=a.t||0,out=[],tn=T?esc(T.first):"the teacher";
+ if(a.st){me.stats[a.st[0]]=clamp((me.stats[a.st[0]]||40)+a.st[1],0,100);out.push("+"+a.st[1]+" "+a.st[0])}
+ if(a.catch&&Math.random()<a.catch){tv+=a.ct;out.push("👀 "+tn+" caught you!")}
+ if(T&&tv){changeRel(T.id,tv);out.push((tv>0?"+":"")+tv+" ❤ with "+tn)}
+ let extra="";
+ if(a.mate){const ms=scPick(a.mn);ms.forEach(m=>{const r0=relation(m.id);changeRel(m.id,a.mate);extra+=scFriendCheck(m.id,r0)});if(ms.length)out.push("+"+a.mate+" ❤ with "+ms.map(m=>esc(m.first)).join(", "))}
+ if(a.det&&Math.random()<a.det)extra+=" "+scDetention();
+ me.mem.push(state.year+" — Attended a "+["Maths","Reading","Science","History","Art","Geography"][d%6]+" lesson.");
+ modal('<h2>🎒 Lesson over</h2><p>'+a.txt.replace("{T}",tn)+'</p><p class="muted">'+out.join(" · ")+'</p>'+(extra?'<p>'+extra+'</p>':'')+'<div class="choices"><button id="scQz" class="gold">📝 Take today\'s quiz</button><button id="close">OK</button></div>');
+ $("close").onclick=closeModal;$("scQz").onclick=()=>{closeModal();try{schoolQuiz()}catch(e){}};renderPanel();
+}
+
+/* ---------- PEOPLE MENUS ---------- */
+const SC_T={
+ help:{n:"🙋 Ask for help",once:1,d:3,st:["intelligence",1],txt:"{N} patiently explains it again. You finally get it."},
+ chat:{n:"💬 Chat after class",once:1,d:2,txt:"You chat about hobbies. {N} smiles."},
+ apple:{n:"🍎 Give an apple (€2)",once:1,cost:2,d:5,txt:"{N} is touched by the apple."},
+ sorry:{n:"🙏 Apologise",once:1,d:8,need:r=>r<0,txt:"{N} accepts your apology."},
+ back:{n:"😠 Talk back",d:-10,det:.5,mates:2,txt:"You answer rudely. The room goes quiet."},
+ yell:{n:"🤬 Shout at them",d:-22,det:.85,txt:"You scream at {N}. Everyone stares."},
+ prank:{n:"🧪 Prank the teacher",d:-15,det:.5,mates:5,txt:"You hide a frog in {N}'s desk drawer…"}
+};
+const SC_M={
+ chat:{n:"💬 Chat",once:1,d:2,txt:"You chat about games and cartoons."},
+ lunch:{n:"🍱 Share your lunch (€3)",once:1,cost:3,d:5,txt:"{N} grins and shares a bite."},
+ play:{n:"🎲 Play together",once:1,d:4,st:["speed",1],txt:"You play tag until the bell."},
+ note:{n:"✉️ Pass a note",once:1,d:3,txt:"{N} reads the note and tries not to laugh."},
+ sorry:{n:"🙏 Say sorry",once:1,d:8,need:r=>r<0,txt:"{N} thinks about it… and nods."},
+ prank:{n:"🧪 Prank them",d:-8,det:.2,txt:"You swap {N}'s pencil case with a rubber snake."},
+ insult:{n:"😠 Be mean to them",d:-12,det:.25,txt:"You say something hurtful. {N} looks away."},
+ fight:{n:"🤛 Start a fight",d:-25,det:.7,hurt:2,txt:"Fists fly in the playground."}
+};
+function scList(kind){
+ if(!scGate())return;
+ const L=kind==="T"?scTeachers_().slice(0,8):scKids();
+ modal('<h2>'+(kind==="T"?'🧑‍🏫 Teachers':'👫 Classmates')+'</h2>'+(L.map(p=>{const r=relation(p.id);return'<div class="event"><b>'+esc(p.name)+'</b> · age '+p.age+(p.location==="school"?' · 📍 here now':'')+'<br><span class="muted">'+(kind==="T"?scTLab(r):scLab(r))+' · ❤ '+r+'</span> <button class="scOpen gold" data-id="'+p.id+'">TALK</button></div>'}).join("")||'<p class="muted">Nobody is around.</p>')+'<div class="choices"><button id="close">CLOSE</button></div>');
+ $("close").onclick=closeModal;document.querySelectorAll(".scOpen").forEach(b=>b.onclick=()=>scMenu(b.dataset.id,kind));
+}
+function scTeachers(){scList("T")}
+function scMates(){scList("M")}
+function scMenu(id,kind,msg){
+ const p=find(id),me=state.player;if(!p||!p.alive)return;
+ const A=kind==="T"?SC_T:SC_M,r=relation(id);
+ const btn=Object.keys(A).filter(k=>!(A[k].need&&!A[k].need(r))).map(k=>'<button class="scA'+(A[k].d<0?' danger':'')+'" data-k="'+k+'">'+A[k].n+'</button>').join("");
+ modal('<h2>'+(kind==="T"?'🧑‍🏫 ':'🧒 ')+esc(p.name)+'</h2>'+scAv(p)+'<div class="row"><span>'+(kind==="T"?'Teacher':'Classmate')+' · age '+p.age+' · '+esc(p.trait)+'</span><b>'+(kind==="T"?scTLab(r):scLab(r))+'</b></div><div class="row"><span>Relationship</span><b>❤ '+r+'</b></div><div class="scBar"><i style="width:'+((r+100)/2)+'%;background:'+scCol(r)+'"></i></div>'+(msg?'<p class="event">'+msg+'</p>':'')+'<div class="choices"><button class="gold" id="scCl">🤝 GET CLOSER</button>'+btn+'</div><div class="choices"><button id="scBk">← BACK</button><button id="close">CLOSE</button></div>');
+ $("close").onclick=closeModal;$("scBk").onclick=()=>scList(kind);$("scCl").onclick=()=>scCloser(id,()=>scMenu(id,kind));
+ document.querySelectorAll(".scA").forEach(b=>b.onclick=()=>scAct(id,kind,b.dataset.k));
+}
+function scAct(id,kind,k){
+ const me=state.player,p=find(id),a=(kind==="T"?SC_T:SC_M)[k];if(!p||!a)return;
+ if(a.once&&!scOnce(k+":"+id))return scMenu(id,kind,"You already did that today.");
+ if(a.cost){if(me.money<a.cost)return scMenu(id,kind,"You need €"+a.cost+".");me.money-=a.cost;renderTop()}
+ const r0=relation(id);let dv=a.d;
+ if(dv<0&&kind==="T")dv=Math.round(dv*(p.trait==="kind"?.7:(p.trait==="stubborn"||p.trait==="selfish")?1.3:1));
+ changeRel(id,dv);
+ if(a.st)me.stats[a.st[0]]=clamp((me.stats[a.st[0]]||40)+a.st[1],0,100);
+ let extra=scFriendCheck(id,r0);
+ if(a.mates){scPick(4).filter(m=>m!==p).forEach(m=>changeRel(m.id,a.mates))}
+ if(a.hurt)me.stats.health=clamp((me.stats.health||70)-a.hurt,0,100);
+ if(a.det&&Math.random()<a.det)extra+=" "+scDetention();
+ p.mem.push(state.year+" — "+(dv>0?"Got along with ":"Had trouble with ")+me.first+" at school.");
+ renderPanel();
+ scMenu(id,kind,a.txt.replace("{N}",esc(p.first))+" <b>("+(dv>0?"+":"")+dv+" ❤)</b>"+(a.st?" +1 "+a.st[0]+".":"")+extra);
+}
+
+/* ---------- GET CLOSER: spam it to raise the relationship ---------- */
+function scCloser(id,back){
+ const p=find(id),me=state.player,x=scX(me),d=scDay();if(!p||!p.alive)return;
+ const g=(x.gc[id]&&x.gc[id].d===d)?x.gc[id]:(x.gc[id]={d,n:0}),CAP=40;
+ const col=r=>r<-15?"#c0392b":r<40?"#e5b82a":"#27ae60";
+ modal('<h2>🤝 Get closer — '+esc(p.name)+'</h2>'+scAv(p)+'<div class="row"><span>Relationship</span><b id="scR">❤ '+relation(id)+'</b></div><div class="scBar"><i id="scBi" style="width:'+((relation(id)+100)/2)+'%;background:'+col(relation(id))+'"></i></div><div class="scHb" id="scHb"></div><p id="scMsg" class="muted">Keep pressing to spend time together…</p><div class="choices"><button id="scGo" class="gold">🤝 GET CLOSER</button></div><p class="muted" id="scCap">'+g.n+' / '+CAP+' today</p><button id="scBack">← BACK</button>');
+ $("scBack").onclick=()=>(back?back():closeModal());
+ const go=$("scGo"),R=$("scR"),B=$("scBi"),M=$("scMsg"),C=$("scCap"),H=$("scHb");
+ const lines=["You sit together.","You laugh about something silly.","You share a secret.","You walk side by side.","You draw something together.","You trade snacks.","You pinky-promise to stay friends."];
+ const cap=()=>{go.disabled=true;go.textContent="Enough closeness for today";M.textContent=p.first+" needs some space now. Come back tomorrow."};
+ if(g.n>=CAP)cap();
+ go.onclick=()=>{
+  if(g.n>=CAP)return;g.n++;const r0=relation(id);
+  let gain=1;if(r0<-30&&g.n%2)gain=0;
+  if(gain)changeRel(id,gain);
+  if(g.n===1){p.mem.push(state.year+" — Grew closer to "+me.first+".");me.mem.push(state.year+" — Spent time getting closer to "+p.first+".")}
+  const r=relation(id);R.textContent="❤ "+r;B.style.width=((r+100)/2)+"%";B.style.background=col(r);C.textContent=g.n+" / "+CAP+" today";
+  if(gain){const h=document.createElement("span");h.className="scHeart";h.textContent="❤ +1";h.style.left=(30+Math.random()*40)+"%";h.onanimationend=()=>h.remove();H.appendChild(h)}
+  const f=scFriendCheck(id,r0);
+  M.innerHTML=f?f:(gain?lines[g.n%lines.length]:esc(p.first)+" is not interested yet… keep trying.");
+  if(g.n>=CAP)cap();
+  if(g.n%10===0)renderPanel();
+ };
+}
+
+/* profile button: any child can spam GET CLOSER with anyone */
+const _scPF=profile;profile=function(id){_scPF(id);
+ try{const me=state.player,p=find(id);if(me.age<18&&p&&p!==me&&p.alive&&!$("scGC")){const c=document.querySelector(".modal .choices");if(c){c.insertAdjacentHTML("afterbegin",'<button id="scGC" class="gold">🤝 GET CLOSER</button>');$("scGC").onclick=()=>scCloser(id,()=>profile(id))}}}catch(e){}};
+
+/* hook into object clicks + life panel */
+const _scRO=runObj;runObj=function(pl,o){const a=o&&o[4];if(a&&typeof a==="string"&&a.startsWith("sc:")){const f=({class:scClass,teachers:scTeachers,mates:scMates,play:scPlay})[a.slice(3)];if(f){f();return}}_scRO(pl,o)};
+function scPlay(){
+ if(!scGate())return;
+ const me=state.player;if(!scOnce("play")){status("You have played enough for today. Come back tomorrow.");return}
+ const ks=scPick(3),st=Math.random()<.5?"speed":"strength";let extra="";
+ me.stats[st]=clamp((me.stats[st]||40)+1,0,100);
+ ks.forEach(m=>{const r0=relation(m.id);changeRel(m.id,3);extra+=scFriendCheck(m.id,r0)});
+ me.mem.push(state.year+" — Played on the school playground.");
+ modal('<h2>⚽ Playground</h2><p>'+(ks.length?'You join '+ks.map(k=>esc(k.first)).join(", ")+' for a game of tag.':'The playground is empty.')+' You feel a bit '+(st==="speed"?"faster":"stronger")+' (+1 '+st+').</p>'+(ks.length?'<p class="muted">+3 ❤ with each of them.</p>':'')+(extra?'<p>'+extra+'</p>':'')+'<button id="close">OK</button>');
+ $("close").onclick=closeModal;renderPanel();
+}
+const _scSR=schoolRow;schoolRow=function(p){let h=_scSR(p);
+ if(p.age<18&&p.scx){const x=p.scx,fr=Object.keys(x.fr||{}).filter(i=>{const q=find(i);return q&&q.alive}).length;h+='<div class="row"><span>Lessons attended</span><b>'+(x.att||0)+'</b></div><div class="row"><span>Friends at school</span><b>'+fr+'</b></div><div class="row"><span>Detentions</span><b>'+(x.det||0)+'</b></div>'}return h};
+
+/* ===================================================================
+   v23: SCHOOL DAY (notification at 8:00 + slowed, fully simulated day)
+   =================================================================== */
+document.head.insertAdjacentHTML("beforeend","<style>"+
+"#scNote{position:fixed;left:50%;top:58px;transform:translateX(-50%);z-index:40;display:none;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;max-width:94vw;background:#1d2a4a;color:#fff;border:2px solid #e7ca80;border-radius:12px;padding:10px 14px;box-shadow:0 6px 22px #0009;animation:scpop .45s}"+
+"@keyframes scpop{from{transform:translate(-50%,-30px);opacity:0}to{transform:translate(-50%,0);opacity:1}}"+
+"#scDayOv{position:fixed;inset:0;z-index:9998;background:linear-gradient(#0f1830,#1c2a4c);color:#eee;display:flex;flex-direction:column;align-items:center;padding:12px;gap:10px;font-family:system-ui,sans-serif}"+
+"#scDayOv .scTop{display:flex;align-items:center;gap:16px;width:min(780px,96vw)}#scDayOv .scClk{font:700 40px monospace;color:#ffd877;text-shadow:0 0 12px #ffb83088}"+
+"#scDayOv .scTop small{display:block;opacity:.75}#scDayOv .scBarW{flex:1;height:10px;background:#0006;border-radius:6px;overflow:hidden}#scDayOv .scBarW i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4aa3ff,#ffd877)}"+
+".scScene{width:min(780px,96vw);height:30vh;min-height:150px;border-radius:12px;overflow:hidden;border:2px solid #ffffff30;flex-shrink:0}.scScene svg{width:100%;height:100%;display:block}"+
+".scLog{width:min(780px,96vw);flex:1;overflow:auto;padding:4px}.scL{padding:6px 10px;margin:4px 0;border-radius:8px;background:#ffffff12;animation:htcin .5s both;font-size:15px;line-height:1.4}"+
+".scL.good{border-left:4px solid #3ecf6e}.scL.warn{border-left:4px solid #e5b82a}.scL.bad{border-left:4px solid #d9453b}.scL.hd{background:#e7ca8022;font-size:16px}"+
+".scBob{animation:scbob .9s ease-in-out infinite alternate}@keyframes scbob{from{transform:translateY(0)}to{transform:translateY(-6px)}}"+
+".scSum{padding:6px}.scSum .htcRow{width:auto}"+
+"</style>");
+const SC_S=["Maths","Reading","Science","History","Art","Geography"];
+const SC_P={studious:{a:.85,m:.02,soc:.6},social:{a:.5,m:.12,soc:1.6},trouble:{a:.25,m:.55,soc:1.1},balanced:{a:.65,m:.1,soc:1}};
+function scEligible(){const me=state.player,x=scX(me),d=scDay(),h=nowH();return me.age>=5&&me.age<18&&!inPrison()&&d%7<5&&h>=8&&h<14&&x.schoolDay!==d&&x.sus<=d}
+
+/* ---- notification ---- */
+function scNote(first){
+ let n=$("scNote");
+ if(!n){document.body.insertAdjacentHTML("beforeend",'<div id="scNote"></div>');n=$("scNote");n.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;if(b.dataset.a==="go")scGoToSchool();else n.style.display="none"})}
+ n.innerHTML='<b>🏫 '+(first?'You turned 5 — time for your first day of school!':'School is starting!')+'</b><span class="muted">'+DAYS[scDay()%7]+' 08:00</span><button data-a="go" class="gold">GO TO SCHOOL</button><button data-a="x">✕</button>';
+ n.style.display="flex";clearTimeout(HT.scn);HT.scn=setTimeout(()=>{n.style.display="none"},45000);
+ status("🏫 "+(first?"Your first day of school is today!":"School starts now."));
+}
+function scNoteCheck(){
+ if(!state||$("game").style.display==="none")return;
+ const me=state.player;if(!me||me.age<5||me.age>=18||inPrison()||modalOpen()||HT.sd||HT.cut||HT.rd)return;
+ const x=scX(me),d=scDay();if(!scEligible()||x.noteDay===d)return;
+ x.noteDay=d;
+ if(state.inside==="school"){scDayStart();return}
+ scNote(!x.first&&!x.att);x.first=1;
+}
+function scGoToSchool(){
+ const n=$("scNote");if(n)n.style.display="none";
+ const me=state.player;if(inPrison()||me.age<5||HT.sd)return;
+ if(modalOpen())closeModal();
+ if(state.inside==="school"){scDayStart();return}
+ state.inside=null;state.area="centre";const dd=doorPos("school");me.x=dd.x;me.y=dd.y+14;renderWorld();renderTop();
+ enterInterior("school");
+}
+function scHour(h,day){
+ const me=state.player;if(!me||h!==15||me.age<5||me.age>=18||inPrison())return;
+ const x=scX(me);if(!(day%7<5)||x.noteDay!==day||x.schoolDay===day)return;
+ x.skips=(x.skips||0)+1;(me.parents||[]).forEach(i=>{const q=find(i);if(q&&q.alive)changeRel(i,-2)});
+ me.mem.push(state.year+" — Skipped school.");const n=$("scNote");if(n)n.style.display="none";
+ status("📞 The school called your parents — you skipped today (−2 ❤).");
+}
+
+/* ---- scenes ---- */
+function scScene(k){
+ const C=["#2c3e6b","#8e3b46","#3b6b4a","#6b5a2c","#5a3b6b","#2f6b6b"];
+ const kids=(xs,y,s)=>xs.map((x,i)=>'<g class="scBob" style="animation-delay:'+(i*.27).toFixed(2)+'s">'+htSil(x,y,s,C[i%C.length])+'</g>').join("");
+ const SKY='<defs><linearGradient id="sk2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7cc4ff"/><stop offset="1" stop-color="#d9f2ff"/></linearGradient></defs>';
+ let b="";
+ if(k==="class")b='<rect width="800" height="300" fill="#dfe6ef"/><rect y="228" width="800" height="72" fill="#b79a73"/><rect x="240" y="26" width="320" height="118" rx="6" fill="#2f4f3f" stroke="#7b5b3a" stroke-width="8"/><path d="M270 66h120M270 92h190M270 118h90" stroke="#eee" stroke-width="3" opacity=".7"/>'+htSil(650,236,1.9,"#4a3b5a")+kids([130,230,520,610],250,1.5)
+  +[90,200,490,580].map(x=>'<rect x="'+x+'" y="236" width="86" height="10" fill="#8a6a45"/><rect x="'+(x+8)+'" y="246" width="5" height="30" fill="#6a4f33"/><rect x="'+(x+73)+'" y="246" width="5" height="30" fill="#6a4f33"/>').join("")
+  +htAv(375,268,2.3,"")+'<rect x="320" y="256" width="110" height="12" fill="#8a6a45"/><rect x="328" y="268" width="6" height="28" fill="#6a4f33"/><rect x="416" y="268" width="6" height="28" fill="#6a4f33"/>';
+ else if(k==="play")b=SKY+'<rect width="800" height="300" fill="url(#sk2)"/><circle cx="690" cy="60" r="30" fill="#ffe07a"/><rect y="215" width="800" height="85" fill="#62b84f"/><polygon points="90,215 90,120 190,215" fill="#e0524a"/><rect x="82" y="112" width="20" height="104" fill="#b9392f"/>'+kids([260,560,650],262,1.7)+htAv(420,268,2.4,"");
+ else if(k==="lunch")b='<rect width="800" height="300" fill="#efe3c9"/><rect y="236" width="800" height="64" fill="#cdb48a"/>'+kids([150,250,560,650],226,1.5)+htAv(400,226,2.2,"")+'<rect x="60" y="214" width="680" height="16" rx="4" fill="#8a5f36"/><rect x="80" y="230" width="10" height="56" fill="#6b4726"/><rect x="710" y="230" width="10" height="56" fill="#6b4726"/>'+[130,240,350,460,570].map(x=>'<rect x="'+x+'" y="208" width="46" height="7" rx="2" fill="#d9d9d9"/><circle cx="'+(x+16)+'" cy="206" r="5" fill="#e9a43a"/>').join("");
+ else b=SKY+'<rect width="800" height="300" fill="url(#sk2)"/><rect y="236" width="800" height="64" fill="#7a8b6a"/><rect x="190" y="60" width="420" height="180" fill="#c9785a"/><polygon points="170,60 400,10 630,60" fill="#8a3f2d"/><rect x="360" y="150" width="80" height="90" fill="#5a3b2a"/><g fill="#cfe6ff">'+[220,290,480,550].map(x=>'<rect x="'+x+'" y="95" width="42" height="42"/>').join("")+'</g><text x="400" y="52" text-anchor="middle" font-family="Georgia,serif" font-size="20" fill="#fff" letter-spacing="3">TOWN SCHOOL</text>'+kids([110,690],262,1.6)+htAv(300,268,2.3,"");
+ return '<svg viewBox="0 0 800 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">'+b+'</svg>';
+}
+
+/* ---- start screen ---- */
+function scDayStart(){
+ if(HT.sd||!state||state.inside!=="school"||!scEligible())return;
+ const me=state.player,x=scX(me);
+ modal('<h2>🏫 School day</h2><p>'+(!x.att?'<b>Your first day of school!</b> ':'')+'The bell rings. Step inside and time slows down while a whole school day plays out: registration, lessons, break, lunch, a pop quiz and a club.</p><p class="muted">How do you want to act today?</p><div class="choices"><button class="scSt gold" data-s="studious">📖 Studious</button><button class="scSt" data-s="social">🗣️ Social butterfly</button><button class="scSt danger" data-s="trouble">😈 Troublemaker</button><button class="scSt" data-s="balanced">⚖️ Balanced</button></div><br><button id="close">NOT NOW</button>');
+ $("close").onclick=closeModal;document.querySelectorAll(".scSt").forEach(b=>b.onclick=()=>scDayRun(b.dataset.s));
+}
+
+/* ---- the simulation ---- */
+async function scDayRun(style){
+ const me=state.player,x=scX(me),d=scDay(),P=SC_P[style]||SC_P.balanced;
+ HT.sd=1;x.schoolDay=d;x.noteDay=d;x.att++;x.lessonDay=d;const nt=$("scNote");if(nt)nt.style.display="none";
+ modal("<div></div>");
+ const ov=document.createElement("div");ov.id="scDayOv";
+ ov.innerHTML='<div class="scTop"><div class="scClk" id="scClk">--:--</div><div><b>'+DAYS[d%7]+' · School day</b><small>⏳ Time slowed — '+({studious:"📖 studious",social:"🗣️ social",trouble:"😈 troublemaker",balanced:"⚖️ balanced"})[style]+'</small></div><div class="scBarW"><i id="scPg"></i></div><button id="scSkip">⏩ SPEED UP</button></div><div class="scScene" id="scScene"></div><div class="scLog" id="scLog"></div>';
+ document.body.appendChild(ov);
+ const q=s=>ov.querySelector(s),log=q("#scLog"),clk=q("#scClk"),pg=q("#scPg"),scene=q("#scScene");
+ let speed=1;q("#scSkip").onclick=()=>{speed=7;q("#scSkip").disabled=true};
+ const wait=ms=>new Promise(r=>setTimeout(r,ms/speed)),pad=n=>String(n).padStart(2,"0");
+ const st0=Object.assign({},me.stats),T=scTeacher(),tl0=T?relation(T.id):0,fr0=Object.keys(x.fr).length,det0=x.det,kd={},S={good:0,quiz:null,lessons:0};
+ const tn=T?esc(T.first):"the teacher",hNow=nowH();
+ const addRel=(id,dv)=>{const r0=relation(id);changeRel(id,dv);kd[id]=(kd[id]||0)+dv;return scFriendCheck(id,r0)};
+ const tch=dv=>{if(T)changeRel(T.id,Math.round(dv))};
+ const line=(t,tone)=>{const e=document.createElement("div");e.className="scL "+(tone||"");e.innerHTML=t;log.appendChild(e);log.scrollTop=log.scrollHeight};
+ const gain=(k,n)=>{me.stats[k]=clamp((me.stats[k]||40)+(n||1),0,100)};
+ const pool=scKids(),rk=n=>{const a=pool.slice(),o=[];while(o.length<n&&a.length)o.push(a.splice(Math.floor(Math.random()*a.length),1)[0]);return o},nm=k=>esc(k.first);
+ const showClock=()=>{clk.textContent=pad(nowH())+":"+pad(Math.floor(state.clock%60));pg.style.width=clamp((state.clock-d*1440-480)/420*100,0,100)+"%";const c=$("clock");if(c)c.textContent=DAYS[d%7]+" "+clk.textContent+" · "+state.year};
+ const tickTo=async h=>{const from=state.clock,to=Math.max(from,d*1440+h*60);for(let i=1;i<=40;i++){state.clock=Math.round(from+(to-from)*i/40);showClock();await wait(105)}};
+ const det=p=>{if(Math.random()<p)line(scDetention(),"bad")};
+ const arrive=()=>{
+  if(x.att===1){const k=rk(4);k.forEach(m=>addRel(m.id,3));tch(2);line('🎒 <b>Your first day of school!</b> '+tn+' introduces you to the class. You meet '+k.map(nm).join(", ")+'. <i>(+3 ❤ each)</i>',"good")}
+  else if(hNow>8){tch(-3);line('⏰ You arrive late. '+tn+' is not amused. <i>(−3 ❤)</i>',"warn");det(.3)}
+  else{tch(1);line('🔔 Registration. You answer "present" and take your seat. <i>(+1 ❤ '+tn+')</i>',"good")}};
+ const lesson=subj=>()=>{
+  S.lessons++;const r=Math.random();
+  if(r<P.a){const g=S.good<2||Math.random()<.4;if(g){gain("intelligence");S.good++}tch(2);
+   line('📖 You focus hard on '+subj+'. '+pick(["You put your hand up and get it right.","Your notes are neat and tidy.","You finish the worksheet before everyone else.","You ask a clever question."])+' <i>(+2 ❤ '+tn+(g?', +1 intelligence':'')+')</i>',"good");
+   if(Math.random()<.3){tch(3);line('🌟 '+tn+' praises your work in front of the class. <i>(+3 ❤)</i>',"good")}}
+  else if(r<P.a+P.m){
+   const ms=[()=>{const k=rk(2);k.forEach(m=>addRel(m.id,3));tch(-3);line('🤡 You crack a joke and the class erupts'+(k.length?' — '+k.map(nm).join(" & ")+' love it <i>(+3 ❤ each)</i>':'')+'. <i>(−3 ❤ '+tn+')</i>',"warn");return .35},
+    ()=>{tch(-8);rk(2).forEach(m=>addRel(m.id,2));line('😠 You talk back to '+tn+'. Gasps all round. <i>(−8 ❤)</i>',"bad");return .5},
+    ()=>{tch(-5);rk(3).forEach(m=>addRel(m.id,3));line('✈️ Paper planes swarm the room! <i>(−5 ❤ '+tn+', +3 ❤ classmates)</i>',"warn");return .4},
+    ()=>{tch(-10);rk(2).forEach(m=>addRel(m.id,4));line('🐸 You hide a frog in the teacher\'s drawer. <i>(−10 ❤)</i>',"bad");return .55}];
+   det(pick(ms)())}
+  else if(Math.random()<.5){gain("creativity");const c=Math.random()<.3;if(c)tch(-2);line('🎨 You fill your notebook with doodles in '+subj+'.'+(c?' '+tn+' catches you <i>(−2 ❤)</i>.':'')+' <i>(+1 creativity)</i>',c?"warn":"")}
+  else{const k=rk(1)[0];if(k){const f=addRel(k.id,3);line('🤫 You whisper with '+nm(k)+' during '+subj+'. <i>(+3 ❤)</i>'+f,"good")}else line("💭 You daydream out of the window.")}};
+ const brk=()=>{
+  const k=rk(3),v=Math.round(3*P.soc),sk=Math.random()<.5?"speed":"strength";let s="";k.forEach(m=>{s+=addRel(m.id,v)});gain(sk);
+  line('⚽ You play'+(k.length?' tag with '+k.map(nm).join(", ")+' <i>(+'+v+' ❤ each)</i>':' alone')+'. <i>(+1 '+sk+')</i>'+s,"good");
+  if(style==="trouble"&&Math.random()<.4){const m=rk(1)[0];if(m){addRel(m.id,-8);line('🤛 You shove '+nm(m)+' in a game gone wrong. <i>(−8 ❤)</i>',"bad");det(.3)}}
+  else if(Math.random()<.3){const m=rk(1)[0];if(m){const f=addRel(m.id,5);line('🎒 '+nm(m)+' invites you to join a secret club. <i>(+5 ❤)</i>'+f,"good")}}};
+ const lunch=()=>{
+  const m=rk(1)[0];if(!m){line("🍱 You eat your lunch quietly.");return}
+  const ev=Math.random(),v=Math.round(4*P.soc);
+  if(ev<.4){const f=addRel(m.id,v);line('🍱 You sit with '+nm(m)+' and swap snacks. <i>(+'+v+' ❤)</i>'+f,"good")}
+  else if(ev<.65){const f=addRel(m.id,3);line('😂 You and '+nm(m)+' laugh until milk comes out of your nose. <i>(+3 ❤)</i>'+f,"good")}
+  else if(ev<.85&&style!=="studious"){rk(3).forEach(k=>addRel(k.id,3));line('🍝 A food fight breaks out! Everyone joins in. <i>(+3 ❤ with the crowd)</i>',"warn");det(.35)}
+  else{gain("intelligence");line('📚 You read a book in a quiet corner. <i>(+1 intelligence)</i>',"good")}};
+ const quiz=()=>{
+  const got=clamp(Math.round((30+(me.stats.intelligence||40)*.5+S.good*6+Math.random()*22)/10),1,10);
+  me.sch=me.sch||{n:0,t:0};me.sch.n++;me.sch.t+=got*10;S.quiz=got;if(got>=6)gain("intelligence");if(got>=9)tch(2);
+  line('📝 Pop quiz in '+SC_S[(d+2)%6]+': <b>'+got+'/10</b> '+(got>=8?'🌟 Brilliant!':got>=6?'✅ Passed.':'❌ Needs work.')+(got>=6?' <i>(+1 intelligence)</i>':''),got>=6?"good":"bad")};
+ const club=()=>{
+  const o=pick([["🎨","Art club","creativity"],["🏃","PE","strength"],["🎵","Music","charisma"],["♟️","Chess club","intelligence"],["👟","Running club","speed"]]),m=rk(1)[0],v=Math.round(2*P.soc);
+  gain(o[2]);let f="";if(m)f=addRel(m.id,v);
+  line(o[0]+' '+o[1]+': you practise all afternoon. <i>(+1 '+o[2]+')</i>'+(m?' You team up with '+nm(m)+' <i>(+'+v+' ❤)</i>.':'')+f,"good")};
+ const home=()=>line("🔔 The final bell rings. School is out!","hd");
+ const all=[{h:8,k:"gate",ic:"🔔",t:"Registration",run:arrive},{h:9,k:"class",ic:"📖",t:"Lesson 1 — "+SC_S[d%6],run:lesson(SC_S[d%6])},{h:10,k:"class",ic:"📖",t:"Lesson 2 — "+SC_S[(d+1)%6],run:lesson(SC_S[(d+1)%6])},{h:11,k:"play",ic:"⚽",t:"Break time",run:brk},{h:12,k:"lunch",ic:"🍱",t:"Lunch",run:lunch},{h:13,k:"class",ic:"📝",t:"Pop quiz",run:quiz},{h:14,k:"class",ic:"🎨",t:"Club / PE",run:club},{h:15,k:"gate",ic:"🔔",t:"Home time",run:home}];
+ const steps=hNow<=8?all:[{h:hNow,k:"gate",ic:"🚪",t:"Arriving late",run:arrive}].concat(all.filter(s=>s.h>hNow));
+ try{
+  for(const s of steps){
+   scene.innerHTML=scScene(s.k);await tickTo(s.h);
+   line('<b>'+pad(s.h)+':00 '+s.ic+' '+s.t+'</b>',"hd");s.run();renderTop();await wait(1700);
+  }
+ }catch(e){console.error(e)}
+ // summary
+ const dS=Object.keys(me.stats).map(k=>[k,Math.round((me.stats[k]||0)-(st0[k]||0))]).filter(a=>a[1]>0).map(a=>"+"+a[1]+" "+a[0]).join(" · ")||"—";
+ const tD=T?relation(T.id)-tl0:0,newFr=Object.keys(x.fr).length-fr0,dts=x.det-det0;
+ const best=Object.keys(kd).sort((a,b)=>kd[b]-kd[a]).slice(0,3).map(id=>{const k=find(id);return k?esc(k.first)+" ("+(kd[id]>0?"+":"")+kd[id]+")":""}).filter(Boolean).join(", ")||"—";
+ me.mem.push(state.year+" — Spent a full day at school.");
+ const rows=[["📚","Lessons attended",S.lessons],["📝","Pop quiz",S.quiz!=null?S.quiz+"/10":"—"],["🧑‍🏫","With "+(T?esc(T.first):"the teacher"),(tD>0?"+":"")+tD+" ❤"],["👫","Closest classmates",best],["🎉","New friends",newFr>0?"+"+newFr:"0"],["⚠️","Detentions today",dts],["📈","Stats",dS]];
+ scene.innerHTML=scScene("gate");
+ log.innerHTML='<div class="scSum"><h2 style="margin:4px 0 8px">🏫 School day complete</h2>'+rows.map((r,i)=>'<div class="htcRow" style="animation-delay:'+(i*.25)+'s"><span>'+r[0]+' '+r[1]+'</span><b>'+r[2]+'</b></div>').join("")+'<p style="text-align:center"><button id="scHome" class="gold">🚪 GO HOME</button></p></div>';
+ q("#scSkip").style.display="none";
+ q("#scHome").onclick=()=>{ov.remove();closeModal();HT.sd=0;try{leave()}catch(e){}renderPanel();renderTop()};
+}
+
+/* ---- hooks ---- */
+const _scEI=enterInterior;enterInterior=function(pl){_scEI(pl);try{if(pl==="school"&&state.inside==="school"&&scEligible())setTimeout(scDayStart,350)}catch(e){}};
+const _scHU=hourUpdate;hourUpdate=function(h,day){_scHU(h,day);try{scHour(h,day)}catch(e){console.error(e)}};
+setInterval(()=>{try{scNoteCheck()}catch(e){}},700);
+
+
+/* ===================================================================
+   v22: HOSPITAL MEDICS COLLECT THE DEAD
+   - ~10 seconds (100 game-minutes) after a kill, two medics come out of the hospital door
+     (or in through the door when the body is inside a building)
+   - they walk to the body, grab it and drag it back to the hospital,
+     leaving a blood trail; at most 3 squads work at once
+   - if you are somewhere else the body is simply collected a bit later
+   =================================================================== */
+document.head.insertAdjacentHTML("beforeend","<style>"+
+".htMed{pointer-events:none;z-index:6;animation:htmin .5s both}.htMed .name{font-size:11px;top:-16px}"+
+"@keyframes htmin{from{opacity:0}to{opacity:1}}"+
+".htStain i.tr{animation:none;opacity:.55}"+
+"</style>");
+const HM={DELAY:100,MAX:3,WALK:2.3,DRAG:1.4,FAR:180,HARD:600,cool:0};
+const HM_LOOK=[{skin:SK.Light,hair:HC.Brown,hs:"short",top:"#f6fafb",bottom:"#1f8a96",eyes:"Brown"},{skin:SK.Tan,hair:HC.Black,hs:"bun",top:"#f6fafb",bottom:"#1f8a96",eyes:"Green"}];
+function htMedList(){return state.medics||(state.medics=[])}
+function htMedView(b){return b.in?state.inside===b.in:(!state.inside&&AREA()===b.area)}
+function htMedGate(b){
+ const[W,H]=WH();
+ if(b.in){const B=RB();return{x:B.x+B.w/2,y:B.y+B.h-14}}
+ if(b.area==="centre")return doorPos("hospital");
+ const o={north:[W/2,H+40],south:[W/2,-40],east:[-40,H/2],west:[W+40,H/2]}[b.area]||[-40,H/2];
+ return{x:o[0],y:o[1]}}
+function htMedHTML(sq,k){const m=sq.m[k];
+ return'<div class="person htMed'+(m.f?" f"+m.f:"")+'" id="htm-'+sq.id+'-'+k+'" style="--sc:1;left:'+Math.round(m.x)+'px;top:'+Math.round(m.y)+'px"><div class="name">🩺</div><div class="av">'+avatar(HM_LOOK[k%2])+'</div></div>'}
+function htMedDraw(){
+ if(!state)return;const w=$("world");if(!w)return;
+ w.querySelectorAll(".htMed").forEach(e=>e.remove());
+ const bs=htBodies();
+ htMedList().forEach(sq=>{const b=bs.find(x=>x.id===sq.bid);if(!b||!htMedView(b))return;sq.m.forEach((m,k)=>w.insertAdjacentHTML("beforeend",htMedHTML(sq,k)))})}
+function htMedKill(sq){[0,1].forEach(k=>{const e=$("htm-"+sq.id+"-"+k);if(e)e.remove()})}
+function htMedDone(b){
+ const L=htMedList(),i=L.findIndex(s=>s.id===b.mid);if(i>=0){htMedKill(L[i]);L.splice(i,1)}
+ b.col=1;b.mid=null;
+ document.querySelectorAll('.htBody[data-hid="'+b.id+'"]').forEach(e=>e.remove());
+ const v=find(b.id);
+ if(v){lg("Hospital medics collected "+v.name+"'s body.");if(htMedView(b))status("🩺 The medics took "+v.first+" away"+(b.in?".":" to the Town Hospital."))}}
+/* one walking step with simple obstacle avoidance; returns true on arrival */
+function htMedStep(sq,tx,ty,sp,centre){
+ const dx=tx-sq.x,dy=ty-sq.y,d=Math.hypot(dx,dy);
+ if(d<=sp){sq.x=tx;sq.y=ty;return true}
+ const ux=dx/d,uy=dy/d;let vx=ux,vy=uy;
+ if(centre&&d>16&&!blocked(sq.x,sq.y,3)){
+  const sd=sq.sd||1,tryDir=a=>{const c=Math.cos(a),s=Math.sin(a),wx=ux*c-uy*s,wy=ux*s+uy*c;return(!blocked(sq.x+wx*sp*7,sq.y+wy*sp*7,4)&&!blocked(sq.x+wx*sp,sq.y+wy*sp,4))?[wx,wy]:null};
+  let r=tryDir(0);
+  if(!r)for(const m of[.6,1.2,1.9,2.6]){r=tryDir(m*sd);if(r){break}r=tryDir(-m*sd);if(r){sq.sd=-sd;break}}
+  if(!r){sq.bk=(sq.bk||0)+1;if(sq.bk>25){const s=safeSpot(sq.x+ux*60,sq.y+uy*60);sq.x=s.x;sq.y=s.y;sq.bk=0}return false}
+  vx=r[0];vy=r[1]}
+ sq.bk=0;sq.x+=vx*sp;sq.y+=vy*sp;sq.dx=(sq.dx||0)*.8+vx*.2;sq.dy=(sq.dy||0)*.8+vy*.2;return false}
+function htMedTick(){
+ if(!state||state.ended||$("game").style.display==="none"||modalOpen())return;
+ const bs=htBodies(),L=htMedList();
+ /* squads whose body is gone (expired / year skipped) */
+ for(let i=L.length-1;i>=0;i--){const sq=L[i],b=bs.find(x=>x.id===sq.bid);if(!b||b.col){htMedKill(sq);L.splice(i,1)}}
+ bs.forEach(b=>{if(b.mid&&!L.some(s=>s.id===b.mid))b.mid=null});
+ /* nobody watching for a while, or it took too long: just collect it */
+ bs.forEach(b=>{if(b.col)return;const age=state.clock-b.t;if(age>=HM.HARD||(age>=HM.FAR&&!htMedView(b)))htMedDone(b)});
+ /* dispatch the next squad */
+ if(HM.cool>0)HM.cool--;
+ if(L.length<HM.MAX&&HM.cool<=0){
+  const nx=bs.filter(b=>!b.col&&!b.mid&&state.clock>=b.t&&state.clock-b.t>=HM.DELAY).sort((a,c)=>a.t-c.t)[0];
+  if(nx){const g=htMedGate(nx),sq={id:"m"+(state.medSeq=(state.medSeq||0)+1),bid:nx.id,ph:"go",x:g.x,y:g.y,dx:0,dy:1,st:0,lx:0,ly:0,m:[{x:g.x-10,y:g.y},{x:g.x+10,y:g.y}]};
+   nx.mid=sq.id;L.push(sq);HM.cool=40;
+   if(htMedView(nx)){const w=$("world"),v=find(nx.id);sq.m.forEach((m,k)=>w.insertAdjacentHTML("beforeend",htMedHTML(sq,k)));if(v)status("🩺 Medics from the hospital are coming for "+v.first+"'s body.")}}}
+ /* move the squads */
+ L.forEach(sq=>{
+  const b=bs.find(x=>x.id===sq.bid);if(!b)return;
+  const view=htMedView(b),centre=!b.in&&b.area==="centre",gate=htMedGate(b);
+  sq.f=(sq.f||0)+1;
+  let slot=[[sq.x-10,sq.y+3],[sq.x+10,sq.y-3]];
+  if(sq.ph==="go"){
+   if(htMedStep(sq,b.x,b.y,HM.WALK,centre)){sq.ph="grab";sq.st=0}
+  }else if(sq.ph==="grab"){
+   slot=[[b.x-26,b.y+8],[b.x+26,b.y+8]];
+   if(++sq.st>=24){sq.ph="drag";sq.lx=sq.x;sq.ly=sq.y}
+  }else{
+   const arrived=htMedStep(sq,gate.x,gate.y,HM.DRAG,centre);
+   b.dx=Math.round((sq.x-b.x)*10)/10;b.dy=Math.round((sq.y-b.y)*10)/10;
+   const n=Math.hypot(sq.dx,sq.dy)||1,ux=sq.dx/n,uy=sq.dy/n;
+   slot=[[sq.x+ux*34-uy*12,sq.y+uy*34+ux*12],[sq.x+ux*34+uy*12,sq.y+uy*34-ux*12]];
+   if(Math.hypot(sq.x-sq.lx,sq.y-sq.ly)>16){
+    sq.lx=sq.x;sq.ly=sq.y;(b.tr||(b.tr=[])).push([Math.round(sq.x),Math.round(sq.y)]);if(b.tr.length>80)b.tr.shift();
+    if(view){const s=document.querySelector('.htStain[data-hid="'+b.id+'"]');if(s)s.insertAdjacentHTML("beforeend",'<i class="tr" style="left:'+(Math.round(sq.x)-5)+'px;top:'+(Math.round(sq.y)-3)+'px;width:10px;height:6px"></i>')}}
+   if(arrived){htMedDone(b);return}
+  }
+  sq.m.forEach((m,k)=>{
+   const px=m.x;m.x+=(slot[k][0]-m.x)*.3;m.y+=(slot[k][1]-m.y)*.3;
+   if(Math.abs(m.x-px)>.3)m.f=m.x<px?"l":"r";
+   if(!view)return;
+   const w=$("world");let e=$("htm-"+sq.id+"-"+k);
+   if(!e){w.insertAdjacentHTML("beforeend",htMedHTML(sq,k));e=$("htm-"+sq.id+"-"+k);if(!e)return}
+   const bob=sq.ph==="grab"?0:Math.sin(sq.f/3+k*Math.PI)*1.3;
+   e.style.left=Math.round(m.x)+"px";e.style.top=Math.round(m.y+bob)+"px";
+   if(m.f){e.classList.remove("fl","fr");e.classList.add("f"+m.f)}});
+  if(view&&sq.ph==="drag"){const be=document.querySelector('.htBody[data-hid="'+b.id+'"]');if(be){be.classList.remove("fall");be.style.setProperty("--tx",b.dx+"px");be.style.setProperty("--ty",b.dy+"px")}}
+ });
+}
+setInterval(()=>{try{htMedTick()}catch(e){console.error("medics",e)}},30);
 })();
 </script>
 </body>
