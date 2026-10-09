@@ -1617,7 +1617,7 @@ const _rf=rosterFor;rosterFor=function(pl){if(pl==="bank"||pl==="bar")return[STA
   const fam=[ow,ow.spouse&&find(ow.spouse)].concat((ow.children||[]).map(find).filter(k=>k&&k.age<18));return fam.filter((p,i,a)=>p&&p!==m&&p.alive&&!p.away&&p.location==="inhome"&&a.indexOf(p)===i).slice(0,8)}return _rf(pl)};
 const _ip=ipos;ipos=function(p,pl,i,B){return p.staff?{x:B.x+B.w*p.sx,y:B.y+B.h*p.sy}:_ip(p,pl,i,B)};
 const _pf=profile;profile=function(id){const s=STAFF_ID[id];if(!s)return _pf(id);
- modal("<h2>"+esc(s.first)+"</h2><p class=\"muted\">"+s.job+"</p><p>"+(id==="banker"?"\"Welcome to Northside. Savings, loans, or settling a debt?\"":pick(["\"Quiet night. Keep it that way.\"","\"Two rules: no tabs, no fights. Mostly.\"","\"Folks who say they'll have one usually have five.\""]))+'</p><div class="choices"><button id="stf" class="gold">'+(id==="banker"?"🏦 Banking":"🍺 Order a drink")+'</button><button id="close">Close</button></div>');
+ modal("<h2>"+esc(s.first)+"</h2><p class=\"muted\">"+s.job+"</p><p>"+(id==="banker"?"\"Welcome to Northside. Savings, loans, or settling a debt?\"":pick(["\"Quiet night. Keep it that way.\"","\"Two rules: no tabs, no fights. Mostly.\"","\"Folks who say they'll have one usually have five.\"","\"Between us? The dry cleaner in the South Side does more than laundry. Ask about the special service. You didn't hear it from me.\""]))+'</p><div class="choices"><button id="stf" class="gold">'+(id==="banker"?"🏦 Banking":"🍺 Order a drink")+'</button><button id="close">Close</button></div>');
  $("close").onclick=closeModal;$("stf").onclick=()=>id==="banker"?bankMenu():barMenu()};
 const _eb=enterBuilding;enterBuilding=function(pl){if(pl==="bank")return bankMenu();if(pl==="bar")return barMenu();if(pl.startsWith("h_"))return houseMenu(pl.slice(2));_eb(pl)};
 const _ei=enterInterior;enterInterior=function(pl){if(pl.startsWith("h_")){const id=pl.slice(2),ow=ownerOf(id),h=HB[id],d=INT[pl];d.t=ow===state.player?"🏠 Your Home — "+h.name:ow?"🏡 "+ow.first+"'s home — "+h.name:"🏷️ "+h.name+" (for sale)";d.f=ow?["#d9b88c","#d6c3a4","#cfb59a","#dcc9a0","#c9b99a"][hsh(ow.id)%5]:"#e8e2d4"}if(pl==="bar"){if(state.player.age<18){status("Jonas: \"No kids in here. Come back at 18.\"");return}BAR={u:0,d:{},sp:0,t0:state.clock}}
@@ -1812,7 +1812,7 @@ function slots(){const m=state.player;modal('<h2>🎰 Slot machine</h2><div clas
 /* ---- LOAN SHARK ---- */
 const dayNow=()=>Math.floor(state.clock/1440);
 function sharkTalk(){const m=state.player,s=m.shark;
- if(s&&s.owed>0){modal('<h2>🕴️ Vince</h2><p>"You owe me <b>'+fm(s.owed)+'</b>. Due in <b>'+Math.max(0,s.due-dayNow())+" day(s)</b>.\""+(s.strikes?'<br><span class="warn">⚠ You\'ve already been warned '+s.strikes+" time(s).</span>":"")+'</p><div class="choices"><button id="pay" class="gold">Pay what I can ('+fm(Math.min(m.money,s.owed))+')</button><button id="close">Close</button></div>');$("close").onclick=closeModal;$("pay").onclick=()=>{const n=Math.min(m.money,s.owed);if(n<=0){status("You have nothing on you.");return}m.money-=n;s.owed-=n;if(s.owed<=0){m.shark=null;lg(m.name+" paid off the loan shark.");status("Vince: \"Pleasure doing business.\"")}renderTop();closeModal();sharkTalk()}}
+ if(s&&s.owed>0){modal('<h2>🕴️ Vince</h2><p>"You owe me <b>'+fm(s.owed)+'</b>. Due in <b>'+Math.max(0,s.due-dayNow())+" day(s)</b>.\""+(s.strikes?'<br><span class="warn">⚠ You were already beaten once. Miss this deadline and you are dead.</span>':"")+'</p><div class="choices"><button id="pay" class="gold">Pay what I can ('+fm(Math.min(m.money,s.owed))+')</button><button id="close">Close</button></div>');$("close").onclick=closeModal;$("pay").onclick=()=>{const n=Math.min(m.money,s.owed);if(n<=0){status("You have nothing on you.");return}m.money-=n;s.owed-=n;if(s.owed<=0){m.shark=null;lg(m.name+" paid off the loan shark.");status("Vince: \"Pleasure doing business.\"")}renderTop();closeModal();sharkTalk()}}
  else if(m.money<50)sharkOffer();else{modal('<h2>🕴️ Vince</h2><p>"I only deal with people who are desperate. Come back when you\'re broke."</p><button id="close">Close</button>');$("close").onclick=closeModal}}
 function sharkOffer(){const m=state.player;if(!state||m.shark&&m.shark.owed>0)return;
  const O=[[200,1.4,5],[500,1.5,6],[1000,1.6,7]];
@@ -1824,15 +1824,15 @@ function sharkCheck(){if(!state||state.ended||modalOpen()||$("game").style.displ
  if(left>0)return;
  /* deadline reached */
  if(m.money>=s.owed){m.money-=s.owed;m.shark=null;lg(m.name+" paid off the loan shark.");closeModal();renderTop();status("Vince's men collected "+fm(s.owed)+" from you. Debt cleared.");return}
- const took=Math.max(0,Math.round(m.money));s.owed-=took;m.money-=took;const k=s.strikes,dp=[0,.35,.65,.9][Math.min(k,3)];
- if(Math.random()<dp){killed(took);return}
+ const took=Math.max(0,Math.round(m.money));s.owed-=took;m.money-=took;const k=s.strikes;
+ if(k>=1){killed(took);return}
  beating(took,k)}
-function beating(took,k){const m=state.player,s=m.shark;s.strikes=k+1;s.warned=0;s.owed=Math.round(s.owed*1.25);s.due=dayNow()+(k===0?5:3);
+function beating(took,k){const m=state.player,s=m.shark;s.strikes=k+1;s.warned=0;s.owed=Math.round(s.owed*1.25);s.due=dayNow()+5;
  const inj=[...new Set([pick(["arm","leg","rib","nose","hand"]),Math.random()<.7?pick(["rib","leg","conc","arm"]):null].filter(Boolean))];inj.forEach(i=>addIll(m,i,true));
  const hit=10+k*8;m.stats.health=clamp(m.stats.health-hit,1,100);m.mem.push(state.year+" — Beaten by loan shark Vince's men for an unpaid debt.");lg(m.name+" was beaten by loan sharks and ended up in hospital.");
  state.inside=null;state.area="centre";const d=doorPos("hospital");m.x=d.x;m.y=d.y+14;state.clock+=240;renderWorld();render();
  const names=inj.map(i=>DZ[i].n.toLowerCase());
- modal('<h2>🩸 Vince\'s men found you</h2><div class="event"><b>'+(k===0?"First warning.":"Second visit.")+'</b> Two large men cornered you in an alley.</div>'+(took?'<div class="event">They took all your cash ('+fm(took)+').</div>':"")+'<div class="event">You were left with: <b>'+names.join(" and ")+"</b>. A passer-by called an ambulance.</div><div class=\"event\">Health −"+hit+". Your debt grew to <b>"+fm(s.owed)+"</b>, now due in <b>"+(k===0?5:3)+" days</b>.</div><p class=\"warn\">⚠ "+(k===0?"Next time it won't be just a warning.":"There will not be a third warning.")+'</p><div class="choices"><button id="doc" class="gold">🏥 See the doctor</button><button id="close">Close</button></div>');
+ modal('<h2>🩸 Vince\'s men found you</h2><div class="event"><b>Final warning.</b> Two large men cornered you in an alley.</div>'+(took?'<div class="event">They took all your cash ('+fm(took)+').</div>':"")+'<div class="event">You were left with: <b>'+names.join(" and ")+"</b>. A passer-by called an ambulance.</div><div class=\"event\">Health −"+hit+". Your debt grew to <b>"+fm(s.owed)+"</b>, now due in <b>5 days</b>. Pay it or you die.</div><p class=\"warn\">⚠ "+"This was your only warning. Miss the next deadline and you die."+'</p><div class="choices"><button id="doc" class="gold">🏥 See the doctor</button><button id="close">Close</button></div>');
  $("close").onclick=closeModal;$("doc").onclick=()=>{closeModal();enterInterior("hospital");enterBuilding("hospital")}}
 function killed(took){const m=state.player;m.shark=null;state.inside=null;closeModal();
  m.mem.push(state.year+" — Murdered by loan shark Vince's men over an unpaid debt.");lg(m.name+" was killed by loan sharks over an unpaid debt.");
@@ -3080,7 +3080,7 @@ freshStart=function(){svDelete("auto");_fsOrig();svBar()};
    - Hospital medics come and drag bodies away (v22); anything left vanishes after one in-game day, or when a year is skipped
    =================================================================== */
 PL.hitman={a:"south",x:10,y:56,w:160,h:100};
-INT.hitman={t:"🕴️ Hitman Office — Discreet Solutions",f:"#4a4650",o:[
+INT.hitman={t:"🧺 Kowalski Dry Cleaning — back room",f:"#4a4650",o:[
  ["📋",20,28,"Order a contract","ht:order"],
  ["🕴️",50,28,"The Fixer (become a hitman)","ht:join"],
  ["🗂️",80,28,"Contract board","ht:board"],
@@ -3249,7 +3249,7 @@ function htSeg(px,py,ax,ay,bx,by){const dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy||1;let 
 function htShoot(mx,my){
  const me=state.player;if(!htIsHM()||me.weapon!=="gun"||inPrison())return;
  const now=performance.now();if(now-HT.last<160)return;HT.last=now;
- if((me.ammo||0)<=0){status("🔫 Click. Out of ammo — buy more at the Hitman Office armory.");return}
+ if((me.ammo||0)<=0){status("🔫 Click. Out of ammo — buy more at the armory.");return}
  const ox=me.x,oy=me.y-10,dx=mx-ox,dy=my-oy,len=Math.hypot(dx,dy);if(len<4)return;
  me.ammo--;const R=460,ex=ox+dx/len*R,ey=oy+dy/len*R;
  const hits=htCands().map(c=>Object.assign({c},htSeg(c.x,c.y,ox,oy,ex,ey))).filter(h=>h.d<=22).sort((a,b)=>a.t-b.t).slice(0,3);
@@ -3485,14 +3485,14 @@ function htExpire(){
 /* ---------- hooks into the existing game ---------- */
 const _htRO=runObj;runObj=function(pl,o){const a=o&&o[4];if(a&&typeof a==="string"&&a.startsWith("ht:")){({order:htOrder,join:htJoin,board:htBoard,armory:htArmory})[a.slice(3)]();return}_htRO(pl,o)};
 const _htRD=renderDistrict;renderDistrict=function(){const keep=PL.hitman;delete PL.hitman;try{_htRD()}finally{PL.hitman=keep}
- if(AREA()==="south"){$("world").insertAdjacentHTML("afterbegin",dB(PL.hitman,"🕴️ HITMAN OFFICE","hitman","#3a3743",'<div class="fs" style="background:#111;color:#e7ca80;border-color:#e7ca80">BY APPOINTMENT</div>'))}};
+ if(AREA()==="south"){$("world").insertAdjacentHTML("afterbegin",dB(PL.hitman,"🧺 KOWALSKI DRY CLEANING","hitman","#b9c3c9"))}};
 const _htRW=renderWorld;renderWorld=function(){_htRW();try{htDraw();htDecor();htHud()}catch(e){console.error(e)}};
 const _htHU=hourUpdate;hourUpdate=function(h,day){_htHU(h,day);try{htHour()}catch(e){console.error(e)}};
 const _htAY=advanceYear;advanceYear=function(){const y0=state&&state.year;_htAY();if(!state||state.ended||state.year===y0)return;
  try{state.bodies=[];document.querySelectorAll(".htBody,.htStain").forEach(e=>e.remove());state.heat=Math.max(0,(state.heat||0)-3);state.spree=0;
   const all=htHits().slice();state.hits=[];all.forEach(h=>{try{htExec(h)}catch(e){console.error(e)}})}catch(e){console.error(e)}};
 const _htCC=crimeCard;crimeCard=function(){let h=_htCC();const m=state.player;
- if(m.hitman){const H=m.hitman;h+='<div class="card"><h3>🕴️ Hitman</h3><div class="row"><span>Since</span><b>'+H.y+'</b></div><div class="row"><span>Kills</span><b>'+H.kills+'</b></div><div class="row"><span>Contracts done</span><b>'+(H.jobs||0)+'</b></div><div class="row"><span>🔪 Knife</span><b>owned</b></div><div class="row"><span>🔫 Pistol ammo</span><b>'+(m.ammo||0)+'</b></div><p class="muted">Q or the weapon bar draws a weapon. With the gun out, click or hold to shoot. Only adults can be hit. Hospital medics come to drag the bodies away to the hospital (or they disappear after a day / when you skip a year).</p></div>'}
+ if(m.hitman){const H=m.hitman;h+='<div class="card"><h3>🕴️ Contract work</h3><div class="row"><span>Since</span><b>'+H.y+'</b></div><div class="row"><span>Kills</span><b>'+H.kills+'</b></div><div class="row"><span>Contracts done</span><b>'+(H.jobs||0)+'</b></div><div class="row"><span>🔪 Knife</span><b>owned</b></div><div class="row"><span>🔫 Pistol ammo</span><b>'+(m.ammo||0)+'</b></div><p class="muted">Q or the weapon bar draws a weapon. With the gun out, click or hold to shoot. Only adults can be hit. Hospital medics come to drag the bodies away to the hospital (or they disappear after a day / when you skip a year).</p></div>'}
  if(htCT()){const v=find(htCT().id);h+='<div class="card"><h3>🎯 Active contract</h3><div class="row"><span>Target</span><b>'+esc(v?v.name:"?")+'</b></div><div class="row"><span>Reward</span><b>'+fm(htCT().pay)+'</b></div><div class="row"><span>Days left</span><b>'+htDaysLeft()+'</b></div></div>'}
  if(htHits().length)h+='<div class="card"><h3>📞 Pending contracts</h3>'+htHits().map(x=>{const v=find(x.id);return'<div class="event">'+(v?esc(v.name):"?")+' — in progress</div>'}).join("")+'</div>';
  return h};
@@ -3500,7 +3500,7 @@ setInterval(()=>{if(!state||$("game").style.display==="none")return;try{htExpire
 
 /* ---------- Murder removed from the Crime menu: killing now goes through the Hitman Office ---------- */
 delete CR.murder;
-murder=function(){status("🕴️ Killing is handled through the Hitman Office now (South Side).")};
+murder=function(){status("Killing is handled by people who know people. Ask around.")};
 
 /* ---------- DEATH SEQUENCE (any death): tombstone -> life stats -> choose heir ---------- */
 document.head.insertAdjacentHTML("beforeend","<style>"+
@@ -3963,7 +3963,388 @@ function htMedTick(){
  });
 }
 setInterval(()=>{try{htMedTick()}catch(e){console.error("medics",e)}},30);
+
+/* ===================================================================
+   v24: DEBT HITMAN
+   - Loan shark deadline missed too often (old instant "killed") -> hitman ambush
+   - Bank debt unpaid for 2+ years -> chance each year that a hitman is sent
+   - Timing duel: block the telegraphed strike. Strength = extra chances.
+   =================================================================== */
+(function(){
+const NAMES=["Marek","Dario","Viktor","Silas","Ivo","Kasper","Rurik","Nikolai","Bruno","Sasha"],
+ NICKS=["the Collector","the Closer","Two-Finger","the Quiet Man","Ledger","the Undertaker","Grey Coat"],
+ CUE={L:["🥊","Left hook!"],R:["🥊","Right hook!"],D:["🪓","Overhead swing!"]},
+ KEYMAP={ArrowLeft:"L",a:"L",A:"L",ArrowRight:"R",d:"R",D:"R",ArrowDown:"D",s:"D",S:"D"};
+let HM=null;
+document.head.insertAdjacentHTML("beforeend","<style>"+
+"#hmArena{user-select:none;-webkit-user-select:none}"+
+".hmTop{display:flex;justify-content:space-between;gap:8px;font-size:18px;margin:6px 0}"+
+".hmStage{background:#141b15;border:1px solid #4b5b49;border-radius:12px;padding:16px 10px;text-align:center;min-height:128px;transition:transform .08s}"+
+".hmStage.shake{animation:hmshake .35s}@keyframes hmshake{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}"+
+".hmFig{font-size:38px;letter-spacing:18px}.hmCue{margin-top:8px;font-size:22px;min-height:34px;color:#cfd8c9}"+
+".hmCue .hmI{font-size:30px;margin-right:8px}.hmFeint{color:#ffb347!important}.hmNow{color:#ff5a5a!important;font-size:26px!important}.hmOk{color:#7be07b!important}.hmBad{color:#ff8a8a!important}"+
+".hmBar{height:9px;background:#111;border-radius:8px;overflow:hidden;margin:10px 0}.hmBar i{display:block;height:100%;width:0;background:#ff5a5a}"+
+".hmBtns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}.hmBtns button{padding:20px 4px;font-size:18px;touch-action:manipulation}"+
+"</style>");
+
+const strOf=()=>{const s=state.player.stats;return Math.round(clamp(s&&s.strength!=null?s.strength:40,0,100))};
+const chances=()=>{const s=strOf();return{s,base:2,extra:Math.floor(s/25),pro:(typeof htIsHM==="function"&&htIsHM())?1:0}};
+const alive=()=>{if(!HM||!HM.on)return false;if(!$("hmArena")||!state||state.player.alive===false){abort();return false}return true};
+function abort(){if(HM){clearTimeout(HM.t);HM.on=0}}
+const lines=a=>a.filter(Boolean).map(x=>'<div class="event">'+x+'</div>').join("");
+function refresh(){try{renderTop();renderPanel()}catch(e){}try{save(true)}catch(e){}}
+
+/* ---------- intro ---------- */
+function intro(src,took){
+ const c=chances(),nm=pick(NAMES),nick=pick(NICKS);
+ const why=src==="shark"?"Vince is done waiting. He sent a professional.":"Your creditors sold your debt to people who don't send letters.";
+ modal('<h2>🎯 A hitman found you</h2>'+lines([
+  '<b>'+nm+' '+nick+'</b> steps out of the crowd. '+why,
+  '💪 Your strength: <b>'+c.s+'</b> → '+(c.extra>0?'<b>+'+c.extra+' extra chance'+(c.extra>1?'s':'')+'</b> to survive his blows.':'<b>no extra chances</b>. You are too weak to take a punch, so it all comes down to your reflexes.'),
+  c.pro?'🕴️ Professional instincts: <b>+1 chance</b>.':''])+
+  '<p class="muted">Block the strike with the matching button (◀ ▼ ▶ or A / S / D) <b>only when the cue turns red</b>. Orange cues are feints. Land <b>6</b> counters to win. Every mistake costs one chance; at zero he finishes the job.</p>'+
+  '<div class="choices"><button id="hmGo" class="gold">Fight</button></div>');
+ $("hmGo").onclick=()=>begin(src,took,nm,nick,c);
+}
+
+/* ---------- fight ---------- */
+function begin(src,took,nm,nick,c){
+ const total=c.base+c.extra+c.pro;
+ HM={on:1,src,took,nm,nick,c,total,left:total,need:6,hit:0,taken:0,round:0,phase:"idle",cur:null,t:0};
+ modal('<h2>🎯 '+esc(nm)+' '+esc(nick)+'</h2><div id="hmArena"><div class="hmTop"><span id="hmLives"></span><span id="hmHp"></span></div>'+
+  '<div class="hmStage" id="hmStage"><div class="hmFig">🧍🕴️</div><div class="hmCue" id="hmCue"></div></div>'+
+  '<div class="hmBar" id="hmTime"><i></i></div>'+
+  '<div class="hmBtns"><button data-k="L">◀ Block</button><button data-k="D">▼ Duck</button><button data-k="R">Block ▶</button></div></div>');
+ document.querySelectorAll("#hmArena .hmBtns button").forEach(b=>b.addEventListener("pointerdown",e=>{e.preventDefault();press(b.dataset.k)}));
+ draw();cue("🕴️","He circles you…","hmIdle");
+ HM.t=setTimeout(nextRound,800);
+}
+function draw(){
+ if(!HM||!$("hmLives"))return;
+ let h="";for(let i=0;i<HM.total;i++){const k=i<HM.c.base?"❤️":i<HM.c.base+HM.c.extra?"💪":"🕶️";h+=i<HM.left?k:"🖤"}
+ $("hmLives").textContent=h;$("hmHp").textContent="🕴️ "+"▮".repeat(HM.need-HM.hit)+"▯".repeat(HM.hit);
+}
+function cue(icon,text,cls){const e=$("hmCue");if(!e)return;e.className="hmCue "+(cls||"");e.innerHTML='<span class="hmI">'+icon+'</span><b>'+text+'</b>'}
+function timer(ms){const i=document.querySelector("#hmTime i");if(!i)return;i.style.transition="none";i.style.width="100%";void i.offsetWidth;i.style.transition="width "+ms+"ms linear";i.style.width="0%"}
+function timerOff(){const i=document.querySelector("#hmTime i");if(!i)return;i.style.transition="none";i.style.width="0%"}
+function shake(){const s=$("hmStage");if(!s)return;s.classList.remove("shake");void s.offsetWidth;s.classList.add("shake")}
+
+function nextRound(){
+ if(!alive())return;
+ HM.round++;HM.phase="idle";draw();cue("🕴️","He circles you…","hmIdle");timerOff();
+ const win=Math.max(560,1150-HM.round*65),ks=["L","D","R"],fch=HM.round>=3?Math.min(.5,.1*(HM.round-1)):0;
+ HM.t=setTimeout(()=>{
+  if(!alive())return;
+  const k=pick(ks);
+  if(Math.random()<fch){
+   HM.phase="feint";cue(CUE[k][0],CUE[k][1]+" …","hmFeint");
+   const k2=pick(ks.filter(x=>x!==k));
+   HM.t=setTimeout(()=>arm(k2,win,true),340);
+  }else arm(k,win,false);
+ },450+Math.random()*750);
+}
+function arm(k,win,sw){
+ if(!alive())return;
+ HM.phase="open";HM.cur=k;cue(CUE[k][0],CUE[k][1]+(sw?" (switched!)":""),"hmNow");timer(win);
+ HM.t=setTimeout(()=>resolve(false,"Too slow — he lands the blow!"),win);
+}
+function press(k){
+ if(!alive())return;
+ if(HM.phase==="open")resolve(k===HM.cur,"Wrong block — he hits you!");
+ else if(HM.phase==="feint")resolve(false,"You fell for the feint!");
+}
+function resolve(ok,why){
+ clearTimeout(HM.t);HM.phase="done";timerOff();
+ if(ok){HM.hit++;cue("✅","Blocked — counter lands!","hmOk")}
+ else{HM.left--;HM.taken++;cue("💥",why,"hmBad");shake()}
+ draw();
+ if(HM.hit>=HM.need){HM.t=setTimeout(win,650);return}
+ if(HM.left<=0){HM.t=setTimeout(lose,650);return}
+ HM.t=setTimeout(nextRound,900);
+}
+
+/* ---------- outcomes ---------- */
+function win(){
+ if(!HM||!HM.on)return;const h=HM,m=state.player,s=m.shark;h.on=0;
+ const loot=rnd(200,700),dh=h.taken*6,gain=rnd(1,2);let inj="";
+ m.money+=loot;m.stats=m.stats||{};
+ m.stats.strength=clamp((m.stats.strength!=null?m.stats.strength:40)+gain,0,100);
+ m.stats.health=clamp((m.stats.health!=null?m.stats.health:100)-dh,1,100);
+ if(h.taken>=2){const i=pick(["arm","leg","rib","nose","hand"]);if(addIll(m,i,true))inj=DZ[i].n.toLowerCase()}
+ let dbt;
+ if(h.src==="shark"&&s&&s.owed>0){
+  m.money+=h.took;s.owed=Math.round((s.owed+h.took)*1.1);s.strikes=Math.min(s.strikes||0,1);s.warned=0;s.due=dayNow()+6;
+  dbt='Vince is furious. Your debt is now <b>'+fm(s.owed)+'</b>, due in <b>6 days</b>.';
+ }else{m.missed=1;dbt="Your creditors lost their man. They'll send someone else if you keep ignoring the payments."}
+ m.mem.push(state.year+" — Beat a hitman sent over my debts.");lg(m.name+" fought off a hitman sent to collect a debt.");
+ modal('<h2>🏆 You are still standing</h2>'+lines([
+  esc(h.nm)+' '+esc(h.nick)+' limps away.',
+  'You took <b>'+h.taken+'</b> hit'+(h.taken===1?'':'s')+(dh?' (health −'+dh+')':'')+(inj?' and ended up with a <b>'+inj+'</b> injury':'')+'.',
+  'You found <b>'+fm(loot)+'</b> in his coat'+(h.src==="shark"?' and kept your cash.':'.'),
+  '💪 Strength +'+gain+'.',dbt])+
+  '<div class="choices"><button id="hmOk" class="gold">Continue</button></div>');
+ $("hmOk").onclick=()=>{closeModal();refresh()};refresh();
+}
+function lose(){
+ if(!HM||!HM.on)return;const h=HM,m=state.player;h.on=0;
+ m.shark=null;state.inside=null;
+ m.mem.push(state.year+" — Killed by a hitman sent over unpaid debts.");lg(m.name+" was killed by a hitman over unpaid debts.");
+ modal('<h2>💀 He didn\'t miss twice</h2><p>'+esc(h.nm)+' '+esc(h.nick)+' did what he was paid for.</p><p class="muted">'+(h.src==="shark"?"The debt died with you.":"The bank quietly writes the debt off.")+'</p><div class="choices"><button id="hmDie" class="gold">Continue</button></div>');
+ $("hmDie").onclick=()=>{closeModal();die(m)};
+}
+
+/* ---------- keyboard ---------- */
+document.addEventListener("keydown",e=>{
+ if(!HM||!HM.on||!$("hmArena"))return;const k=KEYMAP[e.key];if(!k)return;
+ e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)press(k);
+},true);
+
+/* ---------- triggers ---------- */
+/* loan shark: the old instant kill becomes a hitman fight */
+killed=function(took){
+ const m=state.player;abort();m.shark=null;state.inside=null;closeModal();
+ const nm=pick(NAMES),nick=pick(NICKS);
+ m.mem.push(state.year+" — Killed by a hitman Vince sent after I ignored his final warning.");lg(m.name+" was killed by a hitman over an unpaid debt.");
+ modal('<h2>💀 No more warnings</h2>'+lines(['You were beaten once and told it was your last chance.','<b>'+esc(nm)+' '+esc(nick)+'</b> was waiting for you in the dark. Vince does not give second warnings.'])+'<p class="muted">The debt died with you.</p><div class="choices"><button id="hmDie" class="gold">Continue</button></div>');
+ $("hmDie").onclick=()=>{closeModal();die(m)}};
+/* bank debt unpaid for 2+ years */
+const _fy=finYear;
+finYear=function(){
+ _fy();
+ try{
+  const m=state.player,mi=m.missed||0;
+  if(!m||m.alive===false||!(m.debt>0)||mi<2||inPrison())return;
+  lg("Creditors are running out of patience with "+m.name+".");
+  if(Math.random()<Math.min(.85,.3+.2*(mi-2))){
+   m.mem.push(state.year+" — A hitman was sent after me for my unpaid loans.");
+   setTimeout(function w(){
+    if(!state||state.ended||state.player.alive===false||inPrison())return;
+    if(modalOpen()||$("game").style.display==="none")return setTimeout(w,1500);
+    intro("bank",0);
+   },900);
+  }
+ }catch(e){console.error("debt hitman",e)}
+};
+/* warning card on the Home panel */
+const _hp9=homePanel;
+homePanel=function(){
+ _hp9();const m=state.player;
+ if(m.debt>0&&(m.missed||0)>=2)$("content").insertAdjacentHTML("beforeend",'<div class="card"><h3>🎯 Contract on your head</h3><p class="muted">Your creditors have lost patience after <b>'+m.missed+'</b> missed payments. A hitman may come any year. Strength ('+strOf()+') gives you +'+Math.floor(strOf()/25)+' extra chance'+(Math.floor(strOf()/25)===1?"":"s")+' in the fight. Pay down your debt at the bank.</p></div>');
+};
 })();
+/* ===== v25: the hitman office is a secret (dry cleaner front + back room door) ===== */
+(function(){
+const BACK=INT.hitman;
+const FRONT={t:"🧺 Kowalski Dry Cleaning",f:"#dfe6ea",o:[
+ ["🧺",18,28,"Washing machine 1","dc:w0"],
+ ["🧺",40,28,"Washing machine 2","dc:w1"],
+ ["🕶️",64,52,"The clerk (Mr. Kowalski?)","dc:clerk"],
+ ["👔",18,62,"Clothes rack","fx:Rows of plastic-wrapped suits. None of the tags have names on them.|health|0|0"],
+ ["🚪",86,26,"Door marked STAFF ONLY","dc:back"]
+]};
+INT.hitman=FRONT;
+const room=r=>{INT.hitman=r==="back"?BACK:FRONT};
+const inBack=()=>state.inside==="hitman"&&INT.hitman===BACK;
+const eligible=()=>{const m=state.player;return m.age>=18&&!!((m.rec||[]).length||m.shark||m.hitman||m.htRumor)};
+const known=()=>{const m=state.player;return !!(m.htKnown||m.hitman)};
+const heard=()=>{const m=state.player;return !!(m.htRumor||m.htKnown||m.hitman)};
+function moveIn(r){room(r);const p=state.player,B=RB();p.x=B.x+B.w/2;p.y=B.y+B.h-45;renderWorld()}
+
+const _eiS=enterInterior;
+enterInterior=function(pl){if(pl==="hitman")room("front");_eiS(pl);if(pl==="hitman"&&state.inside==="hitman")status("The smell of detergent. Wash your clothes, or talk to the clerk.")};
+
+const _lvS=leave;
+leave=function(){if(inBack()){moveIn("front");status("You slip back out to the shop floor.");return}_lvS()};
+
+const _roS=runObj;
+runObj=function(pl,o){const a=o&&o[4];
+ if(a==="dc:back"){
+  if(state.player.age<18){status("Clerk: \"Staff only, kid.\"");return}
+  if(known()){moveIn("back");status("You step through the staff door into the back room.");return}
+  status("The staff door is locked."+(heard()&&eligible()?" Maybe the clerk can help you.":""));return}
+ if(a==="paper:read"){paper();return}
+ if(a==="dc:clerk"){clerk();return}
+ if(a==="dc:w0"||a==="dc:w1"){machine(+a[4]);return}
+ _roS(pl,o)};
+
+/* ---------- laundry ---------- */
+const WASH_MIN=45,LOAD_COST=5,CLEAN_FEE=10,dayOf=()=>Math.floor(state.clock/1440);
+function cl(){const m=state.player,d=dayOf();
+ if(!m.cl)m.cl={clean:4,dirty:2,day:d};
+ const gone=d-(m.cl.day||d);if(gone>0){const t=Math.min(gone,m.cl.clean);m.cl.clean-=t;m.cl.dirty+=t;m.cl.day=d}
+ m.mach=m.mach||[null,null];return m.cl}
+function machine(i){
+ const m=state.player,c=cl(),M=m.mach[i],lab="Machine "+(i+1);
+ if(M&&state.clock<M.done){
+  const left=Math.ceil(M.done-state.clock);
+  modal('<h2>🧺 '+lab+'</h2><p>The drum is spinning with <b>'+M.n+'</b> item'+(M.n>1?'s':'')+'.</p><p class="muted">About '+left+' minute'+(left>1?'s':'')+' left.</p><div class="choices"><button id="close">Close</button></div>');$("close").onclick=closeModal;return}
+ if(M){
+  modal('<h2>🧺 '+lab+'</h2><p>The cycle has finished. <b>'+M.n+'</b> clean item'+(M.n>1?'s':'')+' inside, still warm.</p><div class="choices"><button id="take" class="gold">Take your clothes</button><button id="close">Leave them</button></div>');
+  $("close").onclick=closeModal;
+  $("take").onclick=()=>{c.clean+=M.n;m.mach[i]=null;closeModal();
+   const dd=dayOf();m.fxd=m.fxd||{};let g="";
+   if(m.fxd.wash!==dd&&m.stats.charisma!=null){m.fxd.wash=dd;m.stats.charisma=clamp(m.stats.charisma+1,0,100);g=" (+1 charisma)"}
+   status("You take your clean clothes out of the machine."+g);renderTop();try{renderPanel()}catch(e){}};return}
+ const other=m.mach[1-i]?m.mach[1-i].n:0;
+ modal('<h2>🧺 '+lab+'</h2><p>Empty and smelling of detergent. A coin slot reads <b>'+fm(LOAD_COST)+'</b> per load.</p><div class="row"><span>👕 Clean clothes</span><b>'+c.clean+'</b></div><div class="row"><span>🧦 Dirty clothes</span><b>'+c.dirty+'</b></div><div class="choices"><button id="put" class="gold"'+(c.dirty>0&&m.money>=LOAD_COST?"":" disabled")+'>Put in dirty clothes ('+Math.min(4,c.dirty)+')</button><button id="close">Close</button></div>'+(c.dirty<=0?'<p class="muted">You have nothing dirty to wash.</p>':(m.money<LOAD_COST?'<p class="muted">You need '+fm(LOAD_COST)+'.</p>':'')));
+ $("close").onclick=closeModal;
+ if($("put"))$("put").onclick=()=>{const n=Math.min(4,c.dirty);if(n<=0||m.money<LOAD_COST)return;m.money-=LOAD_COST;c.dirty-=n;m.mach[i]={n,done:state.clock+WASH_MIN};closeModal();status("You load "+n+" item"+(n>1?"s":"")+" and start the wash. Ready in about "+WASH_MIN+" minutes.");renderTop();try{renderPanel()}catch(e){}}}
+
+/* ---------- the clerk ---------- */
+const CLERK_LOOKS=[
+ "A thin man in dark glasses, indoors, at night. His apron is spotless. His knuckles are not.",
+ "He is pressing a shirt with surgical precision while watching the door in the mirror.",
+ "A tattoo creeps out from under his cuff. The ticket book in his hand has no names in it.",
+ "He smiles a second too late. The cash drawer is open, but there is no money in it, just a folded cloth."];
+const CLERK_WHO=[
+ "\"Kowalski. Mr. Kowalski. It says so on the sign.\" You notice the name tag is handwritten.",
+ "\"Family business. My father's, his father's.\" He cannot quite keep the story straight about which one.",
+ "\"Dry cleaner. What else would I be?\" He folds a towel into a perfect square and does not blink.",
+ "\"Does it matter who I am if your shirts come back clean?\""];
+function clerk(){
+ const m=state.player;
+ modal('<h2>🕶️ The clerk</h2><p class="muted">'+pick(CLERK_LOOKS)+'</p><p>"Shirts, suits, curtains. Ticket, please."</p><div class="choices"><button id="svc" class="gold">Have him clean your clothes ('+fm(CLEAN_FEE)+')</button><button id="who">"Who are you?"</button>'+((m.age>=18&&!known()&&heard())?'<button id="ask">"I heard you offer a special service."</button>':'')+'<button id="close">Close</button></div>');
+ $("close").onclick=closeModal;
+ $("who").onclick=()=>{closeModal();modal('<h2>🕶️ The clerk</h2><p>'+pick(CLERK_WHO)+'</p><p class="muted">You cannot tell if he is a real dry cleaner, or just playing one.</p><div class="choices"><button id="close">Close</button></div>');$("close").onclick=closeModal};
+ $("svc").onclick=()=>{closeModal();const c=cl();
+  if(c.dirty<=0){status("Clerk: \"Nothing to clean. Come back when you have something to hide.\"");return}
+  if(m.money<CLEAN_FEE){status("Clerk: \""+fm(CLEAN_FEE)+". Cash only.\"");return}
+  m.money-=CLEAN_FEE;const n=c.dirty;c.clean+=n;c.dirty=0;renderTop();try{renderPanel()}catch(e){}
+  status("He takes "+n+" item"+(n>1?"s":"")+" into the back and returns with them spotless, in under a minute. Real dry cleaners are never that fast.")};
+ if($("ask"))$("ask").onclick=()=>{closeModal();
+  if(eligible()&&(((m.rec||[]).length||m.shark||m.hitman)||Math.random()<.5)){
+   m.htKnown=true;m.mem.push(state.year+" — Found the dry cleaner's back room.");
+   modal('<h2>🕶️ The clerk</h2><p>His smile finally arrives. He glances at the window, then nods at the staff door.</p><p>"It\'s open for you now. Don\'t bring anyone."</p><div class="choices"><button id="go" class="gold">Go in</button><button id="close">Later</button></div>');
+   $("close").onclick=closeModal;$("go").onclick=()=>{closeModal();moveIn("back")}}
+  else status("Clerk: \"Special service? We do dry cleaning. Take your business elsewhere.\"")}}
+
+/* clothes on the Home panel */
+const _hpW=homePanel;
+homePanel=function(){_hpW();try{const c=cl();$("content").insertAdjacentHTML("beforeend",'<div class="card"><h3>👕 Clothes</h3><div class="row"><span>Clean</span><b>'+c.clean+'</b></div><div class="row"><span>Dirty</span><b>'+c.dirty+'</b></div><p class="muted">Wash them at the dry cleaner in the South Side.</p></div>')}catch(e){}};
+
+/* ---------- THE TOWN CRIER: a new newspaper every real-life day ---------- */
+document.head.insertAdjacentHTML("beforeend","<style>"+
+".paper{background:#efe6cf;color:#2a2418;font-family:Georgia,'Times New Roman',serif;padding:14px 16px 12px;border:1px solid #b9ab86;box-shadow:inset 0 0 40px #c9b98a66;max-height:78vh;overflow:auto;border-radius:4px}"+
+".pHead{text-align:center;border-top:4px double #2a2418;border-bottom:4px double #2a2418;padding:4px 0 2px;margin-bottom:8px}"+
+".pTitle{font-size:34px;font-weight:bold;letter-spacing:2px;font-family:'Old English Text MT',Georgia,serif;line-height:1.1}"+
+".pSub{display:flex;justify-content:space-between;font-size:11px;text-transform:uppercase;letter-spacing:1px;border-top:1px solid #2a2418;margin-top:3px;padding-top:2px}"+
+".pBig{font-size:25px;line-height:1.1;margin:6px 0 4px;text-transform:uppercase;text-align:center}"+
+".pLead{font-size:14px;line-height:1.35;margin:0 0 8px;text-align:justify;border-bottom:1px solid #2a2418;padding-bottom:8px}"+
+".pCols{column-count:2;column-gap:16px;column-rule:1px solid #8a7d5a}"+
+".pStory{break-inside:avoid;margin-bottom:10px}.pStory h4{margin:0 0 2px;font-size:15px;line-height:1.15}.pStory p{margin:0;font-size:12.5px;line-height:1.35;text-align:justify}"+
+".pBox{border:2px solid #2a2418;padding:6px 8px;margin:8px 0;font-size:12.5px;background:#e6dbbd}.pBox h5{margin:0 0 3px;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #2a2418}"+
+".pGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pFoot{text-align:center;font-size:10px;letter-spacing:1px;text-transform:uppercase;border-top:1px solid #2a2418;margin-top:6px;padding-top:3px}"+
+".pGos li{margin:0 0 4px;font-style:italic}.pGos ul{margin:0;padding-left:16px}"+
+"@media(max-width:560px){.pCols{column-count:1}.pGrid{grid-template-columns:1fr}.pTitle{font-size:26px}.pBig{font-size:20px}}"+
+"</style>");
+
+function paperRng(seed){let a=seed>>>0;return function(){a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296}}
+function paper(){
+ const m=state.player,now=new Date(),y=now.getFullYear(),mo=now.getMonth(),d=now.getDate();
+ const seed=y*10000+(mo+1)*100+d,R=paperRng(seed*2654435761%4294967296);
+ const doy=Math.floor((now-new Date(y,0,0))/864e5);
+ const shuf=a=>{const b=a.slice();for(let i=b.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b};
+ const one=a=>a[Math.floor(R()*a.length)];
+ let ppl=state.people.filter(p=>p.alive&&!p.away&&p.age>=16&&p!==m).map(p=>p);
+ ppl=shuf(ppl);
+ const fb=["Old Mrs. Brandt","Big Tomas","Auntie Vera","Mr. Pettigrew","Little Jonas","Granny Ilze"];
+ let pi=0;const nm=()=>{const p=ppl[pi%Math.max(1,ppl.length)];pi++;return p?(p.name||p.first):fb[pi%fb.length]};
+ const places=["the Café","the Crooked Lantern","the Golden Ace Casino","Northside Bank","Town Hall","the school gates","the hospital car park","the gym","the church steps","the park"];
+ const items=["frozen peas","garden gnomes","tinned herring","sparkly shoelaces","twelve umbrellas","a very large rug","candles, so many candles","bird seed"];
+ const A=nm(),B=nm(),C=nm(),pl=one(places);
+ const f=t=>t.replace(/\{A\}/g,A).replace(/\{B\}/g,B).replace(/\{C\}/g,C).replace(/\{P\}/g,pl).replace(/\{I\}/g,one(items));
+
+ const HEAD=[
+  ["{A} Wins Pie Contest, {B} Demands A Recount","Judges confirmed that {A}'s apple pie beat {B}'s by two crumbs. {B} has hired a lawyer, or possibly a cousin who owns a suit."],
+  ["Pigeons Now Outnumber Residents, Says Council","A count taken near {P} found more pigeons than people. Officials insist this is 'not yet an emergency'."],
+  ["Mystery Of The Missing Garden Gnomes Deepens","Eleven gnomes have vanished overnight. {A} says the thief had 'good taste', which has not helped the investigation."],
+  ["{A} Seen Arguing With A Parking Meter","Witnesses at {P} say the meter 'started it'. Neither party would comment, though the meter was visibly broken."],
+  ["Strange Lights Above {P}","Residents reported bright lights late last night. {A} claims it was probably nothing, then asked not to be quoted."],
+  ["{A} And {B} Seen Together At Midnight: Friends Or Something More?","Sources spotted the pair near {P} well past bedtime. Both say they were 'just walking'. Both were carrying umbrellas on a dry night."],
+  ["Local Cat Elected Honorary Mayor (Unofficially)","A tabby from near {P} won a poll by 41 votes. The real Mayor said he 'respects the result and the claws'."],
+  ["{A}'s Bicycle Stolen, Later Found In A Tree","Police are baffled how the bike got up there. {A} is more baffled by the bell, which was not theirs."],
+  ["Casino Night Sees Record Losses","Staff at the Golden Ace say the house had a wonderful evening. Winners were unavailable for comment, or did not exist."],
+  ["Rumour: Someone Near {P} Is Making Their Own Cheese","Neighbours report an unmistakable smell. {A} denies everything but admits to owning a lot of milk."],
+  ["Bank Teller Counts Same Pile Of Money Three Times","A customer at Northside Bank said the teller 'looked deeply concerned' by the third count. The total never changed."],
+  ["Heated Row Over Bench Colour At Town Hall","Green or brown? {A} and {B} could not agree, and the meeting ended at 11pm. The bench remains grey."],
+  ["Café Out Of Coffee For Eleven Whole Minutes","Regulars described the outage as 'dark' and 'a test of character'. {A} was seen reading the menu out loud."],
+  ["Sausage Shortage Hits Town","Shoppers near {P} reported empty shelves. {A} blames 'big pig', which nobody could explain."]
+ ];
+ const STO=[
+  ["Council To Review Potholes","Officials promised a review by Friday but did not say which Friday. {A} says the largest hole now has its own weather."],
+  ["{A} Takes Up Painting","The new hobby produced thirty canvases, all of the same duck. Critics call it 'a period'."],
+  ["Lost: One Umbrella, Blue, Dignified","{B} offers a reward of three biscuits for its return. No questions asked, mostly."],
+  ["School Fete Raises Record Amount","Pupils sold cakes, lemonade and one suspiciously old lamp. {C} bought the lamp and refuses to say why."],
+  ["Hospital Thanks Public For Not Falling Off Things","Staff reported a quiet week. They asked residents to 'keep it up and please stop climbing the statue'."],
+  ["Gym Introduces Mandatory Cheering","Members at the gym must now clap for each other's squats. Early reviews are mixed, mostly loud."],
+  ["{C} Sets New Town Record For Longest Nap","The nap was 14 hours and ended only when {C} was asked, politely, to move from a bus stop."],
+  ["Church Bell Rings At Wrong Time Again","Residents say it rang at 3 a.m. {A} insists the bell was 'just excited'."],
+  ["Bakery Warns Of Roll Shortage","Demand for rolls is up 30%. Bakers advise residents to 'think about bread differently'."],
+  ["Park Ducks Declared Unionised","A handwritten notice by the pond lists their demands. They want bread, respect and fewer dogs."],
+  ["Police Remind Residents To Lock Doors, And Also Bicycles, And Also Gnomes","A spokesperson said the town is 'generally safe, just weirdly gnome-rich'."],
+  ["Local Man Insists His Tomato Is Largest Ever","{B}'s tomato was weighed and found to be a small melon. {B} will appeal."],
+  ["Weekend Market Moves To Saturday","Unfortunately it was already on Saturday. Organisers have promised 'clarity'."],
+  ["Jukebox At The Café Stuck On One Song","Customers have now heard it 41 times. {A} requested it be buried with them."],
+  ["{A} Receives Letter Meant For Someone Else","The letter contained a recipe, a threat, and a dinner invitation. {A} chose the dinner."],
+  ["Town Library Quiet, Says Librarian","'Unusually quiet,' said the librarian, who then asked everyone to be even quieter."]
+ ];
+ const TG={funny:"{A} told the same joke four times at {P}. Two people laughed, one of them was {A}.",kind:"{A} paid for a stranger's coffee again. Is this town not suspicious enough?",ambitious:"{A} was spotted rehearsing a speech to a lamp post. Mayoral ambitions?",shy:"{A} hid behind a newspaper when {B} said hello. It was upside down.",creative:"{A} was seen painting the side of a bus stop. Permission was not mentioned.",generous:"{A} gave away a perfectly good coat at {P}. Some say it was a *very* good coat.",stubborn:"{A} has refused to change seats at {P} for six years. The seat has been moved twice.",outgoing:"{A} has invited 'everyone' to a party. No date was given.",serious:"{A} was heard laughing at {P}. Witnesses are being counselled.",practical:"{A} labels everything in the fridge, including the fridge.","family-oriented":"{A} was seen carrying three casseroles at once. The family is hungry, or planning something.",independent:"{A} fixed their own roof, their neighbour's roof and a third roof nobody has claimed."};
+ const GOS=[
+  "Who is {B}'s mystery admirer? Our sources say the name begins with a very ordinary letter.",
+  "{A} was seen leaving {B}'s house suspiciously early. Both say they were 'returning a ladder'.",
+  "{A} was seen buying {I} at the shop. Planning something, {A}?",
+  "Word is {A} and {B} are no longer speaking after a dispute over a fence, or possibly a hedge.",
+  "{A} told three people it was a secret. The whole town now knows. It was a surprise party for {B}.",
+  "{C} says they saw {A} dancing alone near {P}. {A} says it was 'a stretch'.",
+  "{B} has a new haircut. Neighbours are divided. {A} says it 'suits the face'.",
+  "A mystery guest paid {A}'s bar tab at the Crooked Lantern. {A} is not saying who owes them.",
+  "{A} borrowed a ladder from {B} six months ago. {B} has started saying 'ladder' pointedly."
+ ];
+ const gos=[];
+ const withTrait=shuf(ppl.filter(p=>p.trait&&TG[p.trait]));
+ if(withTrait[0]){const p=withTrait[0];gos.push(TG[p.trait].replace(/\{A\}/g,p.name||p.first).replace(/\{B\}/g,B).replace(/\{P\}/g,pl))}
+ shuf(GOS).slice(0,3).forEach(g=>gos.push(f(g)));
+ /* things the paper knows about YOU */
+ const mine=[];
+ if((m.rec||[]).length)mine.push("Police sources hint that a resident with 'a colourful past' was seen near "+pl+". No names, though the initials are very loud.");
+ if(m.shark&&m.shark.owed>0)mine.push("A man in the corner of the Golden Ace has been asking after someone who owes money. Our reporter did not stay to find out who.");
+ if(m.money>30000)mine.push(esc(m.name)+" was seen in a very new coat. Is business that good, or is it just a coat?");
+ if(m.hitman)mine.push("Kowalski Dry Cleaning reports 'unusually brisk business'. Nobody could say which stains.");
+ if(m.house)mine.push("Neighbours say "+esc(m.name)+" has been polishing the front step. Visitors are expected, or just very clean boots.");
+ if(mine.length)gos.push(one(mine));
+
+ const hl=shuf(HEAD)[0],st=shuf(STO).slice(0,4);
+ const wx=[["☀️","Sunny spells"],["⛅","Cloudy with ideas"],["🌧️","Rain, bring something to complain with"],["🌫️","Fog, watch out for pigeons"],["💨","Windy, hats at risk"],["❄️","Frost"]];
+ const base=[-2,-1,3,9,15,19,21,20,15,9,3,0][mo];const w=one(wx),tmp=base+Math.floor(R()*9)-4;
+ const signs=["Capricorn","Aquarius","Pisces","Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius"],cut=[20,19,20,20,21,21,22,23,23,23,22,22];
+ const sign=d<cut[mo]?signs[mo]:signs[(mo+1)%12];
+ const HOR=["A small decision today will matter, probably the sandwich.","You will meet someone interesting. They will talk about weather.","Avoid ladders, loans and long goodbyes.","Money comes to you; ask where it has been.","A hidden talent is about to be noticed by the wrong person.","Trust your feet today, not your friends.","Someone is thinking about you. It is probably the landlord.","A door will open. Check that it is the right door."];
+ const lotto=Array.from({length:6},()=>1+Math.floor(R()*49)).sort((a,b)=>a-b).join(" · ");
+ const ADS=["WANTED: Strong person to hold a very large rug. Pay: biscuits.","FOR SALE: Wedding dress, worn once, never mind why.","LOST: Cat named Sir Pounce. Answers to no one.","SERVICES: Dog walking, cat walking, occasional gnome watching.","FOR SALE: Used trombone. Quiet neighbours a plus.","WANTED: Friend to share an umbrella. Must be tall."];
+ const issue=doy+(y-2024)*365;
+ const dateStr=now.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+ const wire=(state.gaz||[]).slice(-2).reverse();
+
+ const body='<div class="paper"><div class="pHead"><div class="pTitle">THE TOWN CRIER</div><div class="pSub"><span>No. '+issue+'</span><span>'+esc(dateStr)+'</span><span>€1.00</span></div></div>'+
+  '<h1 class="pBig">'+esc(f(hl[0]))+'</h1><p class="pLead">'+esc(f(hl[1]))+'</p>'+
+  '<div class="pCols">'+st.map(x=>'<div class="pStory"><h4>'+esc(f(x[0]))+'</h4><p>'+esc(f(x[1]))+'</p></div>').join("")+
+  (wire.length?'<div class="pStory"><h4>From the gazette</h4><p>'+wire.map(e=>esc(e)).join(" ")+'</p></div>':"")+'</div>'+
+  '<div class="pBox pGos"><h5>🗣️ Whispers &amp; Rumours</h5><ul>'+gos.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul></div>'+
+  '<div class="pGrid"><div class="pBox"><h5>Weather</h5>'+w[0]+' '+w[1]+', '+tmp+'°C</div><div class="pBox"><h5>🔮 '+sign+'</h5>'+one(HOR)+'</div><div class="pBox"><h5>🎟️ Lucky numbers</h5>'+lotto+'</div><div class="pBox"><h5>Classifieds</h5>'+one(ADS)+'</div></div>'+
+  '<div class="pFoot">The Town Crier · All the news that is fit to gossip · Printed daily</div></div>'+
+  '<div class="choices" style="margin-top:8px"><button id="close" class="gold">Put it back</button></div>';
+ modal(body);$("close").onclick=closeModal;
+ const dd=dayOf();m.fxd=m.fxd||{};
+ if(m.fxd.paper!==dd&&m.stats&&m.stats.intelligence!=null){m.fxd.paper=dd;m.stats.intelligence=clamp(m.stats.intelligence+1,0,100);status("You read the paper. (+1 intelligence)");renderTop()}
+}
+const _nw=INT.cafe.o.find(o=>o[3]==="Newspaper");if(_nw)_nw[4]="paper:read";
+
+/* bartender rumor flag */
+const _mo=modal;
+modal=function(h){try{if(typeof h==="string"&&h.indexOf("dry cleaner in the South Side")>-1&&state&&state.player)state.player.htRumor=true}catch(e){}return _mo.apply(this,arguments)};
+})();
+})();
+
 </script>
 </body>
 </html>
